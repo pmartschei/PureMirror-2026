@@ -1,54 +1,63 @@
+// clang-format off
 #include "pch.h"
+// clang-format on
 
+#include "backend_detector.h"
 #include "console/console.h"
-
+#include "external/minhook/MinHook.h"
 #include "hooks/hooks.h"
 #include "utils/utils.h"
-
-#include "external/minhook/MinHook.h"
 
 DWORD WINAPI OnProcessAttach(LPVOID lpParam);
 DWORD WINAPI OnProcessDetach(LPVOID lpParam);
 
-BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
-    if (fdwReason == DLL_PROCESS_ATTACH) {
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
+{
+    if (fdwReason == DLL_PROCESS_ATTACH)
+    {
         DisableThreadLibraryCalls(hinstDLL);
 
         U::SetRenderingBackend(DIRECTX12);
 
         HANDLE hHandle = CreateThread(NULL, 0, OnProcessAttach, hinstDLL, 0, NULL);
-        if (hHandle != NULL) {
+        if (hHandle != NULL)
+        {
             CloseHandle(hHandle);
         }
-    } else if (fdwReason == DLL_PROCESS_DETACH && !lpReserved) {
+    }
+    else if (fdwReason == DLL_PROCESS_DETACH && !lpReserved)
+    {
         OnProcessDetach(NULL);
     }
 
     return TRUE;
 }
 
-DWORD WINAPI OnProcessAttach(LPVOID lpParam) {
-    Console::Alloc( );
-    LOG("[+] Rendering backend: %s\n", U::RenderingBackendToStr( ));
-    if (U::GetRenderingBackend( ) == NONE) {
+DWORD WINAPI OnProcessAttach(LPVOID lpParam)
+{
+    Console::Alloc();
+    LOG("[+] Rendering backend: %s\n", U::RenderingBackendToStr());
+    if (U::GetRenderingBackend() == NONE)
+    {
         LOG("[!] Looks like you forgot to set a backend. Will unload after pressing enter...");
-        std::cin.get( );
+        std::cin.get();
 
         FreeLibraryAndExitThread(reinterpret_cast<HMODULE>(lpParam), 0);
         return 0;
     }
 
-    MH_Initialize( );
-    H::Init( );
+    MH_Initialize();
+    H::Init();
 
     return 0;
 }
 
-DWORD WINAPI OnProcessDetach(LPVOID lpParam) {
-    H::Free( );
-    MH_Uninitialize( );
+DWORD WINAPI OnProcessDetach(LPVOID lpParam)
+{
+    H::Free();
+    MH_Uninitialize();
 
-    Console::Free( );
+    Console::Free();
 
     return 0;
 }

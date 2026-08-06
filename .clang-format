@@ -25,7 +25,7 @@ AlignAfterOpenBracket: Align
 SortIncludes: true
 IncludeBlocks: Regroup
 
-NamespaceIndentation: None
+NamespaceIndentation: All
 
 SpacesBeforeTrailingComments: 2
 

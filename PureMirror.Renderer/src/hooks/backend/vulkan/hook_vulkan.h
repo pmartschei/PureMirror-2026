@@ -1,6 +1,7 @@
 #pragma once
 
-namespace VK {
-	void Hook(HWND hwnd);
-	void Unhook( );
-}
+namespace VK
+{
+    void Hook();
+    void Unhook();
+}  // namespace VK

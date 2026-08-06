@@ -1,21 +1,19 @@
 #pragma once
 
-#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
+#define WIN32_LEAN_AND_MEAN  // Exclude rarely-used stuff from Windows headers
 // Windows Header Files
-#include <windows.h>
 #include <dxgi.h>
-
 #include <fstream>
 #include <iostream>
-//consoles
+#include <windows.h>
+// consoles
 #include <cstdio>
 
 // threading
+#include <memory>
 #include <mutex>
 #include <thread>
 
-#include <memory>
-
 // structs
+#include <array>
 #include <unordered_map>
-

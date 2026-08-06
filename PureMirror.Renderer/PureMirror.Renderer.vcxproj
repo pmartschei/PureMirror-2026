@@ -194,7 +194,8 @@ copy /Y "$(OutDir)PureMirror.Imgui.dll" "D:\Spiele\Path of Exile\PureMirror.Imgu
     <ClInclude Include="src\hooks\backend\opengl\hook_opengl.h" />
     <ClInclude Include="src\hooks\backend\vulkan\hook_vulkan.h" />
     <ClInclude Include="src\hooks\hooks.h" />
-    <ClInclude Include="src\menu\menu.h" />
+    <ClInclude Include="src\backend_detector.h" />
+    <ClInclude Include="src\core\core.h" />
     <ClInclude Include="src\utils\utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -206,6 +207,7 @@ copy /Y "$(OutDir)PureMirror.Imgui.dll" "D:\Spiele\Path of Exile\PureMirror.Imgu
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">pch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">pch.h</PrecompiledHeaderFile>
     </ClCompile>
+    <ClCompile Include="src\backend_detector.cpp" />
     <ClCompile Include="src\console\console.cpp" />
     <ClCompile Include="src\dllmain.cpp" />
     <ClCompile Include="src\external\imgui\imgui_impl_dx10.cpp">
@@ -263,7 +265,7 @@ copy /Y "$(OutDir)PureMirror.Imgui.dll" "D:\Spiele\Path of Exile\PureMirror.Imgu
     <ClCompile Include="src\hooks\backend\opengl\hook_opengl.cpp" />
     <ClCompile Include="src\hooks\backend\vulkan\hook_vulkan.cpp" />
     <ClCompile Include="src\hooks\hooks.cpp" />
-    <ClCompile Include="src\menu\menu.cpp" />
+    <ClCompile Include="src\core\core.cpp" />
     <ClCompile Include="src\utils\utils.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
