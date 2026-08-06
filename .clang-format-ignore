@@ -1,0 +1,15 @@
+
+build/
+bin/
+obj/
+out/
+
+external/
+third_party/
+packages/
+
+.git/
+.vs/
+
+CMakeFiles/
+CMakeCache.txt
