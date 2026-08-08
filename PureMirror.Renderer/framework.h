@@ -4,6 +4,7 @@
 // Windows Header Files
 #include <dxgi.h>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <windows.h>
 // consoles
@@ -17,3 +18,6 @@
 // structs
 #include <array>
 #include <unordered_map>
+
+// error handling
+#include <expected>

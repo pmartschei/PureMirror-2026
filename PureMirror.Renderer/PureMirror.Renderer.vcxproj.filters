@@ -105,6 +105,18 @@
     <ClInclude Include="src\backend_detector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\core_api.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\imgui_drawdata_snapshot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\render_thread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\utils\imgui_drawdata_copy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -180,6 +192,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\backend_detector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils\imgui_drawdata_snapshot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\render_thread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils\imgui_drawdata_copy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

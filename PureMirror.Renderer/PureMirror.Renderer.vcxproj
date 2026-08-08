@@ -126,6 +126,8 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)\PureMirror.Imgui\include;$(VULKAN_SDK)\Include;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -135,8 +137,7 @@
       <AdditionalLibraryDirectories>$(VULKAN_SDK)\Lib;$(OUTDIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "$(OutDir)PureMirror.Renderer.dll" "D:\Spiele\Path of Exile\PureMirror.dll"
-copy /Y "$(OutDir)PureMirror.Imgui.dll" "D:\Spiele\Path of Exile\PureMirror.Imgui.dll"</Command>
+      <Command>copy /Y "$(OutDir)$(TargetFileName)" "D:\Spiele\Path of Exile\PureMirror.dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -151,6 +152,8 @@ copy /Y "$(OutDir)PureMirror.Imgui.dll" "D:\Spiele\Path of Exile\PureMirror.Imgu
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)\PureMirror.Imgui\include;$(VULKAN_SDK)\Include;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -162,15 +165,16 @@ copy /Y "$(OutDir)PureMirror.Imgui.dll" "D:\Spiele\Path of Exile\PureMirror.Imgu
       <AdditionalLibraryDirectories>$(VULKAN_SDK)\Lib;$(OUTDIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "$(OutDir)PureMirror.Renderer.dll" "D:\Spiele\Path of Exile\PureMirror.dll"
-copy /Y "$(OutDir)PureMirror.Imgui.dll" "D:\Spiele\Path of Exile\PureMirror.Imgui.dll"</Command>
+      <Command>copy /Y "$(OutDir)$(TargetFileName)" "D:\Spiele\Path of Exile\PureMirror.dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="include\core_api.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="src\backend.h" />
     <ClInclude Include="src\console\console.h" />
+    <ClInclude Include="src\core\render_thread.h" />
     <ClInclude Include="src\external\imgui\imgui_impl_dx10.h" />
     <ClInclude Include="src\external\imgui\imgui_impl_dx11.h" />
     <ClInclude Include="src\external\imgui\imgui_impl_dx12.h" />
@@ -196,6 +200,8 @@ copy /Y "$(OutDir)PureMirror.Imgui.dll" "D:\Spiele\Path of Exile\PureMirror.Imgu
     <ClInclude Include="src\hooks\hooks.h" />
     <ClInclude Include="src\backend_detector.h" />
     <ClInclude Include="src\core\core.h" />
+    <ClInclude Include="src\utils\imgui_drawdata_copy.h" />
+    <ClInclude Include="src\utils\imgui_drawdata_snapshot.h" />
     <ClInclude Include="src\utils\utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -209,6 +215,7 @@ copy /Y "$(OutDir)PureMirror.Imgui.dll" "D:\Spiele\Path of Exile\PureMirror.Imgu
     </ClCompile>
     <ClCompile Include="src\backend_detector.cpp" />
     <ClCompile Include="src\console\console.cpp" />
+    <ClCompile Include="src\core\render_thread.cpp" />
     <ClCompile Include="src\dllmain.cpp" />
     <ClCompile Include="src\external\imgui\imgui_impl_dx10.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -262,10 +269,15 @@ copy /Y "$(OutDir)PureMirror.Imgui.dll" "D:\Spiele\Path of Exile\PureMirror.Imgu
     <ClCompile Include="src\hooks\backend\dx11\hook_directx11.cpp" />
     <ClCompile Include="src\hooks\backend\dx12\hook_directx12.cpp" />
     <ClCompile Include="src\hooks\backend\dx9\hook_directx9.cpp" />
-    <ClCompile Include="src\hooks\backend\opengl\hook_opengl.cpp" />
+    <ClCompile Include="src\hooks\backend\opengl\hook_opengl.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\hooks\backend\vulkan\hook_vulkan.cpp" />
     <ClCompile Include="src\hooks\hooks.cpp" />
     <ClCompile Include="src\core\core.cpp" />
+    <ClCompile Include="src\utils\imgui_drawdata_copy.cpp" />
+    <ClCompile Include="src\utils\imgui_drawdata_snapshot.cpp" />
     <ClCompile Include="src\utils\utils.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

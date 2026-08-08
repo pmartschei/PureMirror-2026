@@ -499,13 +499,24 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 
         if (ImGui::GetCurrentContext() && g_mainRenderTargetResource[0])
         {
-            ImGui_ImplDX12_NewFrame();
-            ImGui_ImplWin32_NewFrame();
-            ImGui::NewFrame();
 
-            Core::Render();
+            Core::GlobalRenderThread.Start(*ImGui::GetCurrentContext(),
+                                           []()
+                                           {
+                                               ImGui_ImplDX12_NewFrame();
+                                               ImGui_ImplWin32_NewFrame();
 
-            ImGui::Render();
+                                               ImGui::NewFrame();
+
+                                               ImGui::SetNextWindowPos(ImVec2(250, 250));
+                                               ImGui::Begin("wow such a nice name");
+
+                                               ImGui::End();
+
+                                               Core::Render();
+
+                                               ImGui::Render();
+                                           });
 
             UINT backBufferIdx = pSwapChain->GetCurrentBackBufferIndex();
             ID3D12CommandAllocator* commandAllocator = g_commandAllocators[backBufferIdx];
@@ -523,7 +534,12 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 
             g_pd3dCommandList->OMSetRenderTargets(1, &g_mainRenderTargetDescriptor[backBufferIdx], FALSE, NULL);
             g_pd3dCommandList->SetDescriptorHeaps(1, &g_pd3dSrvDescHeap);
-            ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), g_pd3dCommandList);
+            ImDrawData* drawData = Core::GlobalRenderThread.BeginRead();
+            if (drawData)
+            {
+                ImGui_ImplDX12_RenderDrawData(drawData, g_pd3dCommandList);
+            }
+            Core::GlobalRenderThread.EndRead();
             barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
             barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
             g_pd3dCommandList->ResourceBarrier(1, &barrier);

@@ -5,11 +5,17 @@
 
 #include "../external/imgui/imgui_impl_win32.h"
 #include "imgui.h"
+#include "include/core_api.h"
+#include "render_thread.h"
 
 namespace Core
 {
+    using GetCoreAPI_t = CoreAPI* (*)();
+    static HINSTANCE g_coreDLL = NULL;
     static HWND g_hWindow = NULL;
     static WNDPROC oWndProc;
+    static std::vector<CoreAPI*> g_CoreAPIs = {};
+    RenderThread GlobalRenderThread;
     static LRESULT WINAPI WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         if (uMsg == WM_KEYDOWN)
@@ -61,7 +67,21 @@ namespace Core
         return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
     }
 
-    void InitializeLibs() {}
+    void InitializeLibs()
+    {
+        g_coreDLL = LoadLibraryA("PureMirror.Core.dll");
+        if (g_coreDLL)
+        {
+            auto GetCoreAPI = reinterpret_cast<GetCoreAPI_t>(GetProcAddress(g_coreDLL, "GetCoreAPI"));
+
+            if (GetCoreAPI)
+            {
+                auto coreAPI = GetCoreAPI();
+                // TODO Version check imgui check whatever
+                g_CoreAPIs.push_back(coreAPI);
+            }
+        }
+    }
 
     bool HasContext()
     {
@@ -73,8 +93,9 @@ namespace Core
         if (ImGui::GetCurrentContext())
             return;
 
-        ImGui::CreateContext();
+        auto imguiContext = ImGui::CreateContext();
         ImGui_ImplWin32_Init(hwnd);
+        InitializeLibs();
 
         ImGuiIO& io = ImGui::GetIO();
         io.IniFilename = io.LogFilename = nullptr;
@@ -85,7 +106,10 @@ namespace Core
 
     void Render()
     {
-        ImGui::ShowDemoWindow();
+        for (auto& coreApi : g_CoreAPIs)
+        {
+            coreApi->Render();
+        }
     }
 
     void Shutdown()

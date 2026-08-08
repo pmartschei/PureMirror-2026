@@ -6,6 +6,15 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PureMirror.Imgui", "PureMirror.Imgui\PureMirror.Imgui.vcxproj", "{421671AB-B9CE-47F5-B6BF-910E54722E84}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PureMirror.Renderer", "PureMirror.Renderer\PureMirror.Renderer.vcxproj", "{C9D24F16-F636-4BFF-91F0-C166FC5A6BDA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{421671AB-B9CE-47F5-B6BF-910E54722E84} = {421671AB-B9CE-47F5-B6BF-910E54722E84}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PureMirror.Core", "PureMirror.Core\PureMirror.Core.vcxproj", "{C405B016-DCC7-4F32-ABE4-57A1E17517A7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{421671AB-B9CE-47F5-B6BF-910E54722E84} = {421671AB-B9CE-47F5-B6BF-910E54722E84}
+		{C9D24F16-F636-4BFF-91F0-C166FC5A6BDA} = {C9D24F16-F636-4BFF-91F0-C166FC5A6BDA}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,6 +40,14 @@ Global
 		{C9D24F16-F636-4BFF-91F0-C166FC5A6BDA}.Release|x64.Build.0 = Release|x64
 		{C9D24F16-F636-4BFF-91F0-C166FC5A6BDA}.Release|x86.ActiveCfg = Release|Win32
 		{C9D24F16-F636-4BFF-91F0-C166FC5A6BDA}.Release|x86.Build.0 = Release|Win32
+		{C405B016-DCC7-4F32-ABE4-57A1E17517A7}.Debug|x64.ActiveCfg = Debug|x64
+		{C405B016-DCC7-4F32-ABE4-57A1E17517A7}.Debug|x64.Build.0 = Debug|x64
+		{C405B016-DCC7-4F32-ABE4-57A1E17517A7}.Debug|x86.ActiveCfg = Debug|Win32
+		{C405B016-DCC7-4F32-ABE4-57A1E17517A7}.Debug|x86.Build.0 = Debug|Win32
+		{C405B016-DCC7-4F32-ABE4-57A1E17517A7}.Release|x64.ActiveCfg = Release|x64
+		{C405B016-DCC7-4F32-ABE4-57A1E17517A7}.Release|x64.Build.0 = Release|x64
+		{C405B016-DCC7-4F32-ABE4-57A1E17517A7}.Release|x86.ActiveCfg = Release|Win32
+		{C405B016-DCC7-4F32-ABE4-57A1E17517A7}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

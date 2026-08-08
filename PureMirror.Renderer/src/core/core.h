@@ -1,5 +1,7 @@
 #pragma once
 
+#include "render_thread.h"
+
 namespace Core
 {
     bool HasContext();
@@ -7,4 +9,6 @@ namespace Core
     void InitializeContext(HWND hwnd);
     void Render();
     void Shutdown();
+
+    extern RenderThread GlobalRenderThread;
 }  // namespace Core
