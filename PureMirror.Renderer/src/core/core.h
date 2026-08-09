@@ -11,6 +11,7 @@ namespace Core
     void Render();
     void Shutdown();
     Texture LoadTexture(const char* path);
+    void UnloadTexture(const char* path);
 
     extern RenderThread GlobalRenderThread;
     extern IRenderer* GlobalRenderer;

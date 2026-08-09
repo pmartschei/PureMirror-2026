@@ -22,11 +22,20 @@ class DX12GpuUploader
 
     std::shared_ptr<DX12Texture> UploadTexture(std::shared_ptr<TextureAsset> asset);
 
+    void ReleaseTexture(std::shared_ptr<DX12Texture> texture);
+
     bool IsReady(const std::shared_ptr<DX12Texture>& texture) const;
 
   private:
+    enum class RequestType
+    {
+        Upload,
+        Release,
+    };
+
     struct UploadRequest
     {
+        RequestType Type = RequestType::Upload;
         std::shared_ptr<TextureAsset> Asset;
         std::shared_ptr<DX12Texture> Texture;
     };
@@ -34,6 +43,8 @@ class DX12GpuUploader
     void ThreadMain();
 
     void UploadTextureInternal(const UploadRequest& request);
+
+    void ReleaseTextureInternal(const std::shared_ptr<DX12Texture>& texture);
 
     void WaitForFence(uint64_t value);
 

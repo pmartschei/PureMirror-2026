@@ -113,6 +113,7 @@ std::shared_ptr<DX12Texture> DX12GpuUploader::UploadTexture(std::shared_ptr<Text
     texture->Height = static_cast<uint32_t>(asset->Height);
 
     UploadRequest request;
+    request.Type = RequestType::Upload;
     request.Asset = std::move(asset);
     request.Texture = texture;
 
@@ -126,6 +127,25 @@ std::shared_ptr<DX12Texture> DX12GpuUploader::UploadTexture(std::shared_ptr<Text
 
     return texture;
 }
+
+void DX12GpuUploader::ReleaseTexture(std::shared_ptr<DX12Texture> texture)
+{
+    if (!texture)
+        return;
+
+    UploadRequest request;
+    request.Type = RequestType::Release;
+    request.Texture = std::move(texture);
+
+    {
+        std::lock_guard lock(m_Mutex);
+
+        m_Queue.push(std::move(request));
+    }
+
+    m_Condition.notify_one();
+}
+
 bool DX12GpuUploader::IsReady(const std::shared_ptr<DX12Texture>& texture) const
 {
     return texture && texture->Ready.load(std::memory_order_acquire);
@@ -150,7 +170,10 @@ void DX12GpuUploader::ThreadMain()
 
         try
         {
-            UploadTextureInternal(request);
+            if (request.Type == RequestType::Release)
+                ReleaseTextureInternal(request.Texture);
+            else
+                UploadTextureInternal(request);
         }
         catch (...)
         {
@@ -390,6 +413,28 @@ void DX12GpuUploader::UploadTextureInternal(const UploadRequest& request)
     // We no longer need the CPU upload buffer.
     texture.UploadBuffer.Reset();
 }
+
+void DX12GpuUploader::ReleaseTextureInternal(const std::shared_ptr<DX12Texture>& texture)
+{
+    if (!texture)
+        return;
+
+    if (texture->FenceValue > 0)
+        WaitForFence(texture->FenceValue);
+
+    if (texture->Descriptor.IsValid())
+    {
+        m_DescriptorAllocator.Free(texture->Descriptor);
+        texture->Descriptor = {};
+    }
+
+    texture->Resource.Reset();
+    texture->UploadBuffer.Reset();
+    texture->ImGuiID = {};
+    texture->FenceValue = 0;
+    texture->Ready.store(false, std::memory_order_release);
+}
+
 void DX12GpuUploader::WaitForFence(uint64_t value)
 {
     if (m_Fence->GetCompletedValue() >= value)

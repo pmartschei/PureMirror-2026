@@ -11,4 +11,5 @@ struct RendererApi
     uint32_t Version;
 
     Texture (*LoadTexture)(const char* path);
+    void (*UnloadTexture)(const char* path);
 };

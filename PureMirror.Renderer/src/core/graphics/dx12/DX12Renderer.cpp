@@ -6,7 +6,16 @@
 
 DX12Renderer::DX12Renderer() {}
 
-DX12Renderer::~DX12Renderer() {}
+DX12Renderer::~DX12Renderer()
+{
+    if (!m_GpuUploader)
+        return;
+
+    for (auto& [path, texture] : m_Textures)
+        m_GpuUploader->ReleaseTexture(texture);
+
+    m_Textures.clear();
+}
 
 void DX12Renderer::Initialize(ID3D12Device* device, ID3D12DescriptorHeap* srvHeap)
 {
@@ -40,4 +49,17 @@ Texture DX12Renderer::UploadAndRetrieveTexture(const std::shared_ptr<TextureAsse
     result.TextureID = dx12Texture->ImGuiID;
 
     return result;
+}
+
+void DX12Renderer::ReleaseTexture(const std::string& path)
+{
+    auto it = m_Textures.find(path);
+
+    if (it == m_Textures.end())
+        return;
+
+    auto texture = std::move(it->second);
+    m_Textures.erase(it);
+
+    m_GpuUploader->ReleaseTexture(std::move(texture));
 }

@@ -138,4 +138,15 @@ namespace Core
 
         return GlobalRenderer->UploadAndRetrieveTexture(textureAsset);
     }
+
+    void UnloadTexture(const char* path)
+    {
+        if (!path)
+            return;
+
+        if (GlobalRenderer)
+            GlobalRenderer->ReleaseTexture(path);
+
+        g_TextureManager.Unload(path);
+    }
 }  // namespace Core

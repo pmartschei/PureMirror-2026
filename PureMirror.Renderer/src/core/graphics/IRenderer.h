@@ -14,4 +14,6 @@ class IRenderer
     virtual ~IRenderer() = default;
 
     virtual Texture UploadAndRetrieveTexture(const std::shared_ptr<TextureAsset>& asset) = 0;
+
+    virtual void ReleaseTexture(const std::string& path) = 0;
 };

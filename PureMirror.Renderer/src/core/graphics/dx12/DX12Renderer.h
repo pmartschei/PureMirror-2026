@@ -18,6 +18,8 @@ class DX12Renderer : public IRenderer
 
     void Initialize(ID3D12Device* device, ID3D12DescriptorHeap* srvHeap);
 
+    void ReleaseTexture(const std::string& path) override;
+
   private:
     std::unique_ptr<DX12GpuUploader> m_GpuUploader;
 

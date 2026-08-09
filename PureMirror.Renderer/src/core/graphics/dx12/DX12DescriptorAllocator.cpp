@@ -54,7 +54,7 @@ void DX12DescriptorAllocator::Free(const DX12Descriptor& descriptor)
     if (!descriptor.IsValid())
         return;
 
-    if (descriptor.Index >= m_Capacity)
+    if (descriptor.Index < 128 || descriptor.Index >= m_Capacity + 128)
         return;
 
     std::lock_guard lock(m_Mutex);
