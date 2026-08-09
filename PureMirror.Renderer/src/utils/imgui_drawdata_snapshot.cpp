@@ -18,6 +18,55 @@ void ImGuiDrawDataSnapshot::Update(const ImDrawData* drawData)
     buffer.State.store(BufferState::Ready, std::memory_order_release);
 }
 
+void ImGuiDrawDataSnapshot::Clear()
+{
+    const int writeIndex = AcquireWriteBuffer();
+
+    if (writeIndex == -1)
+        return;
+
+    Buffer& buffer = m_Buffers[writeIndex];
+
+    buffer.TextureUsage.clear();
+    buffer.Data.Clear();
+}
+
+void ImGuiDrawDataSnapshot::AddImageUsage(ImTextureID textureID)
+{
+    const int writeIndex = AcquireWriteBuffer();
+
+    if (writeIndex == -1)
+        return;
+
+    Buffer& buffer = m_Buffers[writeIndex];
+
+    if (buffer.TextureUsage.find(textureID) == buffer.TextureUsage.end())
+    {
+        buffer.TextureUsage[textureID] = 1;
+    }
+    else
+    {
+        buffer.TextureUsage[textureID]++;
+    }
+}
+
+std::unordered_set<ImTextureID> ImGuiDrawDataSnapshot::CollectUsedImages()
+{
+    std::unordered_set<ImTextureID> result;
+
+    for (int i = 0; i < BufferCount; ++i)
+    {
+        Buffer& buffer = m_Buffers[i];
+
+        for (const auto& [textureID, usage] : buffer.TextureUsage)
+        {
+            result.insert(textureID);
+        }
+    }
+
+    return result;
+}
+
 ImDrawData* ImGuiDrawDataSnapshot::BeginRead()
 {
     int currentIndex = m_ReadIndex.load(std::memory_order_acquire);

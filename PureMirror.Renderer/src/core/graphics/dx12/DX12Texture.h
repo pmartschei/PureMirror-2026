@@ -24,4 +24,5 @@ struct DX12Texture
     uint32_t Height = 0;
 
     std::atomic<bool> Ready = false;
+    std::atomic<bool> ShouldUnload = false;
 };

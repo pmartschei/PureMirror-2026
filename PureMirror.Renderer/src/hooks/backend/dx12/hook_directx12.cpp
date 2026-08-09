@@ -505,34 +505,46 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
         if (ImGui::GetCurrentContext() && g_mainRenderTargetResource[0])
         {
 
-            Core::GlobalRenderThread.Start(*ImGui::GetCurrentContext(),
-                                           []()
-                                           {
-                                               ImGui_ImplDX12_NewFrame();
-                                               ImGui_ImplWin32_NewFrame();
+            Core::GlobalRenderThread.Start(
+                *ImGui::GetCurrentContext(),
+                [](RenderThread& renderThread)
+                {
+                    ImGui_ImplDX12_NewFrame();
+                    ImGui_ImplWin32_NewFrame();
 
-                                               ImGui::NewFrame();
+                    ImGui::NewFrame();
 
-                                               auto texture = Core::LoadTexture("test.png");
-                                               ImGui::SetNextWindowSize(ImVec2(250, 250));
-                                               ImGui::Begin("wow such a nice name");
-                                               if (texture.TextureID)
-                                               {
-                                                   ImGui::Image(texture.TextureID, ImVec2(100, 100));
-                                               }
-                                               else
-                                               {
-                                                   ImVec2 pos = ImGui::GetCursorScreenPos();
-                                                   auto drawList = ImGui::GetWindowDrawList();
-                                                   drawList->AddRectFilled(
-                                                       pos, ImVec2(pos.x + 100, pos.y + 100), IM_COL32(255, 0, 0, 255));
-                                               }
-                                               ImGui::End();
+                    ImGui::SetNextWindowSize(ImVec2(250, 250));
+                    ImGui::Begin("wow such a nice name");
+                    static bool enabled = false;
+                    if (ImGui::Button("Open"))
+                    {
+                        enabled = !enabled;
+                    }
+                    if (enabled)
+                    {
+                        auto texture = Core::LoadTexture("test.png");
+                        if (texture.TextureID)
+                        {
+                            ImGui::Image(texture.TextureID, ImVec2(100, 100));
+                            renderThread.AddImageUsage(texture.TextureID);
+                        }
+                        else
+                        {
+                            ImVec2 pos = ImGui::GetCursorScreenPos();
+                            auto drawList = ImGui::GetWindowDrawList();
+                            drawList->AddRectFilled(pos, ImVec2(pos.x + 100, pos.y + 100), IM_COL32(255, 0, 0, 255));
+                        }
+                    }
+                    else
+                        Core::UnloadTexture("test.png");
 
-                                               Core::Render();
+                    ImGui::End();
 
-                                               ImGui::Render();
-                                           });
+                    Core::Render();
+
+                    ImGui::Render();
+                });
 
             UINT backBufferIdx = pSwapChain->GetCurrentBackBufferIndex();
             ID3D12CommandAllocator* commandAllocator = g_commandAllocators[backBufferIdx];

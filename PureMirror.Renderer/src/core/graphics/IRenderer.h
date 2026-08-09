@@ -16,4 +16,6 @@ class IRenderer
     virtual Texture UploadAndRetrieveTexture(const std::shared_ptr<TextureAsset>& asset) = 0;
 
     virtual void ReleaseTexture(const std::string& path) = 0;
+
+    virtual void CleanUnusedTextures(const std::unordered_set<ImTextureID>& usedTextures) = 0;
 };

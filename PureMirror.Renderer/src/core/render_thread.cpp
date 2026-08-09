@@ -4,10 +4,12 @@
 
 #include "render_thread.h"
 
+#include "core.h"
+
 #include <src/utils/utils.h>
 
 std::expected<void, RenderThreadError> RenderThread::Start(ImGuiContext& imguiContext,
-                                                           std::function<void()> renderCallback)
+                                                           std::function<void(RenderThread&)> renderCallback)
 {
     if (m_IsRunning)
     {
@@ -48,10 +50,15 @@ void RenderThread::Stop()
     m_Thread.request_stop();
 }
 
+void RenderThread::AddImageUsage(ImTextureID textureID)
+{
+    m_ImGuiDrawDataSnapshot.AddImageUsage(textureID);
+}
+
 void RenderThread::Loop()
 {
     SetThreadDescription(GetCurrentThread(), L"PureMirror Render Thread");
-    const int m_FPS = 10;
+    const int m_FPS = 60;
     using namespace std::chrono;
     using dsec = duration<double>;
     auto invFpsLimit = round<system_clock::duration>(dsec{1. / m_FPS});
@@ -60,11 +67,17 @@ void RenderThread::Loop()
 
     while (!m_ShouldTerminate)
     {
+        m_ImGuiDrawDataSnapshot.Clear();
+
         ImGui::SetCurrentContext(m_ImguiContext);
 
-        m_RenderCallback();
+        m_RenderCallback(*this);
 
         m_ImGuiDrawDataSnapshot.Update(ImGui::GetDrawData());
+
+        auto usedImages = m_ImGuiDrawDataSnapshot.CollectUsedImages();
+
+        Core::GlobalRenderer->CleanUnusedTextures(usedImages);
 
         auto now = system_clock::now();
 

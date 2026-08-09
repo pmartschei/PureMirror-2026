@@ -51,6 +51,24 @@ Texture DX12Renderer::UploadAndRetrieveTexture(const std::shared_ptr<TextureAsse
     return result;
 }
 
+void DX12Renderer::CleanUnusedTextures(const std::unordered_set<ImTextureID>& usedTextures)
+{
+    for (auto it = m_Textures.begin(); it != m_Textures.end();)
+    {
+        auto& texture = it->second;
+
+        if (texture->ShouldUnload.load(std::memory_order_acquire) && !usedTextures.contains(texture->ImGuiID))
+        {
+            m_GpuUploader->ReleaseTexture(std::move(texture));
+            it = m_Textures.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+}
+
 void DX12Renderer::ReleaseTexture(const std::string& path)
 {
     auto it = m_Textures.find(path);
@@ -58,8 +76,6 @@ void DX12Renderer::ReleaseTexture(const std::string& path)
     if (it == m_Textures.end())
         return;
 
-    auto texture = std::move(it->second);
-    m_Textures.erase(it);
-
-    m_GpuUploader->ReleaseTexture(std::move(texture));
+    auto& texture = it->second;
+    texture->ShouldUnload.store(true, std::memory_order_release);
 }

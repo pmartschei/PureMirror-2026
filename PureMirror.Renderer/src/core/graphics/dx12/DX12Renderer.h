@@ -18,12 +18,14 @@ class DX12Renderer : public IRenderer
 
     void Initialize(ID3D12Device* device, ID3D12DescriptorHeap* srvHeap);
 
-    void ReleaseTexture(const std::string& path) override;
-
   private:
     std::unique_ptr<DX12GpuUploader> m_GpuUploader;
 
     std::unordered_map<std::string, std::shared_ptr<DX12Texture>> m_Textures;
 
     virtual Texture UploadAndRetrieveTexture(const std::shared_ptr<TextureAsset>& asset) override;
+
+    void ReleaseTexture(const std::string& path) override;
+
+    virtual void CleanUnusedTextures(const std::unordered_set<ImTextureID>& usedTextures) override;
 };

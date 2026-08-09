@@ -12,6 +12,8 @@
 #include "render_thread.h"
 
 #include <include/Texture.h>
+#include <src/console/console.h>
+#include <src/utils/utils.h>
 
 namespace Core
 {
@@ -65,7 +67,7 @@ namespace Core
 
         LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
         // if (Menu::bShowMenu) {
-        //     ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
+        ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
 
         // (Doesn't work for some games like 'Sid Meier's Civilization VI')
         // Window may not maximize from taskbar because 'H::bShowDemoWindow' is set to true by default. ('hooks.hpp')
@@ -109,8 +111,8 @@ namespace Core
         ImGuiIO& io = ImGui::GetIO();
         io.IniFilename = io.LogFilename = nullptr;
 
-        oWndProc =
-            reinterpret_cast<WNDPROC>(SetWindowLongPtr(g_hWindow, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(WndProc)));
+        g_hWindow = hwnd;
+        oWndProc = reinterpret_cast<WNDPROC>(SetWindowLongPtr(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(WndProc)));
     }
 
     void Render()
