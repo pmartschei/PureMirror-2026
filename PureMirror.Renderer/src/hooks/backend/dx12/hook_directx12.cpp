@@ -21,6 +21,7 @@
 #include "hook_directx12.h"
 
 #include <src/backend_detector.h>
+#include <src/core/graphics/dx12/DX12Renderer.h>
 
 // Data
 static int const NUM_BACK_BUFFERS = 3;
@@ -34,6 +35,7 @@ static IDXGISwapChain3* g_pSwapChain = NULL;
 static ID3D12CommandAllocator* g_commandAllocators[NUM_BACK_BUFFERS] = {};
 static ID3D12Resource* g_mainRenderTargetResource[NUM_BACK_BUFFERS] = {};
 static D3D12_CPU_DESCRIPTOR_HANDLE g_mainRenderTargetDescriptor[NUM_BACK_BUFFERS] = {};
+static DX12Renderer g_Renderer;
 
 static void CleanupDeviceD3D12();
 static void CleanupRenderTarget();
@@ -487,6 +489,9 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
                                 g_pd3dSrvDescHeap,
                                 g_pd3dSrvDescHeap->GetCPUDescriptorHandleForHeapStart(),
                                 g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart());
+
+            g_Renderer.Initialize(g_pd3dDevice, g_pd3dSrvDescHeap);
+            Core::GlobalRenderer = &g_Renderer;
         }
     }
 
@@ -508,9 +513,20 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 
                                                ImGui::NewFrame();
 
-                                               ImGui::SetNextWindowPos(ImVec2(250, 250));
+                                               auto texture = Core::LoadTexture("test.png");
+                                               ImGui::SetNextWindowSize(ImVec2(250, 250));
                                                ImGui::Begin("wow such a nice name");
-
+                                               if (texture.TextureID)
+                                               {
+                                                   ImGui::Image(texture.TextureID, ImVec2(100, 100));
+                                               }
+                                               else
+                                               {
+                                                   ImVec2 pos = ImGui::GetCursorScreenPos();
+                                                   auto drawList = ImGui::GetWindowDrawList();
+                                                   drawList->AddRectFilled(
+                                                       pos, ImVec2(pos.x + 100, pos.y + 100), IM_COL32(255, 0, 0, 255));
+                                               }
                                                ImGui::End();
 
                                                Core::Render();

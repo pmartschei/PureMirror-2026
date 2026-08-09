@@ -1,12 +1,17 @@
 // clang-format off
 #include "pch.h"
 // clang-format on
+
 #include "core.h"
 
 #include "../external/imgui/imgui_impl_win32.h"
+#include "graphics/TextureManager.h"
+#include "graphics/dx12/DX12GpuUploader.h"
 #include "imgui.h"
 #include "include/core_api.h"
 #include "render_thread.h"
+
+#include <include/Texture.h>
 
 namespace Core
 {
@@ -16,6 +21,10 @@ namespace Core
     static WNDPROC oWndProc;
     static std::vector<CoreAPI*> g_CoreAPIs = {};
     RenderThread GlobalRenderThread;
+    TextureManager g_TextureManager;
+    std::unique_ptr<DX12GpuUploader> g_GpuUploader;
+    std::vector<std::shared_ptr<DX12Texture>> m_Textures;
+    IRenderer* GlobalRenderer;
     static LRESULT WINAPI WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         if (uMsg == WM_KEYDOWN)
@@ -118,5 +127,15 @@ namespace Core
         {
             SetWindowLongPtr(g_hWindow, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(oWndProc));
         }
+    }
+
+    Texture LoadTexture(const char* path)
+    {
+        auto textureAsset = g_TextureManager.Load(path);
+
+        if (!textureAsset)
+            return {};
+
+        return GlobalRenderer->UploadAndRetrieveTexture(textureAsset);
     }
 }  // namespace Core

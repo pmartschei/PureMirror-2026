@@ -7,6 +7,7 @@
 #include <functional>
 #include <iostream>
 #include <windows.h>
+#include <wrl/client.h>
 // consoles
 #include <cstdio>
 
@@ -17,6 +18,7 @@
 
 // structs
 #include <array>
+#include <queue>
 #include <unordered_map>
 
 // error handling
