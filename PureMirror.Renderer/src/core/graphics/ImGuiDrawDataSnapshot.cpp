@@ -27,44 +27,23 @@ void ImGuiDrawDataSnapshot::Clear() noexcept
 
     Buffer& buffer = m_Buffers[writeIndex];
 
-    buffer.TextureUsage.clear();
     buffer.Data.Clear();
 }
 
-void ImGuiDrawDataSnapshot::AddImageUsage(ImTextureID textureID) noexcept
+std::unordered_set<ImTextureID> ImGuiDrawDataSnapshot::CollectUsedImages()
 {
-    const int writeIndex = AcquireWriteBuffer();
-
-    if (writeIndex == -1)
-        return;
-
-    Buffer& buffer = m_Buffers[writeIndex];
-
-    if (buffer.TextureUsage.find(textureID) == buffer.TextureUsage.end())
-    {
-        buffer.TextureUsage[textureID] = 1;
-    }
-    else
-    {
-        buffer.TextureUsage[textureID]++;
-    }
-}
-
-std::unordered_set<ImTextureID> ImGuiDrawDataSnapshot::CollectUsedImages() noexcept
-{
-    std::unordered_set<ImTextureID> result;
+    m_UsedImages.clear();
 
     for (int i = 0; i < BufferCount; ++i)
     {
         Buffer& buffer = m_Buffers[i];
 
-        for (const auto& [textureID, usage] : buffer.TextureUsage)
-        {
-            result.insert(textureID);
-        }
+        const auto& usedImages = buffer.Data.GetUsedImages();
+
+        m_UsedImages.insert(usedImages.cbegin(), usedImages.cend());
     }
 
-    return result;
+    return m_UsedImages;
 }
 
 ImDrawData* ImGuiDrawDataSnapshot::BeginRead() noexcept
@@ -92,6 +71,8 @@ ImDrawData* ImGuiDrawDataSnapshot::BeginRead() noexcept
             break;
         }
     }
+
+    // This theoretically could break, with the current state handling
 
     assert(currentIndex >= 0 && currentIndex < static_cast<UINT>(m_Buffers.size()));
 

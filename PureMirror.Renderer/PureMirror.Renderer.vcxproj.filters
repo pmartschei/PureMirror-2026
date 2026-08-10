@@ -102,7 +102,7 @@
     <ClInclude Include="src\core\BackendDetector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\core_api.h">
+    <ClInclude Include="include\CoreApi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\core\graphics\ImGuiDrawDataSnapshot.h">

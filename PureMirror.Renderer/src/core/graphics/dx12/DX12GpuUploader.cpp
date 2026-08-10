@@ -3,8 +3,11 @@
 // clang-format on
 #include "DX12GpuUploader.h"
 
-DX12GpuUploader::DX12GpuUploader(ID3D12Device* device, ID3D12DescriptorHeap* srvHeap, uint32_t descriptorCapacity)
-    : m_DescriptorAllocator(device, srvHeap, descriptorCapacity)
+DX12GpuUploader::DX12GpuUploader(ID3D12Device* device,
+                                 ID3D12DescriptorHeap* srvHeap,
+                                 UINT descriptorCapacity,
+                                 UINT descriptorOffset)
+    : m_DescriptorAllocator(device, srvHeap, descriptorCapacity, descriptorOffset)
 {
     if (!device)
         throw std::invalid_argument("DX12GpuUploader: device is null");
@@ -142,7 +145,7 @@ void DX12GpuUploader::ReleaseTexture(std::shared_ptr<DX12Texture> texture)
 
 bool DX12GpuUploader::IsReady(const std::shared_ptr<DX12Texture>& texture) const
 {
-    return texture && texture->Ready.load(std::memory_order_acquire);
+    return texture && texture->State.load(std::memory_order_acquire) == TextureState::Ready;
 }
 void DX12GpuUploader::ThreadMain(std::stop_token stopToken)
 {
@@ -176,7 +179,7 @@ void DX12GpuUploader::ThreadMain(std::stop_token stopToken)
         }
         catch (...)
         {
-            request.Texture->Ready.store(false, std::memory_order_release);
+            request.Texture->State.store(TextureState::Failed, std::memory_order_release);
 
             // Hier später Logging einbauen.
         }
@@ -227,6 +230,10 @@ void DX12GpuUploader::UploadTextureInternal(const UploadRequest& request)
 
     if (FAILED(hr))
         throw std::runtime_error("Failed to create DX12 texture resource");
+
+    const D3D12_RESOURCE_ALLOCATION_INFO allocationInfo = m_Device->GetResourceAllocationInfo(0, 1, &textureDesc);
+
+    texture.SizeInBytes = allocationInfo.SizeInBytes;
 
     // ------------------------------------------------------------
     // CALCULATE UPLOAD BUFFER SIZE
@@ -407,7 +414,7 @@ void DX12GpuUploader::UploadTextureInternal(const UploadRequest& request)
     // ImGui DX12 backend uses the GPU descriptor handle.
     texture.ImGuiID = reinterpret_cast<ImTextureID>(texture.Descriptor.Gpu.ptr);
 
-    texture.Ready.store(true, std::memory_order_release);
+    texture.State.store(TextureState::Ready, std::memory_order_release);
 
     // We no longer need the CPU upload buffer.
     texture.UploadBuffer.Reset();
@@ -431,7 +438,7 @@ void DX12GpuUploader::ReleaseTextureInternal(const std::shared_ptr<DX12Texture>&
     texture->UploadBuffer.Reset();
     texture->ImGuiID = {};
     texture->FenceValue = 0;
-    texture->Ready.store(false, std::memory_order_release);
+    texture->State.store(TextureState::Released, std::memory_order_release);
 }
 
 void DX12GpuUploader::WaitForFence(uint64_t value)

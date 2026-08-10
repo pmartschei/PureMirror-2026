@@ -9,6 +9,14 @@
 
 using Microsoft::WRL::ComPtr;
 
+enum class TextureState : UINT8
+{
+    Pending,
+    Ready,
+    Failed,
+    Released
+};
+
 struct DX12Texture
 {
     ComPtr<ID3D12Resource> Resource;
@@ -23,6 +31,8 @@ struct DX12Texture
     uint32_t Width = 0;
     uint32_t Height = 0;
 
-    std::atomic<bool> Ready = false;
-    std::atomic<bool> ShouldUnload = false;
+    std::atomic<TextureState> State{TextureState::Pending};
+    UINT64 LastUsedFrame = 0;
+
+    UINT64 SizeInBytes = 0;
 };

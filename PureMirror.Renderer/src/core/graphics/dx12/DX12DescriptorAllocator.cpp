@@ -3,8 +3,11 @@
 // clang-format on
 #include "DX12DescriptorAllocator.h"
 
-DX12DescriptorAllocator::DX12DescriptorAllocator(ID3D12Device* device, ID3D12DescriptorHeap* heap, uint32_t capacity)
-    : m_Heap(heap), m_Capacity(capacity)
+DX12DescriptorAllocator::DX12DescriptorAllocator(ID3D12Device* device,
+                                                 ID3D12DescriptorHeap* heap,
+                                                 UINT capacity,
+                                                 UINT offset)
+    : m_Heap(heap), m_Capacity(capacity), m_Offset(offset)
 {
     if (!device)
         throw std::invalid_argument("DX12DescriptorAllocator: device is null");
@@ -31,7 +34,7 @@ DX12Descriptor DX12DescriptorAllocator::Allocate()
     if (m_FreeIndices.empty())
         throw std::runtime_error("DX12DescriptorAllocator: descriptor heap exhausted");
 
-    const uint32_t index = m_FreeIndices.front() + INDEX_OFFSET;
+    const uint32_t index = m_FreeIndices.front();
 
     m_FreeIndices.pop();
 
@@ -39,13 +42,15 @@ DX12Descriptor DX12DescriptorAllocator::Allocate()
 
     descriptor.Index = index;
 
+    const uint32_t paddedIndex = index + m_Offset;
+
     descriptor.Cpu = m_CpuStart;
 
-    descriptor.Cpu.ptr += static_cast<SIZE_T>(index) * m_DescriptorSize;
+    descriptor.Cpu.ptr += static_cast<SIZE_T>(paddedIndex) * m_DescriptorSize;
 
     descriptor.Gpu = m_GpuStart;
 
-    descriptor.Gpu.ptr += static_cast<UINT64>(index) * m_DescriptorSize;
+    descriptor.Gpu.ptr += static_cast<UINT64>(paddedIndex) * m_DescriptorSize;
 
     return descriptor;
 }

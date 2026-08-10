@@ -7,6 +7,7 @@
 #include "ImGuiDrawDataSnapshot.h"
 
 #include <imgui.h>
+#include <include/RendererApi.h>
 
 enum class RenderThreadError
 {
@@ -24,10 +25,9 @@ class RenderThread
     void EndRead();
     void Stop();
 
-    void AddImageUsage(ImTextureID textureID);
-
   private:
     void Loop();
+
     std::atomic_bool m_IsRunning = false;
     std::atomic_bool m_ShouldTerminate = false;
 

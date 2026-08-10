@@ -40,6 +40,9 @@ static void CleanupDeviceD3D12();
 static void CleanupRenderTarget();
 static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain);
 
+constexpr UINT NUM_DESCRIPTORS_PUREMIRROR = 2 << 14;
+constexpr UINT IMGUI_DESCRIPTORS = 1;
+
 static void FetchQueue(IUnknown* unknown)
 {
     ID3D12CommandQueue* commandQueue = nullptr;
@@ -449,7 +452,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
             {
                 D3D12_DESCRIPTOR_HEAP_DESC desc = {};
                 desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-                desc.NumDescriptors = 1;
+                desc.NumDescriptors = IMGUI_DESCRIPTORS + NUM_DESCRIPTORS_PUREMIRROR;
                 desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
                 if (g_pd3dDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap)) != S_OK)
                     return;
@@ -475,7 +478,7 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
                                 g_pd3dSrvDescHeap->GetCPUDescriptorHandleForHeapStart(),
                                 g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart());
 
-            g_Renderer->Initialize(g_pd3dDevice, g_pd3dSrvDescHeap);
+            g_Renderer->Initialize(g_pd3dDevice, g_pd3dSrvDescHeap, NUM_DESCRIPTORS_PUREMIRROR, IMGUI_DESCRIPTORS);
             auto renderThread = g_Renderer->GetRenderThread();
             if (renderThread)
             {
@@ -487,35 +490,10 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 
                                         ImGui::NewFrame();
 
-                                        ImGui::SetNextWindowSize(ImVec2(250, 250));
-                                        ImGui::Begin("wow such a nice name");
-                                        static bool enabled = false;
-                                        if (ImGui::Button("Open"))
-                                        {
-                                            enabled = !enabled;
-                                        }
-                                        if (enabled)
-                                        {
-                                            auto texture = Core::LoadTexture("test.png");
-                                            if (texture.TextureID)
-                                            {
-                                                ImGui::Image(texture.TextureID, ImVec2(100, 100));
-                                                renderThread.AddImageUsage(texture.TextureID);
-                                            }
-                                            else
-                                            {
-                                                ImVec2 pos = ImGui::GetCursorScreenPos();
-                                                auto drawList = ImGui::GetWindowDrawList();
-                                                drawList->AddRectFilled(
-                                                    pos, ImVec2(pos.x + 100, pos.y + 100), IM_COL32(255, 0, 0, 255));
-                                            }
-                                        }
-                                        else
-                                            Core::UnloadTexture("test.png");
+                                        RenderContext m_RenderContext = {.Version = RENDERER_CONTEXT_API_VERSION,
+                                                                         .Size = sizeof(RenderContext)};
 
-                                        ImGui::End();
-
-                                        Core::Render();
+                                        Core::Render(m_RenderContext);
 
                                         ImGui::Render();
                                     });

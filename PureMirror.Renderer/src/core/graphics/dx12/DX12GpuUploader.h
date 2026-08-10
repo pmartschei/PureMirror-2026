@@ -13,7 +13,10 @@ using Microsoft::WRL::ComPtr;
 class DX12GpuUploader
 {
   public:
-    DX12GpuUploader(ID3D12Device* device, ID3D12DescriptorHeap* srvHeap, uint32_t descriptorCapacity = 2 << 8);
+    DX12GpuUploader(ID3D12Device* device,
+                    ID3D12DescriptorHeap* srvHeap,
+                    UINT descriptorCapacity,
+                    UINT descriptorOffset);
 
     ~DX12GpuUploader();
 

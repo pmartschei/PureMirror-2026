@@ -6,8 +6,6 @@
 
 #include <d3d12.h>
 
-using Microsoft::WRL::ComPtr;
-
 struct DX12Descriptor
 {
     D3D12_CPU_DESCRIPTOR_HANDLE Cpu{};
@@ -24,7 +22,7 @@ struct DX12Descriptor
 class DX12DescriptorAllocator
 {
   public:
-    DX12DescriptorAllocator(ID3D12Device* device, ID3D12DescriptorHeap* heap, uint32_t capacity);
+    DX12DescriptorAllocator(ID3D12Device* device, ID3D12DescriptorHeap* heap, UINT capacity, UINT offset);
 
     DX12DescriptorAllocator(const DX12DescriptorAllocator&) = delete;
 
@@ -34,7 +32,7 @@ class DX12DescriptorAllocator
 
     void Free(const DX12Descriptor& descriptor);
 
-    [[nodiscard]] uint32_t GetCapacity() const noexcept
+    [[nodiscard]] UINT GetCapacity() const noexcept
     {
         return m_Capacity;
     }
@@ -43,13 +41,14 @@ class DX12DescriptorAllocator
     static constexpr int INDEX_OFFSET = 128;
     ID3D12DescriptorHeap* m_Heap = nullptr;
 
-    uint32_t m_Capacity = 0;
-    uint32_t m_DescriptorSize = 0;
+    UINT m_Offset = 0;
+    UINT m_Capacity = 0;
+    UINT m_DescriptorSize = 0;
 
     D3D12_CPU_DESCRIPTOR_HANDLE m_CpuStart{};
     D3D12_GPU_DESCRIPTOR_HANDLE m_GpuStart{};
 
-    std::queue<uint32_t> m_FreeIndices;
+    std::queue<UINT> m_FreeIndices;
 
     mutable std::mutex m_Mutex;
 };

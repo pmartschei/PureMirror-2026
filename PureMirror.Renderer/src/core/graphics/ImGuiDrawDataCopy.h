@@ -35,9 +35,15 @@ class ImGuiDrawDataCopy
         return m_DrawLists.empty();
     }
 
+    [[nodiscard]] const std::unordered_set<ImTextureID>& GetUsedImages() const noexcept
+    {
+        return m_UsedImages;
+    }
+
   private:
     ImDrawData m_DrawData{};
 
     std::vector<std::unique_ptr<ImDrawList>> m_DrawLists;
     std::vector<ImDrawList*> m_CmdLists;
+    std::unordered_set<ImTextureID> m_UsedImages;
 };

@@ -4,7 +4,7 @@
 #define PUREMIRRORCORE_API __declspec(dllimport)
 #endif
 
-#include "core_api.h"
+#include <CoreApi.h>
 
 extern "C"
 {

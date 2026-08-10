@@ -21,9 +21,8 @@ class ImGuiDrawDataSnapshot
 
     void Update(const ImDrawData* drawData) noexcept;
     void Clear() noexcept;
-    void AddImageUsage(ImTextureID textureID) noexcept;
 
-    [[nodiscard]] std::unordered_set<ImTextureID> CollectUsedImages() noexcept;
+    [[nodiscard]] std::unordered_set<ImTextureID> CollectUsedImages();
 
     [[nodiscard]] ImDrawData* BeginRead() noexcept;
     void EndRead() noexcept;
@@ -45,7 +44,6 @@ class ImGuiDrawDataSnapshot
     struct Buffer
     {
         ImGuiDrawDataCopy Data;
-        std::unordered_map<ImTextureID, UINT> TextureUsage;
         std::atomic<BufferState> State{BufferState::Free};
     };
     int AcquireWriteBuffer()
@@ -77,4 +75,6 @@ class ImGuiDrawDataSnapshot
     std::array<Buffer, BufferCount> m_Buffers;
 
     std::atomic<UINT> m_ReadIndex{0};
+
+    std::unordered_set<ImTextureID> m_UsedImages;
 };

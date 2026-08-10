@@ -49,11 +49,6 @@ void RenderThread::Stop()
     m_Thread.request_stop();
 }
 
-void RenderThread::AddImageUsage(ImTextureID textureID)
-{
-    m_ImGuiDrawDataSnapshot.AddImageUsage(textureID);
-}
-
 void RenderThread::Loop()
 {
     SetThreadDescription(GetCurrentThread(), L"PureMirror Render Thread");
@@ -76,7 +71,9 @@ void RenderThread::Loop()
 
         auto usedImages = m_ImGuiDrawDataSnapshot.CollectUsedImages();
 
-        BackendDetector::Instance().GetActiveRenderer()->CleanUnusedTextures(usedImages);
+        BackendDetector::Instance().GetActiveRenderer()->MarkTexturesAsUsed(usedImages);
+
+        BackendDetector::Instance().GetActiveRenderer()->CleanUpTextures();
 
         auto now = system_clock::now();
 

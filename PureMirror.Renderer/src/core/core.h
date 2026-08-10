@@ -9,8 +9,7 @@ namespace Core
     bool HasContext();
     void InitializeLibs();
     void InitializeContext(HWND hwnd);
-    void Render();
+    void Render(RenderContext& renderContext);
     void Shutdown();
     Texture LoadTexture(const char* path);
-    void UnloadTexture(const char* path);
 }  // namespace Core

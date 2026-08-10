@@ -12,6 +12,7 @@ void ImGuiDrawDataCopy::CopyFrom(const ImDrawData* source) noexcept
         return;
     }
 
+    m_UsedImages.clear();
     m_DrawLists.clear();
     m_DrawLists.reserve(source->CmdListsCount);
 
@@ -25,6 +26,12 @@ void ImGuiDrawDataCopy::CopyFrom(const ImDrawData* source) noexcept
         drawList->IdxBuffer = sourceList->IdxBuffer;
         drawList->VtxBuffer = sourceList->VtxBuffer;
         drawList->Flags = sourceList->Flags;
+
+        for (const ImDrawCmd& cmd : drawList->CmdBuffer)
+        {
+            if (const ImTextureID id = cmd.GetTexID())
+                m_UsedImages.insert(id);
+        }
 
         m_DrawLists.push_back(std::move(drawList));
     }
@@ -43,6 +50,7 @@ void ImGuiDrawDataCopy::CopyFrom(const ImDrawData* source) noexcept
 
 void ImGuiDrawDataCopy::Clear() noexcept
 {
+    m_UsedImages.clear();
     m_DrawLists.clear();
     m_CmdLists.clear();
     m_DrawData = {};

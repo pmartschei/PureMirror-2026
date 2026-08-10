@@ -9,11 +9,11 @@
 #include "external/imgui/imgui_impl_win32.h"
 #include "graphics/TextureManager.h"
 #include "graphics/dx12/DX12GpuUploader.h"
-#include "include/Texture.h"
-#include "include/core_api.h"
 #include "utils/utils.h"
 
 #include <imgui.h>
+#include <include/CoreApi.h>
+#include <include/Texture.h>
 
 namespace Core
 {
@@ -25,21 +25,27 @@ namespace Core
     static WNDPROC oWndProc;
 
     TextureManager g_TextureManager;
+
+    const char* GetImguiVersion();
+
+    RendererAPI g_rendererAPI = {.Version = RENDERER_API_VERSION,
+                                 .Size = sizeof(RendererAPI),
+                                 .GetImguiVersion = GetImguiVersion,
+                                 .LoadTexture = LoadTexture};
+
     static LRESULT WINAPI WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
-        LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-        // if (Menu::bShowMenu) {
-        ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
-
-        // call core api
-
-        // (Doesn't work for some games like 'Sid Meier's Civilization VI')
-        // Window may not maximize from taskbar because 'H::bShowDemoWindow' is set to true by default. ('hooks.hpp')
-        //
-        // return ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam) == 0;
-        //}
+        for (auto& coreApi : g_CoreAPIs)
+        {
+            coreApi->HandleInput(hWnd, uMsg, wParam, lParam);
+        }
 
         return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
+    }
+
+    const char* GetImguiVersion()
+    {
+        return ImGui::GetVersion();
     }
 
     void InitializeLibs()
@@ -54,6 +60,8 @@ namespace Core
                 auto coreAPI = GetCoreAPI();
                 // TODO Version check imgui check whatever
                 g_CoreAPIs.push_back(coreAPI);
+
+                coreAPI->Initialize(&g_rendererAPI);
             }
         }
     }
@@ -79,11 +87,11 @@ namespace Core
         oWndProc = reinterpret_cast<WNDPROC>(SetWindowLongPtr(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(WndProc)));
     }
 
-    void Render()
+    void Render(RenderContext& renderContext)
     {
         for (auto& coreApi : g_CoreAPIs)
         {
-            coreApi->Render();
+            coreApi->Render(&renderContext);
         }
     }
 
@@ -108,16 +116,5 @@ namespace Core
         }
 
         return {};
-    }
-
-    void UnloadTexture(const char* path)
-    {
-        if (!path)
-            return;
-
-        if (BackendDetector::Instance().GetActiveRenderer())
-            BackendDetector::Instance().GetActiveRenderer()->ReleaseTexture(path);
-
-        g_TextureManager.Unload(path);
     }
 }  // namespace Core
