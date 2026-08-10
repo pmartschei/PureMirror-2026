@@ -125,7 +125,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)\PureMirror.Imgui\include;$(VULKAN_SDK)\Include;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\PureMirror.Imgui\include;$(VULKAN_SDK)\Include;$(ProjectDir);$(ProjectDir)\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
     </ClCompile>
@@ -151,7 +151,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)\PureMirror.Imgui\include;$(VULKAN_SDK)\Include;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\PureMirror.Imgui\include;$(VULKAN_SDK)\Include;$(ProjectDir);$(ProjectDir)\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
     </ClCompile>
@@ -179,19 +179,18 @@
     <ClInclude Include="src\core\graphics\dx12\DX12DescriptorAllocator.h" />
     <ClInclude Include="src\core\graphics\dx12\DX12Renderer.h" />
     <ClInclude Include="src\core\graphics\dx12\DX12Texture.h" />
-    <ClInclude Include="src\core\graphics\IGpuUploader.h" />
     <ClInclude Include="src\core\graphics\IRenderer.h" />
+    <ClInclude Include="src\core\graphics\RendererType.h" />
     <ClInclude Include="src\core\graphics\TextureAsset.h" />
     <ClInclude Include="src\core\graphics\TextureManager.h" />
     <ClInclude Include="src\core\graphics\dx12\DX12GpuUploader.h" />
-    <ClInclude Include="src\core\render_thread.h" />
+    <ClInclude Include="src\core\graphics\RenderThread.h" />
     <ClInclude Include="src\external\imgui\imgui_impl_dx10.h" />
     <ClInclude Include="src\external\imgui\imgui_impl_dx11.h" />
     <ClInclude Include="src\external\imgui\imgui_impl_dx12.h" />
     <ClInclude Include="src\external\imgui\imgui_impl_dx9.h" />
     <ClInclude Include="src\external\imgui\imgui_impl_opengl3.h" />
     <ClInclude Include="src\external\imgui\imgui_impl_opengl3_loader.h" />
-    <ClInclude Include="src\external\imgui\imgui_impl_vulkan.h" />
     <ClInclude Include="src\external\imgui\imgui_impl_win32.h" />
     <ClInclude Include="src\external\minhook\buffer.h" />
     <ClInclude Include="src\external\minhook\hde\hde32.h" />
@@ -208,10 +207,10 @@
     <ClInclude Include="src\hooks\backend\opengl\hook_opengl.h" />
     <ClInclude Include="src\hooks\backend\vulkan\hook_vulkan.h" />
     <ClInclude Include="src\hooks\hooks.h" />
-    <ClInclude Include="src\backend_detector.h" />
+    <ClInclude Include="src\core\BackendDetector.h" />
     <ClInclude Include="src\core\core.h" />
-    <ClInclude Include="src\utils\imgui_drawdata_copy.h" />
-    <ClInclude Include="src\utils\imgui_drawdata_snapshot.h" />
+    <ClInclude Include="src\core\graphics\ImGuiDrawDataCopy.h" />
+    <ClInclude Include="src\core\graphics\ImGuiDrawDataSnapshot.h" />
     <ClInclude Include="src\utils\utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -223,13 +222,13 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">pch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">pch.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="src\backend_detector.cpp" />
+    <ClCompile Include="src\core\BackendDetector.cpp" />
     <ClCompile Include="src\console\console.cpp" />
     <ClCompile Include="src\core\graphics\dx12\DX12DescriptorAllocator.cpp" />
     <ClCompile Include="src\core\graphics\dx12\DX12GpuUploader.cpp" />
     <ClCompile Include="src\core\graphics\dx12\DX12Renderer.cpp" />
     <ClCompile Include="src\core\graphics\TextureManager.cpp" />
-    <ClCompile Include="src\core\render_thread.cpp" />
+    <ClCompile Include="src\core\graphics\RenderThread.cpp" />
     <ClCompile Include="src\dllmain.cpp" />
     <ClCompile Include="src\external\imgui\imgui_impl_dx10.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -248,10 +247,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\external\imgui\imgui_impl_opengl3.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="src\external\imgui\imgui_impl_vulkan.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
@@ -290,8 +285,8 @@
     <ClCompile Include="src\hooks\backend\vulkan\hook_vulkan.cpp" />
     <ClCompile Include="src\hooks\hooks.cpp" />
     <ClCompile Include="src\core\core.cpp" />
-    <ClCompile Include="src\utils\imgui_drawdata_copy.cpp" />
-    <ClCompile Include="src\utils\imgui_drawdata_snapshot.cpp" />
+    <ClCompile Include="src\core\graphics\ImGuiDrawDataCopy.cpp" />
+    <ClCompile Include="src\core\graphics\ImGuiDrawDataSnapshot.cpp" />
     <ClCompile Include="src\utils\utils.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

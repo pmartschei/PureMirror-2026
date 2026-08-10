@@ -4,9 +4,9 @@
 #include "pch.h"
 // clang-format on
 
-#include "../IGpuUploader.h"
 #include "DX12DescriptorAllocator.h"
 #include "DX12Texture.h"
+#include "core/graphics/TextureAsset.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -40,7 +40,7 @@ class DX12GpuUploader
         std::shared_ptr<DX12Texture> Texture;
     };
 
-    void ThreadMain();
+    void ThreadMain(std::stop_token stopToken);
 
     void UploadTextureInternal(const UploadRequest& request);
 
@@ -66,11 +66,9 @@ class DX12GpuUploader
     std::atomic<uint64_t> m_NextFenceValue = 1;
 
     std::mutex m_Mutex;
-    std::condition_variable m_Condition;
+    std::condition_variable_any m_Condition;
 
     std::queue<UploadRequest> m_Queue;
-
-    bool m_Running = true;
 
     std::jthread m_Thread;
 };

@@ -21,7 +21,7 @@ DX12DescriptorAllocator::DX12DescriptorAllocator(ID3D12Device* device, ID3D12Des
 
     m_GpuStart = heap->GetGPUDescriptorHandleForHeapStart();
 
-    for (uint32_t i = 128; i < capacity + 128; ++i)
+    for (uint32_t i = 0; i < capacity; ++i)
         m_FreeIndices.push(i);
 }
 DX12Descriptor DX12DescriptorAllocator::Allocate()
@@ -31,7 +31,7 @@ DX12Descriptor DX12DescriptorAllocator::Allocate()
     if (m_FreeIndices.empty())
         throw std::runtime_error("DX12DescriptorAllocator: descriptor heap exhausted");
 
-    const uint32_t index = m_FreeIndices.front();
+    const uint32_t index = m_FreeIndices.front() + INDEX_OFFSET;
 
     m_FreeIndices.pop();
 
@@ -54,7 +54,7 @@ void DX12DescriptorAllocator::Free(const DX12Descriptor& descriptor)
     if (!descriptor.IsValid())
         return;
 
-    if (descriptor.Index < 128 || descriptor.Index >= m_Capacity + 128)
+    if (descriptor.Index < 0 || descriptor.Index >= m_Capacity)
         return;
 
     std::lock_guard lock(m_Mutex);

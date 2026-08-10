@@ -1,13 +1,11 @@
 #pragma once
 
-namespace Hooks {
-	void Init( );
-	void Free( );
+namespace Hooks
+{
+    void Init();
+    void Free();
 
-	inline bool bShuttingDown;
-
-    inline int vulkanCounter;
-    inline int dxd12Counter;
-}
+    inline bool bShuttingDown;
+}  // namespace Hooks
 
 namespace H = Hooks;

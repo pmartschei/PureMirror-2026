@@ -2,9 +2,9 @@
 #include "pch.h"
 // clang-format on
 
-#include "imgui_drawdata_copy.h"
+#include "ImGuiDrawDataCopy.h"
 
-void ImGuiDrawDataCopy::CopyFrom(const ImDrawData* source)
+void ImGuiDrawDataCopy::CopyFrom(const ImDrawData* source) noexcept
 {
     if (!source)
     {
@@ -41,7 +41,7 @@ void ImGuiDrawDataCopy::CopyFrom(const ImDrawData* source)
     m_DrawData.CmdListsCount = static_cast<int>(m_CmdLists.size());
 }
 
-void ImGuiDrawDataCopy::Clear()
+void ImGuiDrawDataCopy::Clear() noexcept
 {
     m_DrawLists.clear();
     m_CmdLists.clear();

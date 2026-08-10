@@ -14,20 +14,23 @@ class ImGuiDrawDataCopy
     ImGuiDrawDataCopy(const ImGuiDrawDataCopy&) = delete;
     ImGuiDrawDataCopy& operator=(const ImGuiDrawDataCopy&) = delete;
 
-    void CopyFrom(const ImDrawData* source);
-    void Clear();
+    ImGuiDrawDataCopy(ImGuiDrawDataCopy&&) noexcept = default;
+    ImGuiDrawDataCopy& operator=(ImGuiDrawDataCopy&&) noexcept = default;
 
-    ImDrawData* GetDrawData()
+    void CopyFrom(const ImDrawData* source) noexcept;
+    void Clear() noexcept;
+
+    [[nodiscard]] ImDrawData& GetDrawData() noexcept
     {
-        return &m_DrawData;
+        return m_DrawData;
     }
 
-    const ImDrawData* GetDrawData() const
+    [[nodiscard]] const ImDrawData& GetDrawData() const noexcept
     {
-        return &m_DrawData;
+        return m_DrawData;
     }
 
-    bool Empty() const
+    [[nodiscard]] bool Empty() const noexcept
     {
         return m_DrawLists.empty();
     }

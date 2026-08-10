@@ -4,7 +4,7 @@
 #include "pch.h"
 // clang-format on
 
-#include "imgui_drawdata_copy.h"
+#include "ImGuiDrawDataCopy.h"
 
 #include <imgui.h>
 
@@ -16,14 +16,17 @@ class ImGuiDrawDataSnapshot
     ImGuiDrawDataSnapshot(const ImGuiDrawDataSnapshot&) = delete;
     ImGuiDrawDataSnapshot& operator=(const ImGuiDrawDataSnapshot&) = delete;
 
-    void Update(const ImDrawData* drawData);
-    void Clear();
-    void AddImageUsage(ImTextureID textureID);
+    ImGuiDrawDataSnapshot(ImGuiDrawDataSnapshot&&) noexcept = default;
+    ImGuiDrawDataSnapshot& operator=(ImGuiDrawDataSnapshot&&) noexcept = default;
 
-    std::unordered_set<ImTextureID> CollectUsedImages();
+    void Update(const ImDrawData* drawData) noexcept;
+    void Clear() noexcept;
+    void AddImageUsage(ImTextureID textureID) noexcept;
 
-    ImDrawData* BeginRead();
-    void EndRead();
+    [[nodiscard]] std::unordered_set<ImTextureID> CollectUsedImages() noexcept;
+
+    [[nodiscard]] ImDrawData* BeginRead() noexcept;
+    void EndRead() noexcept;
 
   private:
     // Keep this at 2, unless the bug where the UI can render an old snapshot is fixed
@@ -73,5 +76,5 @@ class ImGuiDrawDataSnapshot
 
     std::array<Buffer, BufferCount> m_Buffers;
 
-    std::atomic<int> m_ReadIndex{0};
+    std::atomic<UINT> m_ReadIndex{0};
 };

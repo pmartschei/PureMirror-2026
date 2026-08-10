@@ -4,8 +4,9 @@
 #include "pch.h"
 // clang-format on
 
+#include "ImGuiDrawDataSnapshot.h"
+
 #include <imgui.h>
-#include <src/utils/imgui_drawdata_snapshot.h>
 
 enum class RenderThreadError
 {

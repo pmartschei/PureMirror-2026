@@ -13,7 +13,7 @@ std::shared_ptr<TextureAsset> TextureManager::Load(const std::string& path)
     if (auto existing = Get(path))
         return existing;
 
-    auto texture = std::make_unique<TextureAsset>();
+    auto texture = std::make_shared<TextureAsset>();
     texture->Path = path;
 
     int width = 0;
@@ -37,12 +37,12 @@ std::shared_ptr<TextureAsset> TextureManager::Load(const std::string& path)
 
     stbi_image_free(pixels);
 
-    m_Textures.emplace(path, std::move(texture));
+    m_Textures.emplace(path, texture);
 
     return texture;
 }
 
-std::shared_ptr<TextureAsset> TextureManager::Get(const std::string& path) const
+std::shared_ptr<TextureAsset> TextureManager::Get(const std::string& path) const noexcept
 {
     auto it = m_Textures.find(path);
 
@@ -52,7 +52,7 @@ std::shared_ptr<TextureAsset> TextureManager::Get(const std::string& path) const
     return it->second;
 }
 
-void TextureManager::Unload(const std::string& path)
+void TextureManager::Unload(const std::string& path) noexcept
 {
     m_Textures.erase(path);
 }

@@ -4,6 +4,8 @@
 
 #include "DX12Renderer.h"
 
+#include <hooks/backend/dx12/hook_directx12.h>
+
 DX12Renderer::DX12Renderer() {}
 
 DX12Renderer::~DX12Renderer()
@@ -19,7 +21,18 @@ DX12Renderer::~DX12Renderer()
 
 void DX12Renderer::Initialize(ID3D12Device* device, ID3D12DescriptorHeap* srvHeap)
 {
-    m_GpuUploader = std::make_unique<DX12GpuUploader>(device, srvHeap, 2 << 12);
+    if (!m_GpuUploader)
+        m_GpuUploader = std::make_unique<DX12GpuUploader>(device, srvHeap, 2 << 14);
+}
+
+void DX12Renderer::Shutdown()
+{
+    for (auto& [path, texture] : m_Textures)
+        m_GpuUploader->ReleaseTexture(texture);
+
+    m_Textures.clear();
+
+    m_GpuUploader.reset();
 }
 
 Texture DX12Renderer::UploadAndRetrieveTexture(const std::shared_ptr<TextureAsset>& asset)
@@ -67,6 +80,23 @@ void DX12Renderer::CleanUnusedTextures(const std::unordered_set<ImTextureID>& us
             ++it;
         }
     }
+}
+
+RendererType DX12Renderer::GetType() noexcept
+{
+    return RendererType::DirectX12;
+}
+
+void DX12Renderer::Reset()
+{
+    Shutdown();
+    SetRenderThread(nullptr);
+    DX12::Unhook();
+}
+
+void DX12Renderer::SetRenderThread(RenderThread* renderThread)
+{
+    m_RenderThread = renderThread;
 }
 
 void DX12Renderer::ReleaseTexture(const std::string& path)

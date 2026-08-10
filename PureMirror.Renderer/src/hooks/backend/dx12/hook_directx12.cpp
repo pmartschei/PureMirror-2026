@@ -2,8 +2,8 @@
 #include "pch.h"
 // clang-format on
 
-#include "../../../backend.h"
-#include "../../../console/console.h"
+#include "backend.h"
+#include "console/console.h"
 
 #ifdef ENABLE_BACKEND_DX12
 #include <d3d12.h>
@@ -12,16 +12,15 @@
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 
-#include "../../../core/core.h"
-#include "../../../external/imgui/imgui_impl_dx12.h"
-#include "../../../external/imgui/imgui_impl_win32.h"
-#include "../../../external/minhook/MinHook.h"
-#include "../../../utils/utils.h"
-#include "../../hooks.h"
+#include "core/BackendDetector.h"
+#include "core/core.h"
+#include "core/graphics/dx12/DX12Renderer.h"
+#include "external/imgui/imgui_impl_dx12.h"
+#include "external/imgui/imgui_impl_win32.h"
+#include "external/minhook/MinHook.h"
 #include "hook_directx12.h"
-
-#include <src/backend_detector.h>
-#include <src/core/graphics/dx12/DX12Renderer.h>
+#include "hooks/hooks.h"
+#include "utils/utils.h"
 
 // Data
 static int const NUM_BACK_BUFFERS = 3;
@@ -35,16 +34,11 @@ static IDXGISwapChain3* g_pSwapChain = NULL;
 static ID3D12CommandAllocator* g_commandAllocators[NUM_BACK_BUFFERS] = {};
 static ID3D12Resource* g_mainRenderTargetResource[NUM_BACK_BUFFERS] = {};
 static D3D12_CPU_DESCRIPTOR_HANDLE g_mainRenderTargetDescriptor[NUM_BACK_BUFFERS] = {};
-static DX12Renderer g_Renderer;
+static std::shared_ptr<DX12Renderer> g_Renderer = std::make_shared<DX12Renderer>();
 
 static void CleanupDeviceD3D12();
 static void CleanupRenderTarget();
 static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain);
-
-static inline bool IsActiveRenderer()
-{
-    return BackendDetector::Instance().GetActiveRenderer() == RendererType::DirectX12;
-}
 
 static void FetchQueue(IUnknown* unknown)
 {
@@ -115,8 +109,8 @@ static void CreateRenderTarget(IDXGISwapChain* pSwapChain)
 static std::add_pointer_t<HRESULT WINAPI(IDXGISwapChain3*, UINT, UINT)> oPresent;
 static HRESULT WINAPI hkPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT Flags)
 {
-    BackendDetector::Instance().Count(RendererType::DirectX12);
-    if (IsActiveRenderer())
+    BackendDetector::Instance().Count(g_Renderer);
+    if (BackendDetector::Instance().IsActiveRenderer(*g_Renderer))
     {
         RenderImGui_DX12(pSwapChain);
     }
@@ -130,7 +124,7 @@ static HRESULT WINAPI hkPresent1(IDXGISwapChain3* pSwapChain,
                                  UINT PresentFlags,
                                  const DXGI_PRESENT_PARAMETERS* pPresentParameters)
 {
-    if (IsActiveRenderer())
+    if (BackendDetector::Instance().IsActiveRenderer(*g_Renderer))
     {
         RenderImGui_DX12(pSwapChain);
     }
@@ -142,10 +136,11 @@ static std::add_pointer_t<HRESULT WINAPI(IDXGISwapChain*, UINT, UINT, UINT, DXGI
 static HRESULT WINAPI hkResizeBuffers(
     IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-    if (IsActiveRenderer())
+    if (BackendDetector::Instance().IsActiveRenderer(*g_Renderer))
     {
         DX12::Unhook();
     }
+
     return oResizeBuffers(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
 }
 
@@ -161,9 +156,9 @@ static HRESULT WINAPI hkResizeBuffers1(IDXGISwapChain3* pSwapChain,
                                        const UINT* pCreationNodeMask,
                                        IUnknown* const* ppPresentQueue)
 {
-    if (IsActiveRenderer())
+    if (BackendDetector::Instance().IsActiveRenderer(*g_Renderer))
     {
-        CleanupDeviceD3D12();
+        DX12::Unhook();
     }
 
     return oResizeBuffers1(
@@ -175,7 +170,7 @@ static void WINAPI hkExecuteCommandLists(ID3D12CommandQueue* pCommandQueue,
                                          UINT NumCommandLists,
                                          ID3D12CommandList* ppCommandLists)
 {
-    if (IsActiveRenderer())
+    if (BackendDetector::Instance().IsActiveRenderer(*g_Renderer))
     {
         if (!g_pd3dCommandQueue && pCommandQueue->GetDesc().Type == D3D12_COMMAND_LIST_TYPE_DIRECT)
         {
@@ -195,7 +190,7 @@ static HRESULT WINAPI hkCreateSwapChain(IDXGIFactory* pFactory,
 {
     FetchQueue(pQueue);
 
-    if (IsActiveRenderer())
+    if (BackendDetector::Instance().IsActiveRenderer(*g_Renderer))
     {
         CleanupDeviceD3D12();
     }
@@ -221,22 +216,12 @@ static HRESULT WINAPI hkCreateSwapChainForHwnd(IDXGIFactory* pFactory,
 {
     FetchQueue(pQueue);
 
-    if (IsActiveRenderer())
+    if (BackendDetector::Instance().IsActiveRenderer(*g_Renderer))
     {
         CleanupDeviceD3D12();
     }
 
-    auto result =
-        oCreateSwapChainForHwnd(pFactory, pQueue, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
-
-    // H::bShuttingDown = true;
-    //
-    // H::Free();
-    // H::Init();
-    //
-    // H::bShuttingDown = false;
-
-    return result;
+    return oCreateSwapChainForHwnd(pFactory, pQueue, hWnd, pDesc, pFullscreenDesc, pRestrictToOutput, ppSwapChain);
 }
 
 static std::add_pointer_t<HRESULT WINAPI(
@@ -251,7 +236,7 @@ static HRESULT WINAPI hkCreateSwapChainForCoreWindow(IDXGIFactory* pFactory,
 {
     FetchQueue(pQueue);
 
-    if (IsActiveRenderer())
+    if (BackendDetector::Instance().IsActiveRenderer(*g_Renderer))
     {
         CleanupDeviceD3D12();
     }
@@ -270,7 +255,7 @@ static HRESULT WINAPI hkCreateSwapChainForComposition(IDXGIFactory* pFactory,
 {
     FetchQueue(pQueue);
 
-    if (IsActiveRenderer())
+    if (BackendDetector::Instance().IsActiveRenderer(*g_Renderer))
     {
         CleanupDeviceD3D12();
     }
@@ -490,8 +475,51 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
                                 g_pd3dSrvDescHeap->GetCPUDescriptorHandleForHeapStart(),
                                 g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart());
 
-            g_Renderer.Initialize(g_pd3dDevice, g_pd3dSrvDescHeap);
-            Core::GlobalRenderer = &g_Renderer;
+            g_Renderer->Initialize(g_pd3dDevice, g_pd3dSrvDescHeap);
+            auto renderThread = g_Renderer->GetRenderThread();
+            if (renderThread)
+            {
+                renderThread->Start(*ImGui::GetCurrentContext(),
+                                    [](RenderThread& renderThread)
+                                    {
+                                        ImGui_ImplDX12_NewFrame();
+                                        ImGui_ImplWin32_NewFrame();
+
+                                        ImGui::NewFrame();
+
+                                        ImGui::SetNextWindowSize(ImVec2(250, 250));
+                                        ImGui::Begin("wow such a nice name");
+                                        static bool enabled = false;
+                                        if (ImGui::Button("Open"))
+                                        {
+                                            enabled = !enabled;
+                                        }
+                                        if (enabled)
+                                        {
+                                            auto texture = Core::LoadTexture("test.png");
+                                            if (texture.TextureID)
+                                            {
+                                                ImGui::Image(texture.TextureID, ImVec2(100, 100));
+                                                renderThread.AddImageUsage(texture.TextureID);
+                                            }
+                                            else
+                                            {
+                                                ImVec2 pos = ImGui::GetCursorScreenPos();
+                                                auto drawList = ImGui::GetWindowDrawList();
+                                                drawList->AddRectFilled(
+                                                    pos, ImVec2(pos.x + 100, pos.y + 100), IM_COL32(255, 0, 0, 255));
+                                            }
+                                        }
+                                        else
+                                            Core::UnloadTexture("test.png");
+
+                                        ImGui::End();
+
+                                        Core::Render();
+
+                                        ImGui::Render();
+                                    });
+            }
         }
     }
 
@@ -504,48 +532,6 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 
         if (ImGui::GetCurrentContext() && g_mainRenderTargetResource[0])
         {
-
-            Core::GlobalRenderThread.Start(
-                *ImGui::GetCurrentContext(),
-                [](RenderThread& renderThread)
-                {
-                    ImGui_ImplDX12_NewFrame();
-                    ImGui_ImplWin32_NewFrame();
-
-                    ImGui::NewFrame();
-
-                    ImGui::SetNextWindowSize(ImVec2(250, 250));
-                    ImGui::Begin("wow such a nice name");
-                    static bool enabled = false;
-                    if (ImGui::Button("Open"))
-                    {
-                        enabled = !enabled;
-                    }
-                    if (enabled)
-                    {
-                        auto texture = Core::LoadTexture("test.png");
-                        if (texture.TextureID)
-                        {
-                            ImGui::Image(texture.TextureID, ImVec2(100, 100));
-                            renderThread.AddImageUsage(texture.TextureID);
-                        }
-                        else
-                        {
-                            ImVec2 pos = ImGui::GetCursorScreenPos();
-                            auto drawList = ImGui::GetWindowDrawList();
-                            drawList->AddRectFilled(pos, ImVec2(pos.x + 100, pos.y + 100), IM_COL32(255, 0, 0, 255));
-                        }
-                    }
-                    else
-                        Core::UnloadTexture("test.png");
-
-                    ImGui::End();
-
-                    Core::Render();
-
-                    ImGui::Render();
-                });
-
             UINT backBufferIdx = pSwapChain->GetCurrentBackBufferIndex();
             ID3D12CommandAllocator* commandAllocator = g_commandAllocators[backBufferIdx];
             commandAllocator->Reset();
@@ -562,12 +548,17 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
 
             g_pd3dCommandList->OMSetRenderTargets(1, &g_mainRenderTargetDescriptor[backBufferIdx], FALSE, NULL);
             g_pd3dCommandList->SetDescriptorHeaps(1, &g_pd3dSrvDescHeap);
-            ImDrawData* drawData = Core::GlobalRenderThread.BeginRead();
-            if (drawData)
+
+            auto renderThread = g_Renderer->GetRenderThread();
+            if (renderThread)
             {
-                ImGui_ImplDX12_RenderDrawData(drawData, g_pd3dCommandList);
+                ImDrawData* drawData = renderThread->BeginRead();
+                if (drawData)
+                {
+                    ImGui_ImplDX12_RenderDrawData(drawData, g_pd3dCommandList);
+                }
+                renderThread->EndRead();
             }
-            Core::GlobalRenderThread.EndRead();
             barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
             barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
             g_pd3dCommandList->ResourceBarrier(1, &barrier);

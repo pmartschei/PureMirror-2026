@@ -78,18 +78,12 @@ DX12GpuUploader::DX12GpuUploader(ID3D12Device* device, ID3D12DescriptorHeap* srv
     // THREAD
     // ------------------------------------------------------------
 
-    m_Thread = std::jthread([this](std::stop_token) { ThreadMain(); });
+    m_Thread = std::jthread([this](std::stop_token stopToken) { ThreadMain(stopToken); });
 }
 
 DX12GpuUploader::~DX12GpuUploader()
 {
-    {
-        std::lock_guard lock(m_Mutex);
-
-        m_Running = false;
-    }
-
-    m_Condition.notify_one();
+    m_Thread.request_stop();
 
     if (m_Thread.joinable())
         m_Thread.join();
@@ -150,7 +144,7 @@ bool DX12GpuUploader::IsReady(const std::shared_ptr<DX12Texture>& texture) const
 {
     return texture && texture->Ready.load(std::memory_order_acquire);
 }
-void DX12GpuUploader::ThreadMain()
+void DX12GpuUploader::ThreadMain(std::stop_token stopToken)
 {
     while (true)
     {
@@ -159,10 +153,15 @@ void DX12GpuUploader::ThreadMain()
         {
             std::unique_lock lock(m_Mutex);
 
-            m_Condition.wait(lock, [this] { return !m_Running || !m_Queue.empty(); });
+            m_Condition.wait(lock, stopToken, [this] { return !m_Queue.empty(); });
 
-            if (!m_Running && m_Queue.empty())
-                return;
+            if (m_Queue.empty())
+            {
+                if (stopToken.stop_requested())
+                    break;
+
+                continue;
+            }
 
             request = std::move(m_Queue.front());
             m_Queue.pop();

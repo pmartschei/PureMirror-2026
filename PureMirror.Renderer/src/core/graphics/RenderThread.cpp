@@ -2,11 +2,10 @@
 #include "pch.h"
 // clang-format on
 
-#include "render_thread.h"
+#include "RenderThread.h"
 
-#include "core.h"
-
-#include <src/utils/utils.h>
+#include <core/BackendDetector.h>
+#include <utils/utils.h>
 
 std::expected<void, RenderThreadError> RenderThread::Start(ImGuiContext& imguiContext,
                                                            std::function<void(RenderThread&)> renderCallback)
@@ -77,7 +76,7 @@ void RenderThread::Loop()
 
         auto usedImages = m_ImGuiDrawDataSnapshot.CollectUsedImages();
 
-        Core::GlobalRenderer->CleanUnusedTextures(usedImages);
+        BackendDetector::Instance().GetActiveRenderer()->CleanUnusedTextures(usedImages);
 
         auto now = system_clock::now();
 

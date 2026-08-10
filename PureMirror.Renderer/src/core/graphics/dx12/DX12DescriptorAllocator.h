@@ -40,6 +40,7 @@ class DX12DescriptorAllocator
     }
 
   private:
+    static constexpr int INDEX_OFFSET = 128;
     ID3D12DescriptorHeap* m_Heap = nullptr;
 
     uint32_t m_Capacity = 0;

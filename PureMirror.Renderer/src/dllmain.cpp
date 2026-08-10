@@ -2,8 +2,8 @@
 #include "pch.h"
 // clang-format on
 
-#include "backend_detector.h"
 #include "console/console.h"
+#include "core/BackendDetector.h"
 #include "external/minhook/MinHook.h"
 #include "hooks/hooks.h"
 #include "utils/utils.h"
@@ -16,8 +16,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
     if (fdwReason == DLL_PROCESS_ATTACH)
     {
         DisableThreadLibraryCalls(hinstDLL);
-
-        U::SetRenderingBackend(DIRECTX12);
 
         HANDLE hHandle = CreateThread(NULL, 0, OnProcessAttach, hinstDLL, 0, NULL);
         if (hHandle != NULL)
@@ -36,15 +34,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 DWORD WINAPI OnProcessAttach(LPVOID lpParam)
 {
     Console::Alloc();
-    LOG("[+] Rendering backend: %s\n", U::RenderingBackendToStr());
-    if (U::GetRenderingBackend() == NONE)
-    {
-        LOG("[!] Looks like you forgot to set a backend. Will unload after pressing enter...");
-        std::cin.get();
-
-        FreeLibraryAndExitThread(reinterpret_cast<HMODULE>(lpParam), 0);
-        return 0;
-    }
 
     MH_Initialize();
     H::Init();

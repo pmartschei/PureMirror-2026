@@ -2,8 +2,8 @@
 #include "pch.h"
 // clang-format on
 
-#include "../../../backend.h"
-#include "../../../console/console.h"
+#include "backend.h"
+#include "console/console.h"
 
 #ifdef ENABLE_BACKEND_VULKAN
 
@@ -12,15 +12,14 @@
 #include <vulkan/vulkan_win32.h>
 #pragma comment(lib, "vulkan-1.lib")
 
-#include "../../../core/core.h"
-#include "../../../external/imgui/imgui_impl_vulkan.h"
-#include "../../../external/imgui/imgui_impl_win32.h"
-#include "../../../external/minhook/MinHook.h"
-#include "../../../utils/utils.h"
-#include "../../hooks.h"
+#include "core/core.h"
+#include "core/graphics/BackendDetector.h"
+#include "external/imgui/imgui_impl_vulkan.h"
+#include "external/imgui/imgui_impl_win32.h"
+#include "external/minhook/MinHook.h"
 #include "hook_vulkan.h"
-
-#include <src/backend_detector.h>
+#include "hooks/hooks.h"
+#include "utils/utils.h"
 
 static bool g_skipDestroy = false;
 
@@ -671,7 +670,7 @@ static bool DoesQueueSupportGraphic(VkQueue queue, VkQueue* pGraphicQueue)
 #else
 namespace VK
 {
-    void Hook(HWND hwnd)
+    void Hook()
     {
         LOG("[!] Vulkan backend is not enabled!\n");
     }

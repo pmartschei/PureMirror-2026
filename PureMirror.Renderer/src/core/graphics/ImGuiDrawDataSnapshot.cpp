@@ -2,9 +2,9 @@
 #include "pch.h"
 // clang-format on
 
-#include "imgui_drawdata_snapshot.h"
+#include "ImGuiDrawDataSnapshot.h"
 
-void ImGuiDrawDataSnapshot::Update(const ImDrawData* drawData)
+void ImGuiDrawDataSnapshot::Update(const ImDrawData* drawData) noexcept
 {
     const int writeIndex = AcquireWriteBuffer();
 
@@ -18,7 +18,7 @@ void ImGuiDrawDataSnapshot::Update(const ImDrawData* drawData)
     buffer.State.store(BufferState::Ready, std::memory_order_release);
 }
 
-void ImGuiDrawDataSnapshot::Clear()
+void ImGuiDrawDataSnapshot::Clear() noexcept
 {
     const int writeIndex = AcquireWriteBuffer();
 
@@ -31,7 +31,7 @@ void ImGuiDrawDataSnapshot::Clear()
     buffer.Data.Clear();
 }
 
-void ImGuiDrawDataSnapshot::AddImageUsage(ImTextureID textureID)
+void ImGuiDrawDataSnapshot::AddImageUsage(ImTextureID textureID) noexcept
 {
     const int writeIndex = AcquireWriteBuffer();
 
@@ -50,7 +50,7 @@ void ImGuiDrawDataSnapshot::AddImageUsage(ImTextureID textureID)
     }
 }
 
-std::unordered_set<ImTextureID> ImGuiDrawDataSnapshot::CollectUsedImages()
+std::unordered_set<ImTextureID> ImGuiDrawDataSnapshot::CollectUsedImages() noexcept
 {
     std::unordered_set<ImTextureID> result;
 
@@ -67,7 +67,7 @@ std::unordered_set<ImTextureID> ImGuiDrawDataSnapshot::CollectUsedImages()
     return result;
 }
 
-ImDrawData* ImGuiDrawDataSnapshot::BeginRead()
+ImDrawData* ImGuiDrawDataSnapshot::BeginRead() noexcept
 {
     int currentIndex = m_ReadIndex.load(std::memory_order_acquire);
 
@@ -93,11 +93,13 @@ ImDrawData* ImGuiDrawDataSnapshot::BeginRead()
         }
     }
 
+    assert(currentIndex >= 0 && currentIndex < static_cast<UINT>(m_Buffers.size()));
+
     Buffer& buffer = m_Buffers[currentIndex];
-    return buffer.Data.GetDrawData();
+    return &buffer.Data.GetDrawData();
 }
 
-void ImGuiDrawDataSnapshot::EndRead()
+void ImGuiDrawDataSnapshot::EndRead() noexcept
 {
     // const int index = m_ReadIndex.load(std::memory_order_acquire);
     //

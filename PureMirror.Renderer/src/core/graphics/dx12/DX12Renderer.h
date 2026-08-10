@@ -17,15 +17,24 @@ class DX12Renderer : public IRenderer
     DX12Renderer& operator=(const DX12Renderer&) = delete;
 
     void Initialize(ID3D12Device* device, ID3D12DescriptorHeap* srvHeap);
+    void Shutdown();
+
+    RenderThread* GetRenderThread() const noexcept
+    {
+        return m_RenderThread;
+    }
 
   private:
-    std::unique_ptr<DX12GpuUploader> m_GpuUploader;
+    RenderThread* m_RenderThread = nullptr;
 
+    std::unique_ptr<DX12GpuUploader> m_GpuUploader;
     std::unordered_map<std::string, std::shared_ptr<DX12Texture>> m_Textures;
 
-    virtual Texture UploadAndRetrieveTexture(const std::shared_ptr<TextureAsset>& asset) override;
-
-    void ReleaseTexture(const std::string& path) override;
-
+    // Inherited via IRenderer
+    virtual [[nodiscard]] Texture UploadAndRetrieveTexture(const std::shared_ptr<TextureAsset>& asset) override;
+    virtual void ReleaseTexture(const std::string& path) override;
     virtual void CleanUnusedTextures(const std::unordered_set<ImTextureID>& usedTextures) override;
+    virtual [[nodiscard]] RendererType GetType() noexcept override;
+    virtual void Reset() override;
+    virtual void SetRenderThread(RenderThread* renderThread) override;
 };

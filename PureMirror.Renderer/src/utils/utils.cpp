@@ -6,13 +6,7 @@
 
 #include "../console/console.h"
 
-#define RB2STR(x)                                                                                                      \
-    case x:                                                                                                            \
-        return #x
-
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
-
-static RenderingBackend_t g_eRenderingBackend = NONE;
 
 static BOOL CALLBACK EnumWindowsCallback(HWND handle, LPARAM lParam)
 {
@@ -37,34 +31,6 @@ static DWORD WINAPI _UnloadDLL(LPVOID lpParam)
 
 namespace Utils
 {
-    void SetRenderingBackend(RenderingBackend_t eRenderingBackground)
-    {
-        g_eRenderingBackend = eRenderingBackground;
-    }
-
-    RenderingBackend_t GetRenderingBackend()
-    {
-        return g_eRenderingBackend;
-    }
-
-    const char* RenderingBackendToStr()
-    {
-        RenderingBackend_t eRenderingBackend = GetRenderingBackend();
-
-        switch (eRenderingBackend)
-        {
-            RB2STR(DIRECTX9);
-            RB2STR(DIRECTX10);
-            RB2STR(DIRECTX11);
-            RB2STR(DIRECTX12);
-
-            RB2STR(OPENGL);
-            RB2STR(VULKAN);
-        }
-
-        return "NONE/UNKNOWN";
-    }
-
     HWND GetProcessWindow()
     {
         HWND hwnd = nullptr;
@@ -148,16 +114,27 @@ namespace Utils
 
 #ifdef _WIN32
         // A waitable timer seems to be better than the Windows Sleep().
-        HANDLE WaitTimer;
-        LARGE_INTEGER dueTime;
-        timeInSeconds *= -10.0 * 1000.0 * 1000.0;
-        dueTime.QuadPart = static_cast<LONGLONG>(timeInSeconds);  // dueTime is in 100ns
+
         // We don't name the timer (third parameter) because CreateWaitableTimer will fail if the name
         // matches an existing name (e.g., if two threads call osaSleep).
-        WaitTimer = CreateWaitableTimer(NULL, true, NULL);
-        SetWaitableTimer(WaitTimer, &dueTime, 0, NULL, NULL, 0);
-        WaitForSingleObject(WaitTimer, INFINITE);
-        CloseHandle(WaitTimer);
+        HANDLE waitTimer = CreateWaitableTimer(nullptr, TRUE, nullptr);
+        if (waitTimer == nullptr)
+        {
+            return;
+        }
+
+        LARGE_INTEGER dueTime{};
+        timeInSeconds *= -10.0 * 1000.0 * 1000.0;
+        dueTime.QuadPart = static_cast<LONGLONG>(timeInSeconds);  // dueTime is in 100ns
+
+        if (!SetWaitableTimer(waitTimer, &dueTime, 0, nullptr, nullptr, FALSE))
+        {
+            CloseHandle(waitTimer);
+            return;
+        }
+
+        WaitForSingleObject(waitTimer, INFINITE);
+        CloseHandle(waitTimer);
 #endif
 
 #ifdef __QNX__
