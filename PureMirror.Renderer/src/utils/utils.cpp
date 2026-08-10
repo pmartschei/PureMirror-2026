@@ -4,9 +4,7 @@
 
 #include "utils.h"
 
-#include "../console/console.h"
-
-EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+#include <console/console.h>
 
 static BOOL CALLBACK EnumWindowsCallback(HWND handle, LPARAM lParam)
 {
@@ -21,12 +19,6 @@ static BOOL CALLBACK EnumWindowsCallback(HWND handle, LPARAM lParam)
     *reinterpret_cast<HWND*>(lParam) = handle;
 
     return FALSE;
-}
-
-static DWORD WINAPI _UnloadDLL(LPVOID lpParam)
-{
-    FreeLibraryAndExitThread(Utils::GetCurrentImageBase(), 0);
-    return 0;
 }
 
 namespace Utils
@@ -48,18 +40,6 @@ namespace Utils
         LOG("[+] Got window with name: '%s'\n", name);
 
         return hwnd;
-    }
-
-    void UnloadDLL()
-    {
-        HANDLE hThread = CreateThread(NULL, 0, _UnloadDLL, NULL, 0, NULL);
-        if (hThread != NULL)
-            CloseHandle(hThread);
-    }
-
-    HMODULE GetCurrentImageBase()
-    {
-        return (HINSTANCE)(&__ImageBase);
     }
 
     int GetCorrectDXGIFormat(int eCurrentFormat)

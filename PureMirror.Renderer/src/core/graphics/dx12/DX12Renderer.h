@@ -19,7 +19,7 @@ class DX12Renderer : public IRenderer
     void Initialize(ID3D12Device* device, ID3D12DescriptorHeap* srvHeap);
     void Shutdown();
 
-    RenderThread* GetRenderThread() const noexcept
+    [[nodiscard]] RenderThread* GetRenderThread() const noexcept
     {
         return m_RenderThread;
     }

@@ -34,7 +34,7 @@ class DX12DescriptorAllocator
 
     void Free(const DX12Descriptor& descriptor);
 
-    uint32_t GetCapacity() const
+    [[nodiscard]] uint32_t GetCapacity() const noexcept
     {
         return m_Capacity;
     }

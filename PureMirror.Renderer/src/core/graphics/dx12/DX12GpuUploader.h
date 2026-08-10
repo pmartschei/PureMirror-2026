@@ -20,11 +20,11 @@ class DX12GpuUploader
     DX12GpuUploader(const DX12GpuUploader&) = delete;
     DX12GpuUploader& operator=(const DX12GpuUploader&) = delete;
 
-    std::shared_ptr<DX12Texture> UploadTexture(std::shared_ptr<TextureAsset> asset);
+    [[nodiscard]] std::shared_ptr<DX12Texture> UploadTexture(std::shared_ptr<TextureAsset> asset);
 
     void ReleaseTexture(std::shared_ptr<DX12Texture> texture);
 
-    bool IsReady(const std::shared_ptr<DX12Texture>& texture) const;
+    [[nodiscard]] bool IsReady(const std::shared_ptr<DX12Texture>& texture) const;
 
   private:
     enum class RequestType
