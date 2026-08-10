@@ -26,6 +26,10 @@ class ImGuiDrawDataSnapshot
     void EndRead();
 
   private:
+    // Keep this at 2, unless the bug where the UI can render an old snapshot is fixed
+    // This could happen because the Buffers are not used from latest to newest, but used from 0 to BufferCount, so
+    // everything larger than 2 can result in using new buffers first before using old buffers
+    // can probably successfully reproduce this when the renderThread is higher fps than the game (unsure)
     static constexpr int BufferCount = 2;
 
     enum class BufferState : uint8_t
