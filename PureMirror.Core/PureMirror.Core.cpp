@@ -26,7 +26,8 @@ void SetContext(ImGuiContext* context)
 LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT HandleInput(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    return ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
+    // return ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
+    return 0;
 }
 
 void Render(const RenderContext* renderContext)
@@ -35,7 +36,7 @@ void Render(const RenderContext* renderContext)
 
     ImGui::SetNextWindowSize(ImVec2(250, 250));
     ImGui::Begin("wow such a nice name");
-    static bool enabled = false;
+    static bool enabled = true;
     if (ImGui::Button("Open"))
     {
         enabled = !enabled;

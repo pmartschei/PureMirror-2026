@@ -18,6 +18,20 @@ void ImGuiDrawDataSnapshot::BeginUpdate() noexcept
         m_Buffers[m_WriteIndex].Data.Clear();
 }
 
+void ImGuiDrawDataSnapshot::CancelUpdate() noexcept
+{
+    if (m_WriteIndex == -1)
+        return;
+
+    Buffer& buffer = m_Buffers[m_WriteIndex];
+
+    buffer.Data.Clear();
+
+    buffer.State.store(BufferState::Free, std::memory_order_release);
+
+    m_WriteIndex = -1;
+}
+
 void ImGuiDrawDataSnapshot::Update(const ImDrawData* drawData) noexcept
 {
     if (m_WriteIndex == -1)
@@ -55,6 +69,30 @@ std::unordered_set<ImTextureID> ImGuiDrawDataSnapshot::CollectUsedImages()
     }
 
     return m_UsedImages;
+}
+
+void ImGuiDrawDataSnapshot::Clear() noexcept
+{
+    if (m_WriteIndex != -1)
+    {
+        assert(false && "Clear called during active update");
+        return;
+    }
+
+    const int index = AcquireWriteBuffer();
+
+    if (index == -1)
+        return;
+
+    Buffer& buffer = m_Buffers[index];
+
+    buffer.Data.Clear();
+
+    const UINT64 generation = ++m_WriteGeneration;
+
+    buffer.Generation.store(generation, std::memory_order_relaxed);
+
+    buffer.State.store(BufferState::Ready, std::memory_order_release);
 }
 
 ImDrawData* ImGuiDrawDataSnapshot::BeginRead() noexcept

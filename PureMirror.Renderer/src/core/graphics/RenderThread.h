@@ -25,14 +25,16 @@ class RenderThread
     void Stop();
 
   private:
-    void Loop();
+    void Loop(std::stop_token stopToken);
 
     std::atomic_bool m_IsRunning = false;
-    std::atomic_bool m_ShouldTerminate = false;
 
-    ImGuiContext* m_ImguiContext;
+    ImGuiContext* m_ImguiContext = nullptr;
     std::function<void(RenderThread&)> m_RenderCallback;
     std::jthread m_Thread;
+
+    std::mutex m_SleepMutex;
+    std::condition_variable_any m_SleepCv;
 
     ImGuiDrawDataSnapshot m_ImGuiDrawDataSnapshot;
 };

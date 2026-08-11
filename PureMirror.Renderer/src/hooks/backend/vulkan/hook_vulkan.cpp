@@ -2,8 +2,10 @@
 #include "pch.h"
 // clang-format on
 
-#include "backend.h"
-#include "console/console.h"
+#include "hook_vulkan.h"
+
+#include <backend.h>
+#include <console/console.h>
 
 #ifdef ENABLE_BACKEND_VULKAN
 
@@ -12,14 +14,14 @@
 #include <vulkan/vulkan_win32.h>
 #pragma comment(lib, "vulkan-1.lib")
 
-#include "core/core.h"
-#include "core/graphics/BackendDetector.h"
-#include "external/imgui/imgui_impl_vulkan.h"
-#include "external/imgui/imgui_impl_win32.h"
-#include "external/minhook/MinHook.h"
-#include "hook_vulkan.h"
-#include "hooks/hooks.h"
-#include "utils/utils.h"
+#include <core/BackendDetector.h>
+#include <core/core.h>
+#include <core/graphics/vulkan/VulkanRenderer.h>
+#include <external/imgui/imgui_impl_vulkan.h>
+#include <external/imgui/imgui_impl_win32.h>
+#include <external/minhook/MinHook.h>
+#include <hooks/hooks.h>
+#include <utils/utils.h>
 
 static bool g_skipDestroy = false;
 
@@ -41,15 +43,12 @@ static ImGui_ImplVulkanH_FrameSemaphores g_FrameSemaphores[8] = {};
 static HWND g_Hwnd = NULL;
 static VkExtent2D g_ImageExtent = {};
 
+static std::shared_ptr<VulkanRenderer> g_Renderer = std::make_shared<VulkanRenderer>();
+
 static void CleanupDeviceVulkan();
 static void CleanupRenderTarget();
 static void RenderImGui_Vulkan(VkQueue queue, const VkPresentInfoKHR* pPresentInfo);
 static bool DoesQueueSupportGraphic(VkQueue queue, VkQueue* pGraphicQueue);
-
-static inline bool IsActiveRenderer()
-{
-    return BackendDetector::Instance().GetActiveRenderer() == RendererType::Vulkan;
-}
 
 static bool CreateDeviceVK()
 {
@@ -293,7 +292,7 @@ static VkResult VKAPI_CALL hkAcquireNextImageKHR(VkDevice device,
                                                  VkFence fence,
                                                  uint32_t* pImageIndex)
 {
-    if (IsActiveRenderer())
+    if (BackendDetector::Instance().IsActiveRenderer(*g_Renderer))
     {
         g_Device = device;
     }
@@ -307,7 +306,7 @@ static VkResult VKAPI_CALL hkAcquireNextImage2KHR(VkDevice device,
                                                   const VkAcquireNextImageInfoKHR* pAcquireInfo,
                                                   uint32_t* pImageIndex)
 {
-    if (IsActiveRenderer())
+    if (BackendDetector::Instance().IsActiveRenderer(*g_Renderer))
     {
         g_Device = device;
     }
@@ -318,8 +317,8 @@ static VkResult VKAPI_CALL hkAcquireNextImage2KHR(VkDevice device,
 static std::add_pointer_t<VkResult VKAPI_CALL(VkQueue, const VkPresentInfoKHR*)> oQueuePresentKHR;
 static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo)
 {
-    BackendDetector::Instance().Count(RendererType::Vulkan);
-    if (IsActiveRenderer())
+    BackendDetector::Instance().Count(g_Renderer);
+    if (BackendDetector::Instance().IsActiveRenderer(*g_Renderer))
     {
         RenderImGui_Vulkan(queue, pPresentInfo);
     }
@@ -335,7 +334,7 @@ static VkResult VKAPI_CALL hkCreateSwapchainKHR(VkDevice device,
                                                 const VkAllocationCallbacks* pAllocator,
                                                 VkSwapchainKHR* pSwapchain)
 {
-    if (IsActiveRenderer())
+    if (BackendDetector::Instance().IsActiveRenderer(*g_Renderer))
     {
         CleanupRenderTarget();
         g_ImageExtent = pCreateInfo->imageExtent;
@@ -347,7 +346,7 @@ static VkResult VKAPI_CALL hkCreateSwapchainKHR(VkDevice device,
 static std::add_pointer_t<VkResult VKAPI_CALL(VkDevice, const VkAllocationCallbacks*)> oDestroyDeviceHKR;
 static VkResult VKAPI_CALL hkDestroyDeviceHKR(VkDevice device, const VkAllocationCallbacks* allocator)
 {
-    if (IsActiveRenderer())
+    if (BackendDetector::Instance().IsActiveRenderer(*g_Renderer))
     {
         if (!g_skipDestroy)
         {
@@ -422,7 +421,12 @@ namespace VK
         if (ImGui::GetCurrentContext())
         {
             if (ImGui::GetIO().BackendRendererUserData && ImGui::GetIO().BackendRendererName == "imgui_impl_vulkan")
+            {
+                auto renderThread = g_Renderer->GetRenderThread();
+                if (renderThread)
+                    renderThread->Stop();
                 ImGui_ImplVulkan_Shutdown();
+            }
         }
 
         CleanupDeviceVulkan();
@@ -570,18 +574,37 @@ static void RenderImGui_Vulkan(VkQueue queue, const VkPresentInfoKHR* pPresentIn
             ImGui_ImplVulkan_Init(&init_info, g_RenderPass);
 
             ImGui_ImplVulkan_CreateFontsTexture(fd->CommandBuffer);
+
+            auto renderThread = g_Renderer->GetRenderThread();
+            if (renderThread)
+            {
+                renderThread->Start(*ImGui::GetCurrentContext(),
+                                    [](RenderThread& renderThread)
+                                    {
+                                        ImGui_ImplVulkan_NewFrame();
+                                        ImGui_ImplWin32_NewFrame();
+
+                                        ImGui::NewFrame();
+
+                                        RenderContext m_RenderContext = {.Version = RENDERER_CONTEXT_API_VERSION,
+                                                                         .Size = sizeof(RenderContext)};
+
+                                        Core::Render(m_RenderContext);
+
+                                        ImGui::Render();
+                                    });
+            }
         }
 
-        ImGui_ImplVulkan_NewFrame();
-        ImGui_ImplWin32_NewFrame();
-        ImGui::NewFrame();
-
-        Core::Render();
-
-        ImGui::Render();
-
-        // Record dear imgui primitives into command buffer
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), fd->CommandBuffer);
+        auto renderThread = g_Renderer->GetRenderThread();
+        if (renderThread)
+        {
+            ImDrawData* drawData = renderThread->BeginRead();
+            if (drawData)
+            {
+                ImGui_ImplVulkan_RenderDrawData(drawData, fd->CommandBuffer);
+            }
+        }
 
         // Submit command buffer
         vkCmdEndRenderPass(fd->CommandBuffer);

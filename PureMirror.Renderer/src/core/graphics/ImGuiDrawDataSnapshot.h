@@ -26,11 +26,14 @@ class ImGuiDrawDataSnapshot
     ImGuiDrawDataSnapshot& operator=(ImGuiDrawDataSnapshot&&) noexcept = default;
 
     void BeginUpdate() noexcept;
+    void CancelUpdate() noexcept;
     void Update(const ImDrawData* drawData) noexcept;
 
     [[nodiscard]] ImDrawData* BeginRead() noexcept;
 
     [[nodiscard]] std::unordered_set<ImTextureID> CollectUsedImages();
+
+    void Clear() noexcept;
 
   private:
     // Thread ownership:

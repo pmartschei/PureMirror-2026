@@ -105,7 +105,7 @@ namespace Core
 
     Texture LoadTexture(const char* path)
     {
-        auto textureAsset = g_TextureManager.Load(path);
+        auto textureAsset = g_TextureManager.ReloadIfChanged(path);
 
         if (!textureAsset)
             return {};

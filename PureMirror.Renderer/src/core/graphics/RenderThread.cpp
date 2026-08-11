@@ -23,8 +23,7 @@ std::expected<void, RenderThreadError> RenderThread::Start(ImGuiContext& imguiCo
     m_ImguiContext = &imguiContext;
     m_RenderCallback = std::move(renderCallback);
 
-    m_ShouldTerminate = false;
-    m_Thread = std::jthread(&RenderThread::Loop, this);
+    m_Thread = std::jthread([this](std::stop_token stopToken) { Loop(stopToken); });
     m_IsRunning = true;
 
     return {};
@@ -32,56 +31,78 @@ std::expected<void, RenderThreadError> RenderThread::Start(ImGuiContext& imguiCo
 
 ImDrawData* RenderThread::BeginRead()
 {
+    if (!m_IsRunning)
+        return nullptr;
+
     return m_ImGuiDrawDataSnapshot.BeginRead();
 }
 
 void RenderThread::Stop()
 {
     if (!m_IsRunning)
-    {
         return;
-    }
-    m_ShouldTerminate = true;
 
     m_Thread.request_stop();
+
+    if (m_Thread.joinable())
+        m_Thread.join();
+
+    m_ImGuiDrawDataSnapshot.Clear();
+
+    m_RenderCallback = {};
+    m_ImguiContext = nullptr;
+
+    m_IsRunning = false;
 }
 
-void RenderThread::Loop()
+void RenderThread::Loop(std::stop_token stopToken)
 {
     SetThreadDescription(GetCurrentThread(), L"PureMirror Render Thread");
-    const int m_FPS = 60;
-    using namespace std::chrono;
-    using dsec = duration<double>;
-    auto invFpsLimit = round<system_clock::duration>(dsec{1. / m_FPS});
-    auto m_BeginFrame = system_clock::now();
-    auto m_EndFrame = m_BeginFrame + invFpsLimit;
 
-    while (!m_ShouldTerminate)
+    constexpr int FPS = 60;
+    using namespace std::chrono;
+
+    const auto frameDuration = round<steady_clock::duration>(duration<double>{1.0 / FPS});
+    auto nextFrame = steady_clock::now();
+
+    while (!stopToken.stop_requested())
     {
         m_ImGuiDrawDataSnapshot.BeginUpdate();
+
+        if (stopToken.stop_requested())
+        {
+            m_ImGuiDrawDataSnapshot.CancelUpdate();
+            break;
+        }
 
         ImGui::SetCurrentContext(m_ImguiContext);
 
         m_RenderCallback(*this);
 
+        if (stopToken.stop_requested())
+        {
+            m_ImGuiDrawDataSnapshot.CancelUpdate();
+            break;
+        }
+
         m_ImGuiDrawDataSnapshot.Update(ImGui::GetDrawData());
 
         auto usedImages = m_ImGuiDrawDataSnapshot.CollectUsedImages();
 
-        BackendDetector::Instance().GetActiveRenderer()->MarkTexturesAsUsed(usedImages);
+        auto renderer = BackendDetector::Instance().GetActiveRenderer();
 
-        BackendDetector::Instance().GetActiveRenderer()->CleanUpTextures();
+        if (renderer)
+        {
+            renderer->MarkTexturesAsUsed(usedImages);
+            renderer->CleanUpTextures();
+        }
 
         auto now = system_clock::now();
 
-        std::chrono::duration<double> difference = m_EndFrame - now;
+        nextFrame += frameDuration;
 
-        if (difference.count() > 0.0)
-        {
-            Utils::osSleep(difference.count());
-        }
+        std::unique_lock lock(m_SleepMutex);
 
-        m_EndFrame = m_EndFrame + invFpsLimit;
-        m_BeginFrame = now;
+        m_SleepCv.wait_until(lock, stopToken, nextFrame, [] { return false; });
     }
 }

@@ -356,7 +356,12 @@ namespace DX12
         if (ImGui::GetCurrentContext())
         {
             if (ImGui::GetIO().BackendRendererUserData && ImGui::GetIO().BackendRendererName == "imgui_impl_dx12")
+            {
+                auto renderThread = g_Renderer->GetRenderThread();
+                if (renderThread)
+                    renderThread->Stop();
                 ImGui_ImplDX12_Shutdown();
+            }
         }
 
         CleanupDeviceD3D12();

@@ -6,7 +6,11 @@
 #include "../IRenderer.h"
 #include "DX12GpuUploader.h"
 
+#include <d3d12.h>
 #include <dxgi1_4.h>
+
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
 
 class DX12Renderer : public IRenderer
 {
@@ -36,7 +40,7 @@ class DX12Renderer : public IRenderer
     RenderThread* m_RenderThread = nullptr;
 
     std::unique_ptr<DX12GpuUploader> m_GpuUploader;
-    std::unordered_map<std::string, std::shared_ptr<DX12Texture>> m_Textures;
+    std::unordered_map<std::shared_ptr<TextureAsset>, std::shared_ptr<DX12Texture>> m_Textures;
 
     // Inherited via IRenderer
     virtual [[nodiscard]] Texture UploadAndRetrieveTexture(const std::shared_ptr<TextureAsset>& asset) override;

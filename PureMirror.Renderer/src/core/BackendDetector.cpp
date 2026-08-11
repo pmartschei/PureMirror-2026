@@ -33,6 +33,7 @@ void BackendDetector::ResetActiveRenderer() noexcept
 {
     if (m_activeRenderer)
     {
+        m_RenderThread.Stop();
         m_activeRenderer->SetRenderThread(nullptr);
         m_activeRenderer->Reset();
         m_activeRenderer.reset();

@@ -11,13 +11,7 @@ DX12Renderer::DX12Renderer() {}
 
 DX12Renderer::~DX12Renderer()
 {
-    if (!m_GpuUploader)
-        return;
-
-    for (auto& [path, texture] : m_Textures)
-        m_GpuUploader->ReleaseTexture(texture);
-
-    m_Textures.clear();
+    Shutdown();
 }
 
 void DX12Renderer::Initialize(ID3D12Device* device, ID3D12DescriptorHeap* srvHeap, UINT capacity, UINT offset)
@@ -47,6 +41,9 @@ void DX12Renderer::Initialize(ID3D12Device* device, ID3D12DescriptorHeap* srvHea
 
 void DX12Renderer::Shutdown()
 {
+    if (!m_GpuUploader)
+        return;
+
     for (auto& [path, texture] : m_Textures)
         m_GpuUploader->ReleaseTexture(texture);
 
@@ -60,7 +57,7 @@ Texture DX12Renderer::UploadAndRetrieveTexture(const std::shared_ptr<TextureAsse
     if (!asset)
         return {};
 
-    if (auto it = m_Textures.find(asset->Path); it != m_Textures.end())
+    if (auto it = m_Textures.find(asset); it != m_Textures.end())
     {
         const auto& dx12Texture = it->second;
 
@@ -70,7 +67,7 @@ Texture DX12Renderer::UploadAndRetrieveTexture(const std::shared_ptr<TextureAsse
 
     auto dx12Texture = m_GpuUploader->UploadTexture(asset);
 
-    m_Textures.emplace(asset->Path, dx12Texture);
+    m_Textures.emplace(asset, dx12Texture);
 
     Texture result{};
 
