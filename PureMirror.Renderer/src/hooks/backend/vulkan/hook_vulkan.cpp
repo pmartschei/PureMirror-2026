@@ -418,13 +418,16 @@ namespace VK
 
     void Unhook()
     {
+        auto renderThread = g_Renderer->GetRenderThread();
+        if (renderThread)
+            renderThread->Stop();
+
+        g_Renderer->Shutdown();
+
         if (ImGui::GetCurrentContext())
         {
             if (ImGui::GetIO().BackendRendererUserData && ImGui::GetIO().BackendRendererName == "imgui_impl_vulkan")
             {
-                auto renderThread = g_Renderer->GetRenderThread();
-                if (renderThread)
-                    renderThread->Stop();
                 ImGui_ImplVulkan_Shutdown();
             }
         }
@@ -482,6 +485,12 @@ static void CleanupRenderTarget()
 static void CleanupDeviceVulkan()
 {
     CleanupRenderTarget();
+
+    if (g_RenderPass)
+    {
+        vkDestroyRenderPass(g_Device, g_RenderPass, g_Allocator);
+        g_RenderPass = VK_NULL_HANDLE;
+    }
 
     if (g_DescriptorPool)
     {
@@ -575,6 +584,9 @@ static void RenderImGui_Vulkan(VkQueue queue, const VkPresentInfoKHR* pPresentIn
 
             ImGui_ImplVulkan_CreateFontsTexture(fd->CommandBuffer);
 
+            g_Renderer->Initialize(
+                g_PhysicalDevice, g_Device, graphicQueue, g_QueueFamily, g_DescriptorPool, g_Allocator);
+
             auto renderThread = g_Renderer->GetRenderThread();
             if (renderThread)
             {
@@ -595,6 +607,8 @@ static void RenderImGui_Vulkan(VkQueue queue, const VkPresentInfoKHR* pPresentIn
                                     });
             }
         }
+
+        g_Renderer->ProcessPendingTextures();
 
         auto renderThread = g_Renderer->GetRenderThread();
         if (renderThread)
