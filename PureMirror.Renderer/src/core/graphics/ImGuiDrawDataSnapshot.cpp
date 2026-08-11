@@ -4,30 +4,34 @@
 
 #include "ImGuiDrawDataSnapshot.h"
 
+void ImGuiDrawDataSnapshot::BeginUpdate() noexcept
+{
+    if (m_WriteIndex != -1)
+    {
+        assert(false && "BeginUpdate called without calling Update");
+        return;
+    }
+
+    m_WriteIndex = AcquireWriteBuffer();
+
+    if (m_WriteIndex != -1)
+        m_Buffers[m_WriteIndex].Data.Clear();
+}
+
 void ImGuiDrawDataSnapshot::Update(const ImDrawData* drawData) noexcept
 {
-    const int writeIndex = AcquireWriteBuffer();
-
-    if (writeIndex == -1)
+    if (m_WriteIndex == -1)
         return;
 
-    Buffer& buffer = m_Buffers[writeIndex];
+    Buffer& buffer = m_Buffers[m_WriteIndex];
 
     buffer.Data.CopyFrom(drawData);
 
+    const UINT64 generation = ++m_WriteGeneration;
+    buffer.Generation.store(generation, std::memory_order_relaxed);
     buffer.State.store(BufferState::Ready, std::memory_order_release);
-}
 
-void ImGuiDrawDataSnapshot::Clear() noexcept
-{
-    const int writeIndex = AcquireWriteBuffer();
-
-    if (writeIndex == -1)
-        return;
-
-    Buffer& buffer = m_Buffers[writeIndex];
-
-    buffer.Data.Clear();
+    m_WriteIndex = -1;
 }
 
 std::unordered_set<ImTextureID> ImGuiDrawDataSnapshot::CollectUsedImages()
@@ -37,6 +41,13 @@ std::unordered_set<ImTextureID> ImGuiDrawDataSnapshot::CollectUsedImages()
     for (int i = 0; i < BufferCount; ++i)
     {
         Buffer& buffer = m_Buffers[i];
+
+        const BufferState state = buffer.State.load(std::memory_order_acquire);
+
+        if (state != BufferState::Ready && state != BufferState::Reading)
+        {
+            continue;
+        }
 
         const auto& usedImages = buffer.Data.GetUsedImages();
 
@@ -48,44 +59,145 @@ std::unordered_set<ImTextureID> ImGuiDrawDataSnapshot::CollectUsedImages()
 
 ImDrawData* ImGuiDrawDataSnapshot::BeginRead() noexcept
 {
-    int currentIndex = m_ReadIndex.load(std::memory_order_acquire);
+    const int currentIndex = m_ReadIndex;
 
-    if (currentIndex < 0 || currentIndex > BufferCount)
-        return nullptr;
+    uint64_t currentGeneration = 0;
+
+    if (currentIndex >= 0 && currentIndex < BufferCount)
+    {
+        currentGeneration = m_Buffers[currentIndex].Generation.load(std::memory_order_relaxed);
+    }
+
+    ReadyBuffer readyBuffer = FindNewestReadyBuffer(currentIndex, currentGeneration);
+
+    int newestIndex = readyBuffer.Index;
+    uint64_t newestGeneration = readyBuffer.Generation;
+
+    if (newestIndex != -1)
+    {
+        BufferState expected = BufferState::Ready;
+
+        if (m_Buffers[newestIndex].State.compare_exchange_strong(
+                expected, BufferState::Reading, std::memory_order_acquire, std::memory_order_relaxed))
+        {
+            m_ReadIndex = newestIndex;
+
+            if (currentIndex >= 0 && currentIndex < BufferCount)
+            {
+                m_Buffers[currentIndex].State.store(BufferState::Free, std::memory_order_release);
+            }
+
+            ReleaseOlderReadyBuffers(newestIndex, newestGeneration);
+
+            return &m_Buffers[newestIndex].Data.GetDrawData();
+        }
+    }
+
+    // return current data if we do not have new data
+    if (currentIndex >= 0 && currentIndex < BufferCount)
+    {
+        return &m_Buffers[currentIndex].Data.GetDrawData();
+    }
+
+    // no data
+    return nullptr;
+}
+
+ReadyBuffer ImGuiDrawDataSnapshot::FindNewestReadyBuffer(int currentIndex, uint64_t currentGeneration) noexcept
+{
+    int newestIndex = -1;
+    UINT64 newestGeneration = currentGeneration;
 
     for (int i = 0; i < BufferCount; ++i)
     {
         if (i == currentIndex)
             continue;
 
-        BufferState expected = BufferState::Ready;
+        Buffer& buffer = m_Buffers[i];
 
-        if (m_Buffers[i].State.compare_exchange_strong(
-                expected, BufferState::Reading, std::memory_order_acquire, std::memory_order_relaxed))
+        if (buffer.State.load(std::memory_order_acquire) != BufferState::Ready)
+            continue;
+
+        const UINT64 generation = buffer.Generation.load(std::memory_order_relaxed);
+
+        if (generation > newestGeneration)
         {
-            m_ReadIndex.store(i, std::memory_order_release);
-
-            m_Buffers[currentIndex].State.store(BufferState::Free, std::memory_order_release);
-
-            currentIndex = i;
-            break;
+            newestGeneration = buffer.Generation;
+            newestIndex = i;
         }
     }
 
-    // This theoretically could break, with the current state handling
-
-    assert(currentIndex >= 0 && currentIndex < static_cast<UINT>(m_Buffers.size()));
-
-    Buffer& buffer = m_Buffers[currentIndex];
-    return &buffer.Data.GetDrawData();
+    return ReadyBuffer{.Index = newestIndex, .Generation = newestGeneration};
 }
 
-void ImGuiDrawDataSnapshot::EndRead() noexcept
+void ImGuiDrawDataSnapshot::ReleaseOlderReadyBuffers(int keepIndex, uint64_t newestGeneration) noexcept
 {
-    // const int index = m_ReadIndex.load(std::memory_order_acquire);
-    //
-    // if (index < 0 || index >= BufferCount)
-    //     return;
-    //
-    // m_Buffers[index].State.store(BufferState::Free, std::memory_order_release);
+    for (int i = 0; i < BufferCount; ++i)
+    {
+        if (i == keepIndex)
+            continue;
+
+        Buffer& buffer = m_Buffers[i];
+
+        if (buffer.State.load(std::memory_order_acquire) != BufferState::Ready)
+            continue;
+
+        const UINT64 generation = buffer.Generation.load(std::memory_order_relaxed);
+
+        if (generation >= newestGeneration)
+            continue;
+
+        BufferState expected = BufferState::Ready;
+
+        buffer.State.compare_exchange_strong(
+            expected, BufferState::Free, std::memory_order_release, std::memory_order_relaxed);
+    }
+}
+
+int ImGuiDrawDataSnapshot::AcquireWriteBuffer()
+{
+    // Prefer free buffers.
+    for (int i = 0; i < BufferCount; ++i)
+    {
+        BufferState expected = BufferState::Free;
+
+        if (m_Buffers[i].State.compare_exchange_strong(
+                expected, BufferState::Writing, std::memory_order_acquire, std::memory_order_relaxed))
+        {
+            return i;
+        }
+    }
+
+    // No free buffer. Reclaim the oldest Ready buffer.
+    int oldestIndex = -1;
+    UINT64 oldestGeneration = UINT64_MAX;
+
+    for (int i = 0; i < BufferCount; ++i)
+    {
+        Buffer& buffer = m_Buffers[i];
+
+        if (buffer.State.load(std::memory_order_acquire) != BufferState::Ready)
+            continue;
+
+        const UINT64 generation = buffer.Generation.load(std::memory_order_relaxed);
+
+        if (generation < oldestGeneration)
+        {
+            oldestGeneration = buffer.Generation;
+            oldestIndex = i;
+        }
+    }
+
+    if (oldestIndex != -1)
+    {
+        BufferState expected = BufferState::Ready;
+
+        if (m_Buffers[oldestIndex].State.compare_exchange_strong(
+                expected, BufferState::Writing, std::memory_order_acquire, std::memory_order_relaxed))
+        {
+            return oldestIndex;
+        }
+    }
+
+    return -1;
 }

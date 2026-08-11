@@ -51,6 +51,7 @@ void Render(const RenderContext* renderContext)
         else
         {
             ImVec2 pos = ImGui::GetCursorScreenPos();
+            ImGui::Dummy(ImVec2(100, 100));
             auto drawList = ImGui::GetWindowDrawList();
             drawList->AddRectFilled(pos, ImVec2(pos.x + 100, pos.y + 100), IM_COL32(255, 0, 0, 255));
         }
@@ -61,6 +62,7 @@ void Render(const RenderContext* renderContext)
         else
         {
             ImVec2 pos = ImGui::GetCursorScreenPos();
+            ImGui::Dummy(ImVec2(200, 200));
             auto drawList = ImGui::GetWindowDrawList();
             drawList->AddRectFilled(pos, ImVec2(pos.x + 200, pos.y + 200), IM_COL32(255, 255, 0, 255));
         }

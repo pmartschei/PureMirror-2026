@@ -26,16 +26,13 @@ std::expected<void, RenderThreadError> RenderThread::Start(ImGuiContext& imguiCo
     m_ShouldTerminate = false;
     m_Thread = std::jthread(&RenderThread::Loop, this);
     m_IsRunning = true;
+
+    return {};
 }
 
 ImDrawData* RenderThread::BeginRead()
 {
     return m_ImGuiDrawDataSnapshot.BeginRead();
-}
-
-void RenderThread::EndRead()
-{
-    m_ImGuiDrawDataSnapshot.EndRead();
 }
 
 void RenderThread::Stop()
@@ -61,7 +58,7 @@ void RenderThread::Loop()
 
     while (!m_ShouldTerminate)
     {
-        m_ImGuiDrawDataSnapshot.Clear();
+        m_ImGuiDrawDataSnapshot.BeginUpdate();
 
         ImGui::SetCurrentContext(m_ImguiContext);
 

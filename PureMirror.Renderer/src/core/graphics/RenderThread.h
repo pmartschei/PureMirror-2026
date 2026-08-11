@@ -22,7 +22,6 @@ class RenderThread
     std::expected<void, RenderThreadError> Start(ImGuiContext& imguiContext,
                                                  std::function<void(RenderThread&)> renderCallback);
     ImDrawData* BeginRead();
-    void EndRead();
     void Stop();
 
   private:

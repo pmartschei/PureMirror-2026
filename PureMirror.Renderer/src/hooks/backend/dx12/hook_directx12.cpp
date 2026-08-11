@@ -535,7 +535,6 @@ static void RenderImGui_DX12(IDXGISwapChain3* pSwapChain)
                 {
                     ImGui_ImplDX12_RenderDrawData(drawData, g_pd3dCommandList);
                 }
-                renderThread->EndRead();
             }
             barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
             barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
