@@ -22,9 +22,53 @@ CustomerQueue g_CustomerQueue;
 
 std::unique_ptr<PureMirror::WindowInput> g_WindowInput;
 
+Texture g_BtnErrorTexture;
+Texture g_BtnErrorPressedTexture;
+Texture g_BtnSuccessTexture;
+Texture g_BtnSuccessPressedTexture;
+Texture g_BtnNormalTexture;
+Texture g_BtnNormalPressedTexture;
+Texture g_IconNotAllowedTexture;
+Texture g_IconAddFileTexture;
+Texture g_IconSpeechBubbleTexture;
+Texture g_IconTradeTexture;
+
 namespace
 {
     constexpr ImVec2 QueueWindowSize{430.0f, 360.0f};
+
+    bool AnimatedButton(ImTextureID bgNormal,
+                        ImTextureID bgPressed,
+                        ImTextureID overlay,
+                        ImVec2 size,
+                        ImVec2 overlaySize,
+                        const char* str_id)
+    {
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+        std::string id = "##";
+        id += str_id;
+
+        bool clicked = ImGui::InvisibleButton(id.c_str(), size);
+
+        bool hoveredAndPressed = ImGui::IsItemActive() && ImGui::IsItemHovered();
+
+        ImTextureID bgTexture = hoveredAndPressed ? bgPressed : bgNormal;
+
+        drawList->AddImage(bgTexture, pos, ImVec2(pos.x + size.x, pos.y + size.y));
+
+        if (overlay)
+        {
+            ImVec2 overlayPos =
+                ImVec2(pos.x + (size.x - overlaySize.x) * 0.5f, pos.y + (size.y - overlaySize.y) * 0.5f);
+
+            drawList->AddImage(overlay, overlayPos, ImVec2(overlayPos.x + overlaySize.x, overlayPos.y + overlaySize.y));
+        }
+
+        return clicked;
+    }
 
     bool IsSafeCharacterName(const std::string_view character)
     {
@@ -100,7 +144,9 @@ namespace
                                                false,
                                                ImGuiSelectableFlags_None,
                                                ImVec2(textSize.x, ImGui::GetTextLineHeight()));
-        if (ImGui::IsItemHovered())
+        const auto hovered = ImGui::IsItemHovered();
+
+        if (hovered)
             ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
         if (clicked)
         {
@@ -108,10 +154,12 @@ namespace
             // ImGui::SetNextFrameWantCaptureMouse(true);
             OpenWhisper(customer.Character);
         }
-        if (ImGui::IsItemHovered())
+        if (hovered)
         {
             ImGui::BeginTooltip();
-            ImGui::Text("History: %s", customer.Character.c_str());
+            ImGui::TextUnformatted("History:");
+            ImGui::SameLine();
+            ImGui::TextUnformatted(customer.Character.c_str());
             ImGui::TextDisabled("Click to whisper");
             ImGui::Separator();
             ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
@@ -167,6 +215,45 @@ namespace
         return true;
     }
 
+    void SetRightAlignedButtonRow(const float rowTop, const float buttonsWidth, const float buttonsHeight)
+    {
+        const auto textBlockHeight = ImGui::GetTextLineHeightWithSpacing() * 2.0f;
+        const auto verticalOffset = textBlockHeight > buttonsHeight ? (textBlockHeight - buttonsHeight) * 0.5f : 0.0f;
+        ImGui::SetCursorPos(ImVec2(ImGui::GetContentRegionMax().x - buttonsWidth, rowTop + verticalOffset));
+    }
+
+    float TextButtonWidth(const char* label)
+    {
+        return ImGui::CalcTextSize(label).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+    }
+
+    void SimulateCustomer()
+    {
+        static std::size_t nextCustomerNumber = 1;
+
+        std::string character;
+        bool characterExists = false;
+        do
+        {
+            character = "\xE6\xB5\x81"
+                        "\xE6\x94\xBE"
+                        "\xE4\xB9\x8B"
+                        "\xE8\xB7\xAF"
+                        "\xE7\x8E\xA9"
+                        "\xE5\xAE\xB6" +
+                        std::to_string(nextCustomerNumber++);
+            const auto hasCharacter = [&](const std::vector<Customer>& customers)
+            {
+                return std::any_of(customers.begin(),
+                                   customers.end(),
+                                   [&](const Customer& customer) { return customer.Character == character; });
+            };
+            characterExists = hasCharacter(g_CustomerQueue.Customers()) || hasCharacter(g_CustomerQueue.Waiting());
+        } while (characterExists);
+
+        g_CustomerQueue.Process({.Character = std::move(character), .Text = "Need uber elder (simulated customer)"});
+    }
+
     void RenderCustomers()
     {
         const auto* viewport = ImGui::GetMainViewport();
@@ -175,6 +262,12 @@ namespace
             ImGui::SameLine();
         auto& customers = g_CustomerQueue.Customers();
         ImGui::Text("CUSTOMERS (%zu)", customers.size());
+        if (ImGui::GetIO().KeyAlt)
+        {
+            ImGui::SameLine();
+            if (ImGui::Button("+ Test Customer"))
+                SimulateCustomer();
+        }
         ImGui::Separator();
 
         enum class Action
@@ -191,6 +284,7 @@ namespace
         {
             const auto& customer = customers[index];
             ImGui::PushID(static_cast<int>(index));
+            const auto rowTop = ImGui::GetCursorPosY();
             RenderCustomerName(customer);
             if (customer.WaitingOffered)
             {
@@ -201,13 +295,28 @@ namespace
             const auto safeName = IsSafeCharacterName(customer.Character);
             if (!safeName)
                 ImGui::BeginDisabled();
-            if (ImGui::Button("Invite"))
+
+            constexpr auto buttonSize = 32.0f;
+            const auto buttonsWidth = buttonSize * 3.0f + ImGui::GetStyle().ItemSpacing.x * 2.0f;
+            SetRightAlignedButtonRow(rowTop, buttonsWidth, buttonSize);
+            if (AnimatedButton(g_BtnSuccessTexture.TextureID,
+                               g_BtnSuccessPressedTexture.TextureID,
+                               g_IconAddFileTexture.TextureID,
+                               ImVec2(32, 32),
+                               ImVec2(20, 20),
+                               "Invite"))
             {
                 action = Action::Invite;
                 actionIndex = index;
             }
             ImGui::SameLine();
-            if (ImGui::Button("Full / wait"))
+
+            if (AnimatedButton(g_BtnNormalTexture.TextureID,
+                               g_BtnNormalPressedTexture.TextureID,
+                               g_IconSpeechBubbleTexture.TextureID,
+                               ImVec2(32, 32),
+                               ImVec2(20, 20),
+                               "Message"))
             {
                 action = Action::OfferWaiting;
                 actionIndex = index;
@@ -216,7 +325,13 @@ namespace
                 ImGui::EndDisabled();
 
             ImGui::SameLine();
-            if (ImGui::Button("Remove"))
+
+            if (AnimatedButton(g_BtnErrorTexture.TextureID,
+                               g_BtnErrorPressedTexture.TextureID,
+                               g_IconNotAllowedTexture.TextureID,
+                               ImVec2(32, 32),
+                               ImVec2(20, 20),
+                               "Remove"))
             {
                 action = Action::Remove;
                 actionIndex = index;
@@ -282,6 +397,7 @@ namespace
                 continue;
 
             ImGui::PushID(static_cast<int>(index));
+            const auto rowTop = ImGui::GetCursorPosY();
             RenderCustomerName(customer);
             ImGui::SameLine();
             ImGui::TextDisabled("(waiting)");
@@ -290,7 +406,16 @@ namespace
             const auto safeName = IsSafeCharacterName(customer.Character);
             if (!safeName)
                 ImGui::BeginDisabled();
-            if (ImGui::Button("Invite"))
+
+            constexpr auto buttonSize = 32.0f;
+            const auto buttonsWidth = buttonSize * 3.0f + ImGui::GetStyle().ItemSpacing.x * 2.0f;
+            SetRightAlignedButtonRow(rowTop, buttonsWidth, buttonSize);
+            if (AnimatedButton(g_BtnSuccessTexture.TextureID,
+                               g_BtnSuccessPressedTexture.TextureID,
+                               g_IconAddFileTexture.TextureID,
+                               ImVec2(32, 32),
+                               ImVec2(20, 20),
+                               "Invite"))
             {
                 action = Action::Invite;
                 actionIndex = index;
@@ -298,8 +423,12 @@ namespace
             ImGui::SameLine();
             if (position)
             {
-                const auto label = "Send position #" + std::to_string(*position);
-                if (ImGui::Button(label.c_str()))
+                if (AnimatedButton(g_BtnNormalTexture.TextureID,
+                                   g_BtnNormalPressedTexture.TextureID,
+                                   g_IconSpeechBubbleTexture.TextureID,
+                                   ImVec2(32, 32),
+                                   ImVec2(20, 20),
+                                   "Message"))
                 {
                     action = Action::SendPosition;
                     actionIndex = index;
@@ -309,7 +438,12 @@ namespace
                 ImGui::EndDisabled();
 
             ImGui::SameLine();
-            if (ImGui::Button("Remove"))
+            if (AnimatedButton(g_BtnErrorTexture.TextureID,
+                               g_BtnErrorPressedTexture.TextureID,
+                               g_IconNotAllowedTexture.TextureID,
+                               ImVec2(32, 32),
+                               ImVec2(20, 20),
+                               "Remove"))
             {
                 action = Action::Remove;
                 actionIndex = index;
@@ -382,6 +516,7 @@ namespace
                 continue;
 
             ImGui::PushID(static_cast<int>(index));
+            const auto rowTop = ImGui::GetCursorPosY();
             RenderCustomerName(customer);
             ImGui::SameLine();
             ImGui::TextDisabled("(invited)");
@@ -390,25 +525,35 @@ namespace
             const auto safeName = IsSafeCharacterName(customer.Character);
             if (!safeName)
                 ImGui::BeginDisabled();
-            if (ImGui::Button("Kick"))
-            {
-                action = Action::Kick;
-                actionIndex = index;
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Trade"))
+
+            constexpr auto buttonSize = 32.0f;
+            const auto buttonsWidth = buttonSize * 2.0f + ImGui::GetStyle().ItemSpacing.x * 1.0f;
+            SetRightAlignedButtonRow(rowTop, buttonsWidth, buttonSize);
+
+            if (AnimatedButton(g_BtnSuccessTexture.TextureID,
+                               g_BtnSuccessPressedTexture.TextureID,
+                               g_IconTradeTexture.TextureID,
+                               ImVec2(32, 32),
+                               ImVec2(20, 20),
+                               "Trade"))
             {
                 action = Action::Trade;
                 actionIndex = index;
             }
-            if (!safeName)
-                ImGui::EndDisabled();
             ImGui::SameLine();
-            if (ImGui::Button("Remove"))
+
+            if (AnimatedButton(g_BtnErrorTexture.TextureID,
+                               g_BtnErrorPressedTexture.TextureID,
+                               g_IconNotAllowedTexture.TextureID,
+                               ImVec2(32, 32),
+                               ImVec2(20, 20),
+                               "Kick"))
             {
-                action = Action::Remove;
+                action = Action::Kick;
                 actionIndex = index;
             }
+            if (!safeName)
+                ImGui::EndDisabled();
             ImGui::Separator();
             ImGui::PopID();
         }
@@ -424,9 +569,6 @@ namespace
                 break;
             case Action::Trade:
                 SendChatText("/tradewith " + character);
-                break;
-            case Action::Remove:
-                g_CustomerQueue.RemoveWaiting(actionIndex);
                 break;
             case Action::None:
                 break;
@@ -503,6 +645,18 @@ LRESULT HandleInput(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void Render(const RenderContext* renderContext)
 {
+    ImGui::ShowDemoWindow();
+    g_BtnErrorTexture = g_rendererAPI->LoadTexture("puremirror/btn_error.png");
+    g_BtnErrorPressedTexture = g_rendererAPI->LoadTexture("puremirror/btn_error_pressed.png");
+    g_BtnSuccessTexture = g_rendererAPI->LoadTexture("puremirror/btn_success.png");
+    g_BtnSuccessPressedTexture = g_rendererAPI->LoadTexture("puremirror/btn_success_pressed.png");
+    g_BtnNormalTexture = g_rendererAPI->LoadTexture("puremirror/btn_normal.png");
+    g_BtnNormalPressedTexture = g_rendererAPI->LoadTexture("puremirror/btn_normal_pressed.png");
+    g_IconNotAllowedTexture = g_rendererAPI->LoadTexture("puremirror/icon_not_allowed.png");
+    g_IconAddFileTexture = g_rendererAPI->LoadTexture("puremirror/icon_add_file.png");
+    g_IconSpeechBubbleTexture = g_rendererAPI->LoadTexture("puremirror/icon_speech_bubble.png");
+    g_IconTradeTexture = g_rendererAPI->LoadTexture("puremirror/icon_trade.png");
+
     for (auto& message : g_ClientListener.TakeMessages())
         g_CustomerQueue.Process(std::move(message));
 

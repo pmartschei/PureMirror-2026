@@ -11,9 +11,13 @@
 #include "graphics/dx12/DX12GpuUploader.h"
 #include "utils/utils.h"
 
+#include <array>
+#include <filesystem>
 #include <imgui.h>
 #include <include/CoreApi.h>
 #include <include/Texture.h>
+#include <initializer_list>
+#include <optional>
 
 namespace Core
 {
@@ -23,6 +27,123 @@ namespace Core
 
     static HWND g_hWindow = NULL;
     static WNDPROC oWndProc;
+
+    constexpr float DEFAULT_FONT_SIZE = 18.0f;
+
+    std::string ToLowerAscii(std::string value)
+    {
+        std::transform(value.begin(),
+                       value.end(),
+                       value.begin(),
+                       [](const unsigned char character) { return static_cast<char>(std::tolower(character)); });
+        return value;
+    }
+
+    std::optional<std::filesystem::path> FindFontFile(const std::filesystem::path& fontDirectory,
+                                                      const std::initializer_list<const char*> candidateNames)
+    {
+        std::error_code error;
+        if (!std::filesystem::is_directory(fontDirectory, error))
+            return std::nullopt;
+
+        for (const auto* candidate : candidateNames)
+        {
+            const auto path = fontDirectory / candidate;
+            if (std::filesystem::is_regular_file(path, error))
+                return path;
+        }
+
+        for (std::filesystem::recursive_directory_iterator
+                 iterator(fontDirectory, std::filesystem::directory_options::skip_permission_denied, error),
+             end;
+             iterator != end;
+             iterator.increment(error))
+        {
+            if (error)
+            {
+                error.clear();
+                continue;
+            }
+            if (!iterator->is_regular_file(error))
+                continue;
+
+            const auto filename = ToLowerAscii(iterator->path().filename().string());
+            for (const auto* candidate : candidateNames)
+            {
+                if (filename == ToLowerAscii(candidate))
+                    return iterator->path();
+            }
+        }
+        return std::nullopt;
+    }
+
+    ImFont* AddFont(ImGuiIO& io,
+                    const std::filesystem::path& path,
+                    const ImWchar* glyphRanges,
+                    ImFont* destination = nullptr)
+    {
+        ImFontConfig config{};
+        config.MergeMode = destination != nullptr;
+        config.DstFont = destination;
+        config.PixelSnapH = true;
+
+        const auto filename = path.string();
+        const auto fontSize = destination && destination->FontSize ? destination->FontSize : DEFAULT_FONT_SIZE;
+        return io.Fonts->AddFontFromFileTTF(filename.c_str(), fontSize, &config, glyphRanges);
+    }
+
+    void InitializeFonts(ImGuiIO& io)
+    {
+        std::array<wchar_t, 256> executablePath{};
+        const auto length =
+            GetModuleFileNameW(nullptr, executablePath.data(), static_cast<DWORD>(executablePath.size()));
+        if (length == 0 || length >= executablePath.size())
+        {
+            io.FontDefault = io.Fonts->AddFontDefault();
+            return;
+        }
+
+        const auto fontDirectory =
+            std::filesystem::path(executablePath.data()).parent_path() / L"puremirror" / L"fonts";
+
+        static ImVector<ImWchar> baseRanges;
+        if (baseRanges.empty())
+        {
+            ImFontGlyphRangesBuilder builder;
+            builder.AddRanges(io.Fonts->GetGlyphRangesDefault());
+            builder.AddRanges(io.Fonts->GetGlyphRangesGreek());
+            builder.AddRanges(io.Fonts->GetGlyphRangesCyrillic());
+            builder.AddRanges(io.Fonts->GetGlyphRangesVietnamese());
+            builder.BuildRanges(&baseRanges);
+        }
+
+        ImFont* defaultFont = io.Fonts->AddFontDefault();
+
+        const auto merge = [&](const std::initializer_list<const char*> names, const ImWchar* ranges)
+        {
+            if (const auto path = FindFontFile(fontDirectory, names))
+                AddFont(io, *path, ranges, defaultFont);
+        };
+
+        merge({"NotoSans-Regular.ttf", "NotoSans-VariableFont_wdth,wght.ttf"}, baseRanges.Data);
+
+        merge({"NotoSansSC-Regular.ttf",
+               "NotoSansSC-VariableFont_wght.ttf",
+               "NotoSansTC-Regular.ttf",
+               "NotoSansTC-VariableFont_wght.ttf"},
+              io.Fonts->GetGlyphRangesChineseFull());
+        merge({"NotoSansJP-Regular.ttf", "NotoSansJP-VariableFont_wght.ttf"}, io.Fonts->GetGlyphRangesJapanese());
+        merge({"NotoSansKR-Regular.ttf", "NotoSansKR-VariableFont_wght.ttf"}, io.Fonts->GetGlyphRangesKorean());
+        merge({"NotoSansThai-Regular.ttf", "NotoSansThai-VariableFont_wdth,wght.ttf"}, io.Fonts->GetGlyphRangesThai());
+
+        static constexpr ImWchar arabicRanges[] = {
+            0x0600, 0x06FF, 0x0750, 0x077F, 0x08A0, 0x08FF, 0xFB50, 0xFDFF, 0xFE70, 0xFEFF, 0};
+        merge({"NotoSansArabic-Regular.ttf", "NotoSansArabic-VariableFont_wdth,wght.ttf"}, arabicRanges);
+
+        // Dear ImGui has no automatic fallback between separate ImFont objects,
+        // therefore all available Noto glyphs are merged into the active font.
+        io.FontDefault = defaultFont;
+    }
 
     TextureManager g_TextureManager;
 
@@ -96,6 +217,7 @@ namespace Core
 
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+        InitializeFonts(io);
 
         oWndProc = reinterpret_cast<WNDPROC>(SetWindowLongPtr(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(WndProc)));
     }
