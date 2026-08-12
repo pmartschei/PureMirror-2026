@@ -95,7 +95,7 @@ namespace Core
         InitializeLibs();
 
         ImGuiIO& io = ImGui::GetIO();
-        io.IniFilename = io.LogFilename = nullptr;
+        io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 
         oWndProc = reinterpret_cast<WNDPROC>(SetWindowLongPtr(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(WndProc)));
     }
