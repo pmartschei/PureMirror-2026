@@ -18,6 +18,9 @@
     <ClInclude Include="framework.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="LogFileListener.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="PureMirror.Core.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -27,9 +30,15 @@
     <ClInclude Include="src\external\imgui\imgui_impl_win32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ClientListener.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PureMirror.Core.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LogFileListener.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="dllmain.cpp">

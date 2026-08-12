@@ -4,9 +4,15 @@
 
 #include "PureMirror.Core.h"
 
+#include "ClientListener.h"
+
 #include <imgui.h>
 
 const RendererAPI* g_rendererAPI;
+
+ClientListener g_ClientListener;
+
+std::vector<std::string> m_Messages;
 
 void Initialize(const RendererAPI* rendererAPI)
 {
@@ -73,6 +79,10 @@ LRESULT HandleInput(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void Render(const RenderContext* renderContext)
 {
+    for (auto& d : g_ClientListener.TakeMessages())
+    {
+        m_Messages.push_back(d);
+    }
     ImGui::ShowDemoWindow();
 
     ImGui::SetNextWindowSize(ImVec2(250, 250));
@@ -108,6 +118,14 @@ void Render(const RenderContext* renderContext)
             auto drawList = ImGui::GetWindowDrawList();
             drawList->AddRectFilled(pos, ImVec2(pos.x + 200, pos.y + 200), IM_COL32(255, 255, 0, 255));
         }
+    }
+
+    ImGui::End();
+
+    ImGui::Begin("Messages");
+    for (auto& message : m_Messages)
+    {
+        ImGui::BulletText(message.c_str());
     }
 
     ImGui::End();
