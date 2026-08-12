@@ -185,7 +185,9 @@
     <ClInclude Include="src\core\graphics\TextureManager.h" />
     <ClInclude Include="src\core\graphics\dx12\DX12GpuUploader.h" />
     <ClInclude Include="src\core\graphics\RenderThread.h" />
+    <ClInclude Include="src\core\graphics\vulkan\VulkanGpuUploader.h" />
     <ClInclude Include="src\core\graphics\vulkan\VulkanRenderer.h" />
+    <ClInclude Include="src\core\graphics\vulkan\VulkanTexture.h" />
     <ClInclude Include="src\external\imgui\imgui_impl_dx10.h" />
     <ClInclude Include="src\external\imgui\imgui_impl_dx11.h" />
     <ClInclude Include="src\external\imgui\imgui_impl_dx12.h" />
@@ -231,6 +233,7 @@
     <ClCompile Include="src\core\graphics\dx12\DX12Renderer.cpp" />
     <ClCompile Include="src\core\graphics\TextureManager.cpp" />
     <ClCompile Include="src\core\graphics\RenderThread.cpp" />
+    <ClCompile Include="src\core\graphics\vulkan\VulkanGpuUploader.cpp" />
     <ClCompile Include="src\core\graphics\vulkan\VulkanRenderer.cpp" />
     <ClCompile Include="src\dllmain.cpp" />
     <ClCompile Include="src\external\imgui\imgui_impl_dx10.cpp">
