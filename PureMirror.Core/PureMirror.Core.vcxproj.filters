@@ -36,8 +36,17 @@
     <ClInclude Include="ClientListener.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CustomerQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui_extension.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CustomerQueue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="PureMirror.Core.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

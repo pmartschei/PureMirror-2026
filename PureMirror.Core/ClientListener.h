@@ -5,6 +5,12 @@
 
 #include "LogFileListener.h"
 
+struct ClientMessage
+{
+    std::string Character;
+    std::string Text;
+};
+
 class ClientListener
 {
   public:
@@ -13,15 +19,11 @@ class ClientListener
         m_listener.SetErrorCallback([](const std::string& error) { std::cerr << "Log error: " << error << '\n'; });
 
         m_subscription = m_listener.Subscribe(
-            std::regex{R"(@From\s+(?:<[^>]*>\s+)?([^:]+):\s*(.*\bNeed uber elder\b.*)$)", std::regex::icase},
-            [this](const std::string& completeLine, const std::smatch& match)
+            std::regex{R"(@From\s+(?:<[^>]*>\s+)?([^:]+):\s*(.*)$)"},
+            [this](const std::string&, const std::smatch& match)
             {
-                const std::string player = match[1].str();
-                const std::string message = match[2].str();
-
-                // Callback läuft auf dem Listener-Thread.
                 std::scoped_lock lock(m_mutex);
-                m_messages.push_back(player + ": " + message);
+                m_messages.push_back({.Character = match[1].str(), .Text = match[2].str()});
             });
 
         m_listener.Start();
@@ -33,10 +35,10 @@ class ClientListener
         m_listener.Stop();
     }
 
-    std::vector<std::string> TakeMessages()
+    std::vector<ClientMessage> TakeMessages()
     {
         std::scoped_lock lock(m_mutex);
-        std::vector<std::string> messages = std::move(m_messages);
+        std::vector<ClientMessage> messages = std::move(m_messages);
         m_messages.clear();
         return messages;
     }
@@ -45,5 +47,5 @@ class ClientListener
     PureMirror::LogFileListener m_listener;
     PureMirror::LogFileListener::SubscriptionId m_subscription{};
     std::mutex m_mutex;
-    std::vector<std::string> m_messages;
+    std::vector<ClientMessage> m_messages;
 };
