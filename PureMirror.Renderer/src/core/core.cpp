@@ -37,7 +37,9 @@ namespace Core
     {
         for (auto& coreApi : g_CoreAPIs)
         {
-            coreApi->HandleInput(hWnd, uMsg, wParam, lParam);
+            auto result = coreApi->HandleInput(hWnd, uMsg, wParam, lParam);
+            if (result != 0)
+                return result;
         }
 
         return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);

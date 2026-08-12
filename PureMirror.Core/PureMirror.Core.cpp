@@ -26,7 +26,48 @@ void SetContext(ImGuiContext* context)
 LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT HandleInput(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    // return ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
+    auto result = ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
+
+    if (result != 0)
+        return result;
+
+    auto& io = ImGui::GetIO();
+
+    switch (uMsg)
+    {
+    case WM_KILLFOCUS:
+        return 0;
+    case WM_MOUSEMOVE:
+    case WM_MOUSELEAVE:
+        return 0;
+    case WM_LBUTTONUP:
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONDBLCLK:
+    case WM_RBUTTONUP:
+    case WM_RBUTTONDOWN:
+    case WM_RBUTTONDBLCLK:
+    case WM_MBUTTONUP:
+    case WM_MBUTTONDOWN:
+    case WM_MBUTTONDBLCLK:
+    case WM_XBUTTONUP:
+    case WM_XBUTTONDOWN:
+    case WM_XBUTTONDBLCLK:
+    case WM_MOUSEHWHEEL:
+    case WM_MOUSEWHEEL:
+    {
+        return io.WantCaptureMouse;
+    }
+    case WM_KEYUP:
+    case WM_SYSKEYUP:
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+    {
+        return io.WantCaptureKeyboard;
+    }
+    default:
+        return 0;
+    }
+
     return 0;
 }
 
