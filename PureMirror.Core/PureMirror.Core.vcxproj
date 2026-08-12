@@ -168,6 +168,7 @@
     <ClInclude Include="ClientListener.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="LogFileListener.h" />
+    <ClInclude Include="WindowInput.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="PureMirror.Core.h" />
     <ClInclude Include="src\external\imgui\imgui_impl_win32.h" />
@@ -175,6 +176,7 @@
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="LogFileListener.cpp" />
+    <ClCompile Include="WindowInput.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

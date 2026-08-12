@@ -27,14 +27,19 @@ namespace Core
     TextureManager g_TextureManager;
 
     const char* GetImguiVersion();
+    HWND GetWindow();
 
     RendererAPI g_rendererAPI = {.Version = RENDERER_API_VERSION,
                                  .Size = sizeof(RendererAPI),
                                  .GetImguiVersion = GetImguiVersion,
+                                 .GetWindow = GetWindow,
                                  .LoadTexture = LoadTexture};
 
     static LRESULT WINAPI WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
+        if (GetMessageExtraInfo() == DIRECT_GAME_INPUT_MARKER)
+            return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
+
         for (auto& coreApi : g_CoreAPIs)
         {
             auto result = coreApi->HandleInput(hWnd, uMsg, wParam, lParam);
@@ -48,6 +53,11 @@ namespace Core
     const char* GetImguiVersion()
     {
         return ImGui::GetVersion();
+    }
+
+    HWND GetWindow()
+    {
+        return g_hWindow;
     }
 
     void InitializeLibs()
@@ -78,6 +88,8 @@ namespace Core
         if (ImGui::GetCurrentContext())
             return;
 
+        g_hWindow = hwnd;
+
         auto imguiContext = ImGui::CreateContext();
         ImGui_ImplWin32_Init(hwnd);
         InitializeLibs();
@@ -85,7 +97,6 @@ namespace Core
         ImGuiIO& io = ImGui::GetIO();
         io.IniFilename = io.LogFilename = nullptr;
 
-        g_hWindow = hwnd;
         oWndProc = reinterpret_cast<WNDPROC>(SetWindowLongPtr(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(WndProc)));
     }
 

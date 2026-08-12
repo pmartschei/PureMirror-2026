@@ -5,6 +5,7 @@
 #include "PureMirror.Core.h"
 
 #include "ClientListener.h"
+#include "WindowInput.h"
 
 #include <imgui.h>
 
@@ -14,9 +15,12 @@ ClientListener g_ClientListener;
 
 std::vector<std::string> m_Messages;
 
+std::unique_ptr<PureMirror::WindowInput> g_WindowInput;
+
 void Initialize(const RendererAPI* rendererAPI)
 {
     g_rendererAPI = rendererAPI;
+    g_WindowInput = std::make_unique<PureMirror::WindowInput>(g_rendererAPI->GetWindow());
 }
 
 const char* GetImguiVersion()
@@ -126,6 +130,25 @@ void Render(const RenderContext* renderContext)
     for (auto& message : m_Messages)
     {
         ImGui::BulletText(message.c_str());
+    }
+
+    if (ImGui::Button("Send") && g_WindowInput)
+    {
+        g_WindowInput->SendKey(VK_RETURN);
+
+        g_WindowInput->SendKeyDown(VK_CONTROL);
+        g_WindowInput->SendKey('A');
+        g_WindowInput->SendKeyUp(VK_CONTROL);
+        g_WindowInput->SendKey(VK_DELETE);
+
+        g_WindowInput->SendTextUtf8("Mein Text");
+        g_WindowInput->SendKey(VK_RETURN);
+
+        // Restore the last chat entry
+        g_WindowInput->SendKey(VK_RETURN);
+        g_WindowInput->SendKey(VK_UP);
+        g_WindowInput->SendKey(VK_UP);
+        g_WindowInput->SendKey(VK_ESCAPE);
     }
 
     ImGui::End();

@@ -2,8 +2,11 @@
 #include "Texture.h"
 
 #include <cstdint>
+#include <wtypes.h>
 
-#define RENDERER_API_VERSION 1
+#define RENDERER_API_VERSION 2
+
+inline constexpr ULONG_PTR DIRECT_GAME_INPUT_MARKER = 0x50554D49;  // "PUMI"
 
 struct RendererAPI
 {
@@ -12,6 +15,7 @@ struct RendererAPI
     uint32_t Size;
 
     const char* (*GetImguiVersion)();
+    HWND (*GetWindow)();
 
     // Call this
     Texture (*LoadTexture)(const char* path);
