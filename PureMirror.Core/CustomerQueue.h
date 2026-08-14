@@ -38,6 +38,7 @@ class CustomerQueue final
     void InviteWaiting(std::size_t waitingIndex);
     void RemoveCustomer(std::size_t customerIndex);
     void RemoveWaiting(std::size_t waitingIndex);
+    void ClearCustomers() noexcept;
 
     [[nodiscard]] std::optional<std::size_t> WaitingPosition(std::size_t waitingIndex) const;
 

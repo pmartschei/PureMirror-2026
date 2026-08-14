@@ -74,6 +74,11 @@ void CustomerQueue::RemoveWaiting(const std::size_t waitingIndex)
         m_waiting.erase(m_waiting.begin() + static_cast<std::ptrdiff_t>(waitingIndex));
 }
 
+void CustomerQueue::ClearCustomers() noexcept
+{
+    m_customers.clear();
+}
+
 std::optional<std::size_t> CustomerQueue::WaitingPosition(const std::size_t waitingIndex) const
 {
     if (waitingIndex >= m_waiting.size() || m_waiting[waitingIndex].State == CustomerState::Invited)

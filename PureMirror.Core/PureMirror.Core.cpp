@@ -150,8 +150,6 @@ namespace
             ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
         if (clicked)
         {
-            // ImGui::GetIO().WantCaptureMouse = true;
-            // ImGui::SetNextFrameWantCaptureMouse(true);
             OpenWhisper(customer.Character);
         }
         if (hovered)
@@ -261,14 +259,23 @@ namespace
         if (RenderMoveAnchor())
             ImGui::SameLine();
         auto& customers = g_CustomerQueue.Customers();
-        ImGui::Text("CUSTOMERS (%zu)", customers.size());
         if (ImGui::GetIO().KeyAlt)
         {
-            ImGui::SameLine();
             if (ImGui::Button("+ Test Customer"))
                 SimulateCustomer();
+
+            ImGui::SameLine();
+            constexpr auto clearLabel = "Clear All";
+            const auto clearButtonWidth = TextButtonWidth(clearLabel);
+            ImGui::SetCursorPosX(ImGui::GetContentRegionMax().x - clearButtonWidth);
+            bool isEmpty = customers.empty();
+            if (isEmpty)
+                ImGui::BeginDisabled();
+            if (ImGui::Button(clearLabel))
+                g_CustomerQueue.ClearCustomers();
+            if (isEmpty)
+                ImGui::EndDisabled();
         }
-        ImGui::Separator();
 
         enum class Action
         {
@@ -370,15 +377,8 @@ namespace
         BeginQueueWindow(
             "Waiting Queue",
             ImVec2(viewport->Pos.x + (viewport->Size.x - QueueWindowSize.x) * 0.5f, viewport->Pos.y + 80.0f));
-        if (RenderMoveAnchor())
-            ImGui::SameLine();
+        RenderMoveAnchor();
         auto& waiting = g_CustomerQueue.Waiting();
-        const auto waitingCount =
-            std::count_if(waiting.begin(),
-                          waiting.end(),
-                          [](const Customer& customer) { return customer.State != CustomerState::Invited; });
-        ImGui::Text("WAITING (%zu)", waitingCount);
-        ImGui::Separator();
 
         enum class Action
         {
@@ -400,7 +400,6 @@ namespace
             const auto rowTop = ImGui::GetCursorPosY();
             RenderCustomerName(customer);
             ImGui::SameLine();
-            ImGui::TextDisabled("(waiting)");
             const auto position = g_CustomerQueue.WaitingPosition(index);
             ImGui::TextDisabled("Position #%zu | waiting %s", position.value_or(0), FormatWaitTime(customer).c_str());
             const auto safeName = IsSafeCharacterName(customer.Character);
@@ -519,8 +518,7 @@ namespace
             const auto rowTop = ImGui::GetCursorPosY();
             RenderCustomerName(customer);
             ImGui::SameLine();
-            ImGui::TextDisabled("(invited)");
-            ImGui::TextDisabled("Invited | waiting %s", FormatWaitTime(customer).c_str());
+            ImGui::TextDisabled("waiting %s", FormatWaitTime(customer).c_str());
 
             const auto safeName = IsSafeCharacterName(customer.Character);
             if (!safeName)
