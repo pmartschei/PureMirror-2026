@@ -213,11 +213,56 @@ namespace
         return true;
     }
 
-    void SetRightAlignedButtonRow(const float rowTop, const float buttonsWidth, const float buttonsHeight)
+    constexpr auto QueuePanelPadding = 8.0f;
+    constexpr auto QueuePanelRounding = 8.0f;
+    constexpr auto QueuePanelButtonSize = 32.0f;
+
+    struct QueuePanelLayout
     {
-        const auto textBlockHeight = ImGui::GetTextLineHeightWithSpacing() * 2.0f;
-        const auto verticalOffset = textBlockHeight > buttonsHeight ? (textBlockHeight - buttonsHeight) * 0.5f : 0.0f;
-        ImGui::SetCursorPos(ImVec2(ImGui::GetContentRegionMax().x - buttonsWidth, rowTop + verticalOffset));
+        ImVec2 Cursor;
+        float RowTop;
+        float ContentHeight;
+        float Height;
+    };
+
+    float QueuePanelContentHeight()
+    {
+        const auto textBlockHeight = ImGui::GetTextLineHeight() * 2.0f + ImGui::GetStyle().ItemSpacing.y;
+        return textBlockHeight > QueuePanelButtonSize ? textBlockHeight : QueuePanelButtonSize;
+    }
+
+    float QueuePanelHeight()
+    {
+        return QueuePanelContentHeight() + QueuePanelPadding * 2.0f;
+    }
+
+    QueuePanelLayout BeginQueuePanel()
+    {
+        const auto cursor = ImGui::GetCursorPos();
+        const auto minimum = ImGui::GetCursorScreenPos();
+        const auto contentHeight = QueuePanelContentHeight();
+        const auto height = contentHeight + QueuePanelPadding * 2.0f;
+        const auto maximum = ImVec2(minimum.x + ImGui::GetContentRegionAvail().x, minimum.y + height);
+        auto* drawList = ImGui::GetWindowDrawList();
+        drawList->AddRectFilled(minimum, maximum, ImGui::GetColorU32(ImGuiCol_FrameBg), QueuePanelRounding);
+        drawList->AddRect(minimum, maximum, ImGui::GetColorU32(ImGuiCol_Border), QueuePanelRounding);
+
+        const auto rowTop = cursor.y + QueuePanelPadding;
+        ImGui::SetCursorPos(ImVec2(cursor.x + QueuePanelPadding, rowTop));
+        return {.Cursor = cursor, .RowTop = rowTop, .ContentHeight = contentHeight, .Height = height};
+    }
+
+    void SetQueuePanelButtonRow(const QueuePanelLayout& panel, const float buttonsWidth)
+    {
+        const auto verticalOffset = (panel.ContentHeight - QueuePanelButtonSize) * 0.5f;
+        ImGui::SetCursorPos(ImVec2(ImGui::GetContentRegionMax().x - buttonsWidth - QueuePanelPadding,
+                                  panel.RowTop + verticalOffset));
+    }
+
+    void EndQueuePanel(const QueuePanelLayout& panel)
+    {
+        ImGui::SetCursorPos(
+            ImVec2(panel.Cursor.x, panel.Cursor.y + panel.Height + ImGui::GetStyle().ItemSpacing.y));
     }
 
     float TextButtonWidth(const char* label)
@@ -291,21 +336,22 @@ namespace
         {
             const auto& customer = customers[index];
             ImGui::PushID(static_cast<int>(index));
-            const auto rowTop = ImGui::GetCursorPosY();
+
+            const auto panel = BeginQueuePanel();
             RenderCustomerName(customer);
             if (customer.WaitingOffered)
             {
                 ImGui::SameLine();
                 ImGui::TextDisabled("(waiting for yes)");
             }
+            ImGui::SetCursorPosX(panel.Cursor.x + QueuePanelPadding);
             ImGui::TextDisabled("Position #%zu | waiting %s", index + 1, FormatWaitTime(customer).c_str());
             const auto safeName = IsSafeCharacterName(customer.Character);
             if (!safeName)
                 ImGui::BeginDisabled();
 
-            constexpr auto buttonSize = 32.0f;
-            const auto buttonsWidth = buttonSize * 3.0f + ImGui::GetStyle().ItemSpacing.x * 2.0f;
-            SetRightAlignedButtonRow(rowTop, buttonsWidth, buttonSize);
+            const auto buttonsWidth = QueuePanelButtonSize * 3.0f + ImGui::GetStyle().ItemSpacing.x * 2.0f;
+            SetQueuePanelButtonRow(panel, buttonsWidth);
             if (AnimatedButton(g_BtnSuccessTexture.TextureID,
                                g_BtnSuccessPressedTexture.TextureID,
                                g_IconAddFileTexture.TextureID,
@@ -343,7 +389,7 @@ namespace
                 action = Action::Remove;
                 actionIndex = index;
             }
-            ImGui::Separator();
+            EndQueuePanel(panel);
             ImGui::PopID();
         }
 
@@ -397,18 +443,17 @@ namespace
                 continue;
 
             ImGui::PushID(static_cast<int>(index));
-            const auto rowTop = ImGui::GetCursorPosY();
+            const auto panel = BeginQueuePanel();
             RenderCustomerName(customer);
-            ImGui::SameLine();
             const auto position = g_CustomerQueue.WaitingPosition(index);
+            ImGui::SetCursorPosX(panel.Cursor.x + QueuePanelPadding);
             ImGui::TextDisabled("Position #%zu | waiting %s", position.value_or(0), FormatWaitTime(customer).c_str());
             const auto safeName = IsSafeCharacterName(customer.Character);
             if (!safeName)
                 ImGui::BeginDisabled();
 
-            constexpr auto buttonSize = 32.0f;
-            const auto buttonsWidth = buttonSize * 3.0f + ImGui::GetStyle().ItemSpacing.x * 2.0f;
-            SetRightAlignedButtonRow(rowTop, buttonsWidth, buttonSize);
+            const auto buttonsWidth = QueuePanelButtonSize * 3.0f + ImGui::GetStyle().ItemSpacing.x * 2.0f;
+            SetQueuePanelButtonRow(panel, buttonsWidth);
             if (AnimatedButton(g_BtnSuccessTexture.TextureID,
                                g_BtnSuccessPressedTexture.TextureID,
                                g_IconAddFileTexture.TextureID,
@@ -447,7 +492,7 @@ namespace
                 action = Action::Remove;
                 actionIndex = index;
             }
-            ImGui::Separator();
+            EndQueuePanel(panel);
             ImGui::PopID();
         }
 
@@ -501,8 +546,7 @@ namespace
         // Keep the first invited customer at the bottom and grow the list
         // upwards. The panel deliberately has no visible title.
         const auto& style = ImGui::GetStyle();
-        const auto entryHeight = ImGui::GetTextLineHeightWithSpacing() * 2.0f + ImGui::GetFrameHeightWithSpacing() +
-                                 style.ItemSpacing.y + 1.0f;
+        const auto entryHeight = QueuePanelHeight() + style.ItemSpacing.y;
         const auto entriesHeight = entryHeight * static_cast<float>(invitedCount);
         const auto availableHeight = ImGui::GetContentRegionAvail().y;
         if (entriesHeight < availableHeight)
@@ -515,18 +559,17 @@ namespace
                 continue;
 
             ImGui::PushID(static_cast<int>(index));
-            const auto rowTop = ImGui::GetCursorPosY();
+            const auto panel = BeginQueuePanel();
             RenderCustomerName(customer);
-            ImGui::SameLine();
+            ImGui::SetCursorPosX(panel.Cursor.x + QueuePanelPadding);
             ImGui::TextDisabled("waiting %s", FormatWaitTime(customer).c_str());
 
             const auto safeName = IsSafeCharacterName(customer.Character);
             if (!safeName)
                 ImGui::BeginDisabled();
 
-            constexpr auto buttonSize = 32.0f;
-            const auto buttonsWidth = buttonSize * 2.0f + ImGui::GetStyle().ItemSpacing.x * 1.0f;
-            SetRightAlignedButtonRow(rowTop, buttonsWidth, buttonSize);
+            const auto buttonsWidth = QueuePanelButtonSize * 2.0f + ImGui::GetStyle().ItemSpacing.x;
+            SetQueuePanelButtonRow(panel, buttonsWidth);
 
             if (AnimatedButton(g_BtnSuccessTexture.TextureID,
                                g_BtnSuccessPressedTexture.TextureID,
@@ -552,7 +595,7 @@ namespace
             }
             if (!safeName)
                 ImGui::EndDisabled();
-            ImGui::Separator();
+            EndQueuePanel(panel);
             ImGui::PopID();
         }
 
