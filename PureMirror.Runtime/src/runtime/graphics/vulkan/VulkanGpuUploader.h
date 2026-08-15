@@ -41,7 +41,19 @@ class VulkanGpuUploader
         std::shared_ptr<VulkanTexture> Texture;
     };
 
+    struct PendingUpload
+    {
+        std::shared_ptr<VulkanTexture> Texture;
+        VkBuffer StagingBuffer = VK_NULL_HANDLE;
+        VkDeviceMemory StagingMemory = VK_NULL_HANDLE;
+        VkCommandBuffer CommandBuffer = VK_NULL_HANDLE;
+        VkFence Fence = VK_NULL_HANDLE;
+    };
+
     void Shutdown();
+    void CompletePendingUploads();
+    void FinalizeTextureUpload(const std::shared_ptr<VulkanTexture>& texture);
+    void DestroyPendingUploadResources(PendingUpload& upload) noexcept;
     void UploadTextureInternal(const UploadRequest& request);
     void ReleaseTextureInternal(const std::shared_ptr<VulkanTexture>& texture);
 
@@ -60,6 +72,7 @@ class VulkanGpuUploader
     std::mutex m_Mutex;
     std::queue<UploadRequest> m_UploadQueue;
     std::queue<std::shared_ptr<VulkanTexture>> m_ReleaseQueue;
+    std::vector<PendingUpload> m_PendingUploads;
 
     std::atomic<uint64_t> m_AllocatedBytes = 0;
 };

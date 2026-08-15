@@ -94,6 +94,8 @@ void VulkanGpuUploader::ProcessPendingTextures()
     if (m_Device == VK_NULL_HANDLE || m_CommandPool == VK_NULL_HANDLE)
         return;
 
+    CompletePendingUploads();
+
     std::queue<UploadRequest> uploads;
     std::queue<std::shared_ptr<VulkanTexture>> releases;
 
@@ -166,6 +168,13 @@ void VulkanGpuUploader::Shutdown()
 
     vkDeviceWaitIdle(m_Device);
 
+    for (auto& upload : m_PendingUploads)
+    {
+        DestroyPendingUploadResources(upload);
+        ReleaseTextureInternal(upload.Texture);
+    }
+    m_PendingUploads.clear();
+
     std::queue<UploadRequest> uploads;
     std::queue<std::shared_ptr<VulkanTexture>> releases;
 
@@ -201,6 +210,77 @@ void VulkanGpuUploader::Shutdown()
     m_PhysicalDevice = VK_NULL_HANDLE;
     m_Allocator = nullptr;
     m_AllocatedBytes.store(0, std::memory_order_relaxed);
+}
+
+void VulkanGpuUploader::CompletePendingUploads()
+{
+    for (auto it = m_PendingUploads.begin(); it != m_PendingUploads.end();)
+    {
+        const VkResult status = vkGetFenceStatus(m_Device, it->Fence);
+        if (status == VK_NOT_READY)
+        {
+            ++it;
+            continue;
+        }
+
+        auto texture = it->Texture;
+        DestroyPendingUploadResources(*it);
+        it = m_PendingUploads.erase(it);
+
+        if (status != VK_SUCCESS)
+        {
+            ReleaseTextureInternal(texture);
+            texture->State.store(VulkanTextureState::Failed, std::memory_order_release);
+            continue;
+        }
+
+        try
+        {
+            FinalizeTextureUpload(texture);
+        }
+        catch (...)
+        {
+            ReleaseTextureInternal(texture);
+            texture->State.store(VulkanTextureState::Failed, std::memory_order_release);
+        }
+    }
+}
+
+void VulkanGpuUploader::FinalizeTextureUpload(const std::shared_ptr<VulkanTexture>& texture)
+{
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = texture->Image;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+    viewInfo.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    CheckVk(vkCreateImageView(m_Device, &viewInfo, m_Allocator, &texture->View),
+            "VulkanGpuUploader: could not create texture view");
+
+    texture->DescriptorSet =
+        ImGui_ImplVulkan_AddTexture(m_Sampler, texture->View, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    if (texture->DescriptorSet == VK_NULL_HANDLE)
+        throw std::runtime_error("VulkanGpuUploader: could not allocate texture descriptor");
+
+    m_AllocatedBytes.fetch_add(texture->SizeInBytes, std::memory_order_relaxed);
+    texture->State.store(VulkanTextureState::Ready, std::memory_order_release);
+}
+
+void VulkanGpuUploader::DestroyPendingUploadResources(PendingUpload& upload) noexcept
+{
+    if (upload.Fence != VK_NULL_HANDLE)
+        vkDestroyFence(m_Device, upload.Fence, m_Allocator);
+    if (upload.CommandBuffer != VK_NULL_HANDLE)
+        vkFreeCommandBuffers(m_Device, m_CommandPool, 1, &upload.CommandBuffer);
+    if (upload.StagingBuffer != VK_NULL_HANDLE)
+        vkDestroyBuffer(m_Device, upload.StagingBuffer, m_Allocator);
+    if (upload.StagingMemory != VK_NULL_HANDLE)
+        vkFreeMemory(m_Device, upload.StagingMemory, m_Allocator);
+
+    upload.Fence = VK_NULL_HANDLE;
+    upload.CommandBuffer = VK_NULL_HANDLE;
+    upload.StagingBuffer = VK_NULL_HANDLE;
+    upload.StagingMemory = VK_NULL_HANDLE;
 }
 
 void VulkanGpuUploader::UploadTextureInternal(const UploadRequest& request)
@@ -343,9 +423,18 @@ void VulkanGpuUploader::UploadTextureInternal(const UploadRequest& request)
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &commandBuffer;
+
+        // Reserve before submitting so a host allocation failure can never make us
+        // destroy resources which are already in use by the GPU.
+        m_PendingUploads.reserve(m_PendingUploads.size() + 1);
         CheckVk(vkQueueSubmit(m_Queue, 1, &submitInfo, fence), "VulkanGpuUploader: texture upload failed");
-        CheckVk(vkWaitForFences(m_Device, 1, &fence, VK_TRUE, UINT64_MAX),
-                "VulkanGpuUploader: texture upload wait failed");
+
+        m_PendingUploads.push_back({request.Texture, stagingBuffer, stagingMemory, commandBuffer, fence});
+
+        stagingBuffer = VK_NULL_HANDLE;
+        stagingMemory = VK_NULL_HANDLE;
+        commandBuffer = VK_NULL_HANDLE;
+        fence = VK_NULL_HANDLE;
     }
     catch (...)
     {
@@ -360,27 +449,6 @@ void VulkanGpuUploader::UploadTextureInternal(const UploadRequest& request)
         throw;
     }
 
-    vkDestroyFence(m_Device, fence, m_Allocator);
-    vkFreeCommandBuffers(m_Device, m_CommandPool, 1, &commandBuffer);
-    vkDestroyBuffer(m_Device, stagingBuffer, m_Allocator);
-    vkFreeMemory(m_Device, stagingMemory, m_Allocator);
-
-    VkImageViewCreateInfo viewInfo{};
-    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image = texture.Image;
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-    viewInfo.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-    CheckVk(vkCreateImageView(m_Device, &viewInfo, m_Allocator, &texture.View),
-            "VulkanGpuUploader: could not create texture view");
-
-    texture.DescriptorSet =
-        ImGui_ImplVulkan_AddTexture(m_Sampler, texture.View, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    if (texture.DescriptorSet == VK_NULL_HANDLE)
-        throw std::runtime_error("VulkanGpuUploader: could not allocate texture descriptor");
-
-    m_AllocatedBytes.fetch_add(texture.SizeInBytes, std::memory_order_relaxed);
-    texture.State.store(VulkanTextureState::Ready, std::memory_order_release);
 }
 
 void VulkanGpuUploader::ReleaseTextureInternal(const std::shared_ptr<VulkanTexture>& texture)

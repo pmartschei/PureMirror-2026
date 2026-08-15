@@ -45,7 +45,9 @@ static std::shared_ptr<VulkanRenderer> g_Renderer = std::make_shared<VulkanRende
 
 static void CleanupDeviceVulkan();
 static void CleanupRenderTarget();
-static void RenderImGui_Vulkan(VkQueue queue, const VkPresentInfoKHR* pPresentInfo);
+static void RenderImGui_Vulkan(VkQueue queue,
+                               const VkPresentInfoKHR* pPresentInfo,
+                               std::vector<VkSemaphore>& presentWaitSemaphores);
 static bool DoesQueueSupportGraphic(VkQueue queue, VkQueue* pGraphicQueue);
 
 static bool CreateDeviceVK()
@@ -316,12 +318,21 @@ static std::add_pointer_t<VkResult VKAPI_CALL(VkQueue, const VkPresentInfoKHR*)>
 static VkResult VKAPI_CALL hkQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo)
 {
     BackendDetector::Instance().Count(g_Renderer);
+
+    std::vector<VkSemaphore> presentWaitSemaphores;
     if (BackendDetector::Instance().IsActiveRenderer(*g_Renderer))
     {
-        RenderImGui_Vulkan(queue, pPresentInfo);
+        RenderImGui_Vulkan(queue, pPresentInfo, presentWaitSemaphores);
     }
 
-    return oQueuePresentKHR(queue, pPresentInfo);
+    if (presentWaitSemaphores.empty())
+        return oQueuePresentKHR(queue, pPresentInfo);
+
+    VkPresentInfoKHR overlayPresentInfo = *pPresentInfo;
+    overlayPresentInfo.waitSemaphoreCount = static_cast<uint32_t>(presentWaitSemaphores.size());
+    overlayPresentInfo.pWaitSemaphores = presentWaitSemaphores.data();
+
+    return oQueuePresentKHR(queue, &overlayPresentInfo);
 }
 
 static std::add_pointer_t<VkResult VKAPI_CALL(
@@ -505,7 +516,9 @@ static void CleanupDeviceVulkan()
     g_Device = NULL;
 }
 
-static void RenderImGui_Vulkan(VkQueue queue, const VkPresentInfoKHR* pPresentInfo)
+static void RenderImGui_Vulkan(VkQueue queue,
+                               const VkPresentInfoKHR* pPresentInfo,
+                               std::vector<VkSemaphore>& presentWaitSemaphores)
 {
     if (!g_Device || H::bShuttingDown)
         return;
@@ -635,7 +648,12 @@ static void RenderImGui_Vulkan(VkQueue queue, const VkPresentInfoKHR* pPresentIn
                 info.signalSemaphoreCount = 1;
                 info.pSignalSemaphores = &fsd->RenderCompleteSemaphore;
 
-                vkQueueSubmit(queue, 1, &info, VK_NULL_HANDLE);
+                const VkResult bridgeSubmitResult = vkQueueSubmit(queue, 1, &info, VK_NULL_HANDLE);
+                if (bridgeSubmitResult != VK_SUCCESS)
+                {
+                    LOG("[!] Vulkan: semaphore bridge submit failed (%d)\n", bridgeSubmitResult);
+                    continue;
+                }
             }
             {
                 VkSubmitInfo info = {};
@@ -650,7 +668,15 @@ static void RenderImGui_Vulkan(VkQueue queue, const VkPresentInfoKHR* pPresentIn
                 info.signalSemaphoreCount = 1;
                 info.pSignalSemaphores = &fsd->ImageAcquiredSemaphore;
 
-                vkQueueSubmit(graphicQueue, 1, &info, fd->Fence);
+                const VkResult overlaySubmitResult = vkQueueSubmit(graphicQueue, 1, &info, fd->Fence);
+                if (overlaySubmitResult == VK_SUCCESS)
+                {
+                    presentWaitSemaphores.push_back(fsd->ImageAcquiredSemaphore);
+                }
+                else
+                {
+                    LOG("[!] Vulkan: overlay submit failed (%d)\n", overlaySubmitResult);
+                }
             }
         }
         else
@@ -669,7 +695,15 @@ static void RenderImGui_Vulkan(VkQueue queue, const VkPresentInfoKHR* pPresentIn
             info.signalSemaphoreCount = 1;
             info.pSignalSemaphores = &fsd->ImageAcquiredSemaphore;
 
-            vkQueueSubmit(graphicQueue, 1, &info, fd->Fence);
+            const VkResult overlaySubmitResult = vkQueueSubmit(graphicQueue, 1, &info, fd->Fence);
+            if (overlaySubmitResult == VK_SUCCESS)
+            {
+                presentWaitSemaphores.push_back(fsd->ImageAcquiredSemaphore);
+            }
+            else
+            {
+                LOG("[!] Vulkan: overlay submit failed (%d)\n", overlaySubmitResult);
+            }
         }
     }
 }
