@@ -98,16 +98,24 @@ bool CustomerQueue::EqualsIgnoreCase(const std::string_view left, const std::str
     if (left.size() != right.size())
         return false;
 
-    return std::equal(left.begin(), left.end(), right.begin(), [](const char a, const char b) {
-        return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b));
-    });
+    return std::equal(
+        left.begin(),
+        left.end(),
+        right.begin(),
+        [](const char a, const char b)
+        { return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b)); });
 }
 
 bool CustomerQueue::ContainsIgnoreCase(const std::string_view text, const std::string_view needle)
 {
-    return std::search(text.begin(), text.end(), needle.begin(), needle.end(), [](const char a, const char b) {
-               return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b));
-           }) != text.end();
+    return std::search(text.begin(),
+                       text.end(),
+                       needle.begin(),
+                       needle.end(),
+                       [](const char a, const char b) {
+                           return std::tolower(static_cast<unsigned char>(a)) ==
+                                  std::tolower(static_cast<unsigned char>(b));
+                       }) != text.end();
 }
 
 std::string CustomerQueue::Trim(std::string text)
@@ -120,10 +128,12 @@ std::string CustomerQueue::Trim(std::string text)
 
 Customer* CustomerQueue::Find(const std::string_view character)
 {
-    const auto findIn = [&](auto& customers) -> Customer* {
-        const auto found = std::find_if(customers.begin(), customers.end(), [&](const Customer& customer) {
-            return EqualsIgnoreCase(customer.Character, character);
-        });
+    const auto findIn = [&](auto& customers) -> Customer*
+    {
+        const auto found =
+            std::find_if(customers.begin(),
+                         customers.end(),
+                         [&](const Customer& customer) { return EqualsIgnoreCase(customer.Character, character); });
         return found == customers.end() ? nullptr : &*found;
     };
 

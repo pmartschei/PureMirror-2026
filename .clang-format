@@ -27,6 +27,13 @@ IncludeBlocks: Regroup
 
 NamespaceIndentation: All
 
+StatementMacros:
+  - TEST_METHOD
+  - TEST_METHOD_INITIALIZE
+  - TEST_METHOD_CLEANUP
+  - TEST_CLASS_INITIALIZE
+  - TEST_CLASS_CLEANUP
+
 SpacesBeforeTrailingComments: 2
 
 DerivePointerAlignment: false
