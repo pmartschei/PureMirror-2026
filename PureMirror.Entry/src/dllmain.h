@@ -1,0 +1,12 @@
+#pragma once
+
+#include <dxgi/signatures.h>
+
+HMODULE dll;
+HMODULE clientDLL;
+
+PFN_CreateDXGIFactory OriginalCreateDXGIFactory;
+PFN_CreateDXGIFactory1 OriginalCreateDXGIFactory1;
+PFN_CreateDXGIFactory2 OriginalCreateDXGIFactory2;
+PFN_DXGIDeclareAdapterRemovalSupport OriginalDXGIDeclareAdapterRemovalSupport;
+PFN_DXGIGetDebugInterface1 OriginalDXGIGetDebugInterface1;

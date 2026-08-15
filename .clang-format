@@ -25,6 +25,16 @@ AlignAfterOpenBracket: Align
 SortIncludes: true
 IncludeBlocks: Regroup
 
+IncludeCategories:
+  - Regex: '^"pch\.h"$'
+    Priority: -1
+
+  - Regex: '^".*"$'
+    Priority: 1
+
+  - Regex: '^<.*>$'
+    Priority: 2
+
 NamespaceIndentation: All
 
 StatementMacros:
