@@ -1,13 +1,8 @@
-// clang-format off
 #include "pch.h"
-// clang-format on
 
 #include "VulkanRenderer.h"
 
-#include <algorithm>
 #include <hooks/backend/vulkan/hook_vulkan.h>
-#include <ranges>
-#include <vector>
 
 VulkanRenderer::VulkanRenderer() {}
 

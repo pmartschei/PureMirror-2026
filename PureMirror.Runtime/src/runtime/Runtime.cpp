@@ -1,23 +1,17 @@
-// clang-format off
 #include "pch.h"
-// clang-format on
 
 #include "Runtime.h"
 
 #include "BackendDetector.h"
-#include "console/console.h"
-#include "external/imgui/imgui_impl_win32.h"
 #include "graphics/TextureManager.h"
 #include "graphics/dx12/DX12GpuUploader.h"
-#include "utils/utils.h"
 
-#include <array>
-#include <filesystem>
+#include <console/console.h>
+#include <external/imgui/imgui_impl_win32.h>
 #include <imgui.h>
 #include <include/OverlayApi.h>
 #include <include/Texture.h>
-#include <initializer_list>
-#include <optional>
+#include <utils/utils.h>
 
 namespace Runtime
 {

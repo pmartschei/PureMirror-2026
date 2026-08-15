@@ -1,9 +1,8 @@
-// clang-format off
 #include "pch.h"
-// clang-format on
 
 #include "backend.h"
-#include "console/console.h"
+
+#include <console/console.h>
 
 #ifdef ENABLE_BACKEND_DX12
 #include <d3d12.h>
@@ -12,14 +11,14 @@
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 
-#include "runtime/BackendDetector.h"
-#include "runtime/Runtime.h"
-#include "runtime/graphics/dx12/DX12Renderer.h"
 #include "external/imgui/imgui_impl_dx12.h"
 #include "external/imgui/imgui_impl_win32.h"
 #include "external/minhook/MinHook.h"
 #include "hook_directx12.h"
 #include "hooks/hooks.h"
+#include "runtime/BackendDetector.h"
+#include "runtime/Runtime.h"
+#include "runtime/graphics/dx12/DX12Renderer.h"
 #include "utils/utils.h"
 
 // Data

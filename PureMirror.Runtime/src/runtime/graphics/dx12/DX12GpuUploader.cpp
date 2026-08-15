@@ -1,6 +1,5 @@
-// clang-format off
 #include "pch.h"
-// clang-format on
+
 #include "DX12GpuUploader.h"
 
 DX12GpuUploader::DX12GpuUploader(ID3D12Device* device,

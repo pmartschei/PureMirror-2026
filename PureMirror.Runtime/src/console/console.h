@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdio>
 
 //#define DISABLE_LOGGING_CONSOLE
 
@@ -9,7 +8,8 @@
 #define LOG(...)
 #endif
 
-namespace Console {
-    void Alloc( );
-	void Free( );
-}
+namespace Console
+{
+    void Alloc();
+    void Free();
+}  // namespace Console

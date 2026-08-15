@@ -1,6 +1,4 @@
-// clang-format off
 #include "pch.h"
-// clang-format on
 
 #include "TextureManager.h"
 

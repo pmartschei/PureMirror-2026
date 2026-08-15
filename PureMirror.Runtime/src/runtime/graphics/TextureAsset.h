@@ -1,7 +1,5 @@
 #pragma once
-// clang-format off
 #include "pch.h"
-// clang-format on
 
 struct TextureAsset
 {

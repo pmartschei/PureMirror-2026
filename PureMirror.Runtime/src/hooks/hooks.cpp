@@ -1,6 +1,4 @@
-// clang-format off
 #include "pch.h"
-// clang-format on
 
 #include "hooks.h"
 
@@ -12,8 +10,8 @@
 #include "backend/vulkan/hook_vulkan.h"
 
 #include <console/console.h>
-#include <runtime/Runtime.h>
 #include <external/minhook/MinHook.h>
+#include <runtime/Runtime.h>
 #include <utils/utils.h>
 
 namespace Hooks

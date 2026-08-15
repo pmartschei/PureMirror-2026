@@ -1,12 +1,10 @@
 #pragma once
 
-// clang-format off
 #include "pch.h"
-// clang-format on
 
+#include "../TextureAsset.h"
 #include "DX12DescriptorAllocator.h"
 #include "DX12Texture.h"
-#include "runtime/graphics/TextureAsset.h"
 
 using Microsoft::WRL::ComPtr;
 

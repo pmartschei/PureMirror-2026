@@ -1,13 +1,12 @@
-// clang-format off
 #include "pch.h"
-// clang-format on
 
 #include "BackendDetector.h"
 
-#include "console/console.h"
 #include "Runtime.h"
-#include "hooks/backend/dx12/hook_directx12.h"
-#include "hooks/backend/vulkan/hook_vulkan.h"
+
+#include <console/console.h>
+#include <hooks/backend/dx12/hook_directx12.h>
+#include <hooks/backend/vulkan/hook_vulkan.h>
 
 void BackendDetector::Count(const std::shared_ptr<IRenderer>& renderer) noexcept
 {

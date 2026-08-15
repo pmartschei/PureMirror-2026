@@ -1,11 +1,9 @@
-// clang-format off
 #include "pch.h"
-// clang-format on
 
 #include "console/console.h"
-#include "runtime/BackendDetector.h"
 #include "external/minhook/MinHook.h"
 #include "hooks/hooks.h"
+#include "runtime/BackendDetector.h"
 #include "utils/utils.h"
 
 DWORD WINAPI OnProcessAttach(LPVOID lpParam);

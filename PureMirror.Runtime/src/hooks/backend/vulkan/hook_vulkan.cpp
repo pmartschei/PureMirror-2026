@@ -1,6 +1,4 @@
-// clang-format off
 #include "pch.h"
-// clang-format on
 
 #include "hook_vulkan.h"
 
@@ -14,13 +12,13 @@
 #include <vulkan/vulkan_win32.h>
 #pragma comment(lib, "vulkan-1.lib")
 
-#include <runtime/BackendDetector.h>
-#include <runtime/Runtime.h>
-#include <runtime/graphics/vulkan/VulkanRenderer.h>
 #include <external/imgui/imgui_impl_vulkan.h>
 #include <external/imgui/imgui_impl_win32.h>
 #include <external/minhook/MinHook.h>
 #include <hooks/hooks.h>
+#include <runtime/BackendDetector.h>
+#include <runtime/Runtime.h>
+#include <runtime/graphics/vulkan/VulkanRenderer.h>
 #include <utils/utils.h>
 
 static bool g_skipDestroy = false;

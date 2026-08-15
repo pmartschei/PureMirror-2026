@@ -1,11 +1,8 @@
-// clang-format off
 #include "pch.h"
-// clang-format on
 
 #include "VulkanGpuUploader.h"
 
 #include <external/imgui/imgui_impl_vulkan.h>
-#include <stdexcept>
 
 namespace
 {

@@ -1,11 +1,9 @@
 #pragma once
 
-// clang-format off
 #include "pch.h"
-// clang-format on
 
+#include "../TextureAsset.h"
 #include "VulkanTexture.h"
-#include "runtime/graphics/TextureAsset.h"
 
 #include <vulkan/vulkan.h>
 

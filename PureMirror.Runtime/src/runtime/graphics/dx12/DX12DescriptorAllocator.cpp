@@ -1,6 +1,5 @@
-// clang-format off
 #include "pch.h"
-// clang-format on
+
 #include "DX12DescriptorAllocator.h"
 
 DX12DescriptorAllocator::DX12DescriptorAllocator(ID3D12Device* device,

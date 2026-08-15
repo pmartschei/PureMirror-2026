@@ -169,11 +169,11 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="framework.h" />
+    <ClInclude Include="src\framework.h" />
     <ClInclude Include="include\OverlayApi.h" />
     <ClInclude Include="include\RendererApi.h" />
     <ClInclude Include="include\Texture.h" />
-    <ClInclude Include="pch.h" />
+    <ClInclude Include="src\pch.h" />
     <ClInclude Include="src\backend.h" />
     <ClInclude Include="src\console\console.h" />
     <ClInclude Include="src\runtime\graphics\dx12\DX12DescriptorAllocator.h" />
@@ -218,7 +218,7 @@
     <ClInclude Include="src\utils\utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="pch.cpp">
+    <ClCompile Include="src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
