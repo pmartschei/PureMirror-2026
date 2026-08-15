@@ -1,0 +1,5 @@
+#define PUREMIRROR_FILE_DESCRIPTION  "Entry for PureMirror Runtime, will be loaded by starting application"
+#define PUREMIRROR_INTERNAL_NAME     "PureMirror.Entry"
+#define PUREMIRROR_ORIGINAL_FILENAME "dxgi.dll"
+
+#include "../PureMirror.Version.rcinc"

@@ -1,0 +1,5 @@
+#define PUREMIRROR_FILE_DESCRIPTION  "Runtime for PureMirror, hooks renderers, loads textures"
+#define PUREMIRROR_INTERNAL_NAME     "PureMirror.Runtime"
+#define PUREMIRROR_ORIGINAL_FILENAME "PureMirror.Runtime.dll"
+
+#include "../PureMirror.Version.rcinc"

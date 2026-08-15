@@ -24,4 +24,7 @@ CMakeCache.txt
 *.dll
 *.exe
 
+*.aps
+
 !external/**/*.dll
+

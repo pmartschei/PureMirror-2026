@@ -1,0 +1,5 @@
+#define PUREMIRROR_FILE_DESCRIPTION  "PureMirror Overlay Tests"
+#define PUREMIRROR_INTERNAL_NAME     "PureMirror.Overlay.Tests"
+#define PUREMIRROR_ORIGINAL_FILENAME "PureMirror.Overlay.Tests.dll"
+
+#include "../PureMirror.Version.rcinc"

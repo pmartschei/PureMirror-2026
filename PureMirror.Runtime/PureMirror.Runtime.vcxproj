@@ -299,6 +299,9 @@
     <ClCompile Include="src\runtime\graphics\ImGuiDrawDataSnapshot.cpp" />
     <ClCompile Include="src\utils\utils.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="VersionInfo.rc" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

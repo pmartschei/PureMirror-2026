@@ -1,0 +1,5 @@
+#define PUREMIRROR_FILE_DESCRIPTION  "ImGui shared library for PureMirror"
+#define PUREMIRROR_INTERNAL_NAME     "PureMirror.Imgui"
+#define PUREMIRROR_ORIGINAL_FILENAME "PureMirror.Imgui.dll"
+
+#include "../PureMirror.Version.rcinc"

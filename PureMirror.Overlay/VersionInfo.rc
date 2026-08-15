@@ -1,0 +1,5 @@
+#define PUREMIRROR_FILE_DESCRIPTION  "Main overlay for PureMirror, will be loaded by the runtime"
+#define PUREMIRROR_INTERNAL_NAME     "PureMirror.Overlay"
+#define PUREMIRROR_ORIGINAL_FILENAME "PureMirror.Overlay.dll"
+
+#include "../PureMirror.Version.rcinc"
