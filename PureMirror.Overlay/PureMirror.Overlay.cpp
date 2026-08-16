@@ -1,6 +1,4 @@
-// clang-format off
 #include "pch.h"
-// clang-format on
 
 #include "PureMirror.Overlay.h"
 
@@ -8,11 +6,11 @@
 #include "CustomerQueue.h"
 #include "WindowInput.h"
 #include "imgui_extension.h"
+#include "src/core/CommandRegistry.h"
+#include "src/core/Logger.h"
+#include "src/ui/console/ConsoleWindow.h"
 
-#include <algorithm>
-#include <cstdio>
 #include <imgui.h>
-#include <utility>
 
 const RendererAPI* g_rendererAPI;
 
@@ -21,6 +19,10 @@ ClientListener g_ClientListener;
 CustomerQueue g_CustomerQueue;
 
 std::unique_ptr<PureMirror::WindowInput> g_WindowInput;
+
+PureMirror::Overlay::Logger g_Logger;
+PureMirror::Overlay::CommandRegistry g_ConsoleCommands;
+PureMirror::Overlay::ConsoleWindow g_ConsoleWindow(g_Logger, g_ConsoleCommands);
 
 Texture g_BtnErrorTexture;
 Texture g_BtnErrorPressedTexture;
@@ -219,10 +221,10 @@ namespace
 
     struct QueuePanelLayout
     {
-        ImVec2 Cursor;
-        float RowTop;
-        float ContentHeight;
-        float Height;
+        ImVec2 m_Cursor;
+        float m_RowTop;
+        float m_ContentHeight;
+        float m_Height;
     };
 
     float QueuePanelContentHeight()
@@ -249,20 +251,20 @@ namespace
 
         const auto rowTop = cursor.y + QueuePanelPadding;
         ImGui::SetCursorPos(ImVec2(cursor.x + QueuePanelPadding, rowTop));
-        return {.Cursor = cursor, .RowTop = rowTop, .ContentHeight = contentHeight, .Height = height};
+        return {.m_Cursor = cursor, .m_RowTop = rowTop, .m_ContentHeight = contentHeight, .m_Height = height};
     }
 
     void SetQueuePanelButtonRow(const QueuePanelLayout& panel, const float buttonsWidth)
     {
-        const auto verticalOffset = (panel.ContentHeight - QueuePanelButtonSize) * 0.5f;
-        ImGui::SetCursorPos(ImVec2(ImGui::GetContentRegionMax().x - buttonsWidth - QueuePanelPadding,
-                                  panel.RowTop + verticalOffset));
+        const auto verticalOffset = (panel.m_ContentHeight - QueuePanelButtonSize) * 0.5f;
+        ImGui::SetCursorPos(
+            ImVec2(ImGui::GetContentRegionMax().x - buttonsWidth - QueuePanelPadding, panel.m_RowTop + verticalOffset));
     }
 
     void EndQueuePanel(const QueuePanelLayout& panel)
     {
         ImGui::SetCursorPos(
-            ImVec2(panel.Cursor.x, panel.Cursor.y + panel.Height + ImGui::GetStyle().ItemSpacing.y));
+            ImVec2(panel.m_Cursor.x, panel.m_Cursor.y + panel.m_Height + ImGui::GetStyle().ItemSpacing.y));
     }
 
     float TextButtonWidth(const char* label)
@@ -344,7 +346,7 @@ namespace
                 ImGui::SameLine();
                 ImGui::TextDisabled("(waiting for yes)");
             }
-            ImGui::SetCursorPosX(panel.Cursor.x + QueuePanelPadding);
+            ImGui::SetCursorPosX(panel.m_Cursor.x + QueuePanelPadding);
             ImGui::TextDisabled("Position #%zu | waiting %s", index + 1, FormatWaitTime(customer).c_str());
             const auto safeName = IsSafeCharacterName(customer.Character);
             if (!safeName)
@@ -446,7 +448,7 @@ namespace
             const auto panel = BeginQueuePanel();
             RenderCustomerName(customer);
             const auto position = g_CustomerQueue.WaitingPosition(index);
-            ImGui::SetCursorPosX(panel.Cursor.x + QueuePanelPadding);
+            ImGui::SetCursorPosX(panel.m_Cursor.x + QueuePanelPadding);
             ImGui::TextDisabled("Position #%zu | waiting %s", position.value_or(0), FormatWaitTime(customer).c_str());
             const auto safeName = IsSafeCharacterName(customer.Character);
             if (!safeName)
@@ -561,7 +563,7 @@ namespace
             ImGui::PushID(static_cast<int>(index));
             const auto panel = BeginQueuePanel();
             RenderCustomerName(customer);
-            ImGui::SetCursorPosX(panel.Cursor.x + QueuePanelPadding);
+            ImGui::SetCursorPosX(panel.m_Cursor.x + QueuePanelPadding);
             ImGui::TextDisabled("waiting %s", FormatWaitTime(customer).c_str());
 
             const auto safeName = IsSafeCharacterName(customer.Character);
@@ -624,6 +626,29 @@ void Initialize(const RendererAPI* rendererAPI)
 {
     g_rendererAPI = rendererAPI;
     g_WindowInput = std::make_unique<PureMirror::WindowInput>(g_rendererAPI->GetWindow());
+
+    const auto clearRegistered = g_ConsoleCommands.Register({.m_Name = "clear",
+                                                             .m_Description = "Clears all console messages.",
+                                                             .m_Origin = "PureMirror.Overlay",
+                                                             .m_Handler = [](std::string_view)
+                                                             {
+                                                                 g_Logger.Clear();
+                                                                 return PureMirror::Overlay::CommandResult::Success();
+                                                             }});
+    const auto helpRegistered = g_ConsoleCommands.Register(
+        {.m_Name = "help",
+         .m_Description = "Lists all registered commands.",
+         .m_Origin = "PureMirror.Overlay",
+         .m_Handler = [](std::string_view)
+         {
+             std::string help = "Available commands:";
+             for (const auto& command : g_ConsoleCommands.Commands())
+                 help += "\n/" + command.m_Name + " - " + command.m_Description + " [" + command.m_Origin + ']';
+             return PureMirror::Overlay::CommandResult::Success(std::move(help));
+         }});
+    static_cast<void>(clearRegistered);
+    static_cast<void>(helpRegistered);
+    g_Logger.Info("PureMirror.Overlay", "Console initialized. Type /help for available commands.", "console.ready");
 }
 
 const char* GetImguiVersion()
@@ -686,7 +711,6 @@ LRESULT HandleInput(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void Render(const RenderContext* renderContext)
 {
-    ImGui::ShowDemoWindow();
     g_BtnErrorTexture = g_rendererAPI->LoadTexture("puremirror/btn_error.png");
     g_BtnErrorPressedTexture = g_rendererAPI->LoadTexture("puremirror/btn_error_pressed.png");
     g_BtnSuccessTexture = g_rendererAPI->LoadTexture("puremirror/btn_success.png");
@@ -704,6 +728,7 @@ void Render(const RenderContext* renderContext)
     RenderCustomers();
     RenderWaitingQueue();
     RenderInvitedCustomers();
+    g_ConsoleWindow.Render();
 
     PureMirror::ImGuiExtension::SetWindowsVoidInputPassthrough({ImGui::FindWindowByName("Customers"),
                                                                 ImGui::FindWindowByName("Waiting Queue"),
@@ -711,10 +736,10 @@ void Render(const RenderContext* renderContext)
 }
 
 static OverlayAPI g_OverlayAPI = MAKE_OVERLAY_API(.Initialize = Initialize,
-                                         .GetImguiVersion = GetImguiVersion,
-                                         .SetContext = SetContext,
-                                         .HandleInput = HandleInput,
-                                         .Render = Render);
+                                                  .GetImguiVersion = GetImguiVersion,
+                                                  .SetContext = SetContext,
+                                                  .HandleInput = HandleInput,
+                                                  .Render = Render);
 
 extern "C"
 {

@@ -64,8 +64,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CustomerQueueTests.cpp" />
+    <ClCompile Include="src\core\CommandRegistryTests.cpp" />
+    <ClCompile Include="src\core\LoggerTests.cpp" />
+    <ClCompile Include="..\PureMirror.Overlay\src\core\CommandRegistry.cpp">
+      <Link>Production\CommandRegistry.cpp</Link>
+    </ClCompile>
+    <ClCompile Include="..\PureMirror.Overlay\src\core\CommandResult.cpp">
+      <Link>Production\CommandResult.cpp</Link>
+    </ClCompile>
     <ClCompile Include="..\PureMirror.Overlay\CustomerQueue.cpp">
       <Link>Production\CustomerQueue.cpp</Link>
+    </ClCompile>
+    <ClCompile Include="..\PureMirror.Overlay\src\core\Logger.cpp">
+      <Link>Production\Logger.cpp</Link>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
