@@ -27,6 +27,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CustomerQueue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClInclude Include="framework.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -86,9 +89,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CustomerQueue.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="PureMirror.Overlay.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -107,6 +107,9 @@
     <ClCompile Include="src\external\imgui\imgui_impl_win32.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\console\ConsoleWindow.cpp">
+      <Filter>Source Files\UI\Console</Filter>
+    </ClCompile>
     <ClCompile Include="src\core\CommandRegistry.cpp">
       <Filter>Source Files\Core</Filter>
     </ClCompile>
@@ -115,9 +118,6 @@
     </ClCompile>
     <ClCompile Include="src\core\Logger.cpp">
       <Filter>Source Files\Core</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ui\console\ConsoleWindow.cpp">
-      <Filter>Source Files\UI\Console</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
