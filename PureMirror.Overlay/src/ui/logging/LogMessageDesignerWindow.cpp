@@ -50,7 +50,7 @@ namespace PureMirror::Overlay
         ImGui::Checkbox("Use custom color", &m_UseCustomColor);
         if (!m_UseCustomColor)
             ImGui::BeginDisabled();
-        ImGui::ColorEdit4("Color", &m_Color.m_Red, ImGuiColorEditFlags_AlphaBar);
+        ImGui::ColorEdit4("Color", &m_Color.Red, ImGuiColorEditFlags_AlphaBar);
         if (!m_UseCustomColor)
             ImGui::EndDisabled();
 
@@ -61,7 +61,7 @@ namespace PureMirror::Overlay
         const auto level = Levels[static_cast<std::size_t>(levelIndex)];
         const auto previewColor = m_UseCustomColor ? m_Color : Logger::DefaultColor(level);
         ImGui::TextUnformatted("Preview");
-        ImGui::TextColored(ImVec4(previewColor.m_Red, previewColor.m_Green, previewColor.m_Blue, previewColor.m_Alpha),
+        ImGui::TextColored(ImVec4(previewColor.Red, previewColor.Green, previewColor.Blue, previewColor.Alpha),
                            "[%s] [%s] %s",
                            Logger::LevelName(level),
                            m_Origin.data(),
@@ -109,14 +109,14 @@ namespace PureMirror::Overlay
     void LogMessageDesignerWindow::Send()
     {
         const auto messagesBefore = m_Logger.Snapshot();
-        const auto lastSequenceBefore = messagesBefore.empty() ? 0 : messagesBefore.back().m_Sequence;
+        const auto lastSequenceBefore = messagesBefore.empty() ? 0 : messagesBefore.back().Sequence;
         const auto levelIndex = std::clamp(m_LevelIndex, 0, static_cast<int>(Levels.size() - 1));
         const auto level = Levels[static_cast<std::size_t>(levelIndex)];
         const auto* color = m_UseCustomColor ? &m_Color : nullptr;
         m_Logger.Log(level, m_Origin.data(), m_Content.data(), m_MessageId.data(), color, m_OccurrenceLimit);
 
         const auto messagesAfter = m_Logger.Snapshot();
-        m_LastSendWasLogged = !messagesAfter.empty() && messagesAfter.back().m_Sequence != lastSequenceBefore;
+        m_LastSendWasLogged = !messagesAfter.empty() && messagesAfter.back().Sequence != lastSequenceBefore;
         m_HasSendResult = true;
     }
 }  // namespace PureMirror::Overlay

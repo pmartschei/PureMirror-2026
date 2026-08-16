@@ -12,9 +12,9 @@ namespace PureMirror::Overlay
 
     struct ConsoleCommand
     {
-        std::string m_Name;
-        std::string m_Description;
-        std::string m_Origin;
-        CommandHandler m_Handler;
+        std::string Name;
+        std::string Description;
+        std::string Origin;
+        CommandHandler Handler;
     };
 }  // namespace PureMirror::Overlay

@@ -4,9 +4,9 @@ namespace PureMirror::Overlay
 {
     struct LogColor
     {
-        float m_Red{1.0f};
-        float m_Green{1.0f};
-        float m_Blue{1.0f};
-        float m_Alpha{1.0f};
+        float Red{1.0f};
+        float Green{1.0f};
+        float Blue{1.0f};
+        float Alpha{1.0f};
     };
 }  // namespace PureMirror::Overlay

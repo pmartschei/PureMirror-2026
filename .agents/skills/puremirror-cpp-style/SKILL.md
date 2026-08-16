@@ -9,19 +9,28 @@ Apply these rules to every touched C++ file. Preserve the surrounding architectu
 
 ## Member variables
 
-- Name every non-static member variable with the `m_` prefix followed by PascalCase.
-- Apply the rule regardless of visibility.
+- Name public non-static member variables in PascalCase without a prefix.
+- Name private and protected non-static member variables with the `m_` prefix followed by PascalCase.
 
 ```cpp
+struct Result
+{
+    std::string Message;
+    bool IsSuccessful{};
+};
+
 class Example
 {
+  public:
+    std::string Name;
+
   private:
-    std::string m_Name;
     bool m_IsEnabled{};
 };
 ```
 
-Do not introduce suffix-style members such as `name_`, `logger_`, or `isEnabled_`.
+Do not prefix public members with `m_`. Do not introduce suffix-style members such as `name_`, `logger_`, or
+`isEnabled_`.
 
 ## Precompiled header
 
@@ -77,7 +86,8 @@ If the implementation file is at the project root, place its test at the test pr
 3. If `framework.h` exists, evaluate each header dependency for additional inclusion there.
 4. If `pch.h` exists, include it first in every touched `.cpp` file without clang-format guards; otherwise preserve the PCH-free project setup.
 5. Place every new class or struct in its own file where required.
-6. Rename touched member variables to the `m_PascalCase` form and update all references.
+6. Rename touched public member variables to `PascalCase` and private or protected member variables to
+   `m_PascalCase`, then update all references.
 7. Add or update tests in the matching `.Tests` project and mirrored relative folder.
 8. Run clang-format, build the affected project and its test project, and run relevant tests.
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string_view>
-#include <wtypes.h>
+#include <windows.h>
 
 namespace PureMirror
 {
@@ -28,6 +28,6 @@ namespace PureMirror
         static INPUT CreateCharacterInput(wchar_t character, bool released);
         [[nodiscard]] bool CanSend() const noexcept;
 
-        HWND m_window;
+        HWND m_Window;
     };
 }  // namespace PureMirror

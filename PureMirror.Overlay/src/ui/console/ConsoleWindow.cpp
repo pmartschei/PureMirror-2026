@@ -40,7 +40,7 @@ namespace PureMirror::Overlay
 
         ImVec4 ToImGuiColor(const LogColor& color)
         {
-            return {color.m_Red, color.m_Green, color.m_Blue, color.m_Alpha};
+            return {color.Red, color.Green, color.Blue, color.Alpha};
         }
     }  // namespace
 
@@ -73,8 +73,8 @@ namespace PureMirror::Overlay
             {
                 if (!PassesFilter(message))
                     continue;
-                clipboard += '[' + FormatTimestamp(message.m_Timestamp) + "] [" + Logger::LevelName(message.m_Level) +
-                             "] [" + message.m_Origin + "] " + message.m_Content + '\n';
+                clipboard += '[' + FormatTimestamp(message.Timestamp) + "] [" + Logger::LevelName(message.Level) +
+                             "] [" + message.Origin + "] " + message.Content + '\n';
             }
             ImGui::SetClipboardText(clipboard.c_str());
         }
@@ -103,9 +103,9 @@ namespace PureMirror::Overlay
         }
 
         const auto messages = m_Logger.Snapshot();
-        if (!messages.empty() && messages.back().m_Sequence != m_LastSequence)
+        if (!messages.empty() && messages.back().Sequence != m_LastSequence)
         {
-            m_LastSequence = messages.back().m_Sequence;
+            m_LastSequence = messages.back().Sequence;
             if (m_AutoScroll)
                 m_ScrollToBottom = true;
         }
@@ -128,20 +128,20 @@ namespace PureMirror::Overlay
                 if (!PassesFilter(message))
                     continue;
 
-                const auto color = ToImGuiColor(message.m_Color);
-                ImGui::PushID(static_cast<int>(message.m_Sequence));
+                const auto color = ToImGuiColor(message.Color);
+                ImGui::PushID(static_cast<int>(message.Sequence));
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextDisabled("%s", FormatTimestamp(message.m_Timestamp).c_str());
+                ImGui::TextDisabled("%s", FormatTimestamp(message.Timestamp).c_str());
                 ImGui::TableSetColumnIndex(1);
-                ImGui::TextColored(color, "%s", Logger::LevelName(message.m_Level));
+                ImGui::TextColored(color, "%s", Logger::LevelName(message.Level));
                 ImGui::TableSetColumnIndex(2);
-                ImGui::TextUnformatted(message.m_Origin.c_str());
+                ImGui::TextUnformatted(message.Origin.c_str());
                 ImGui::TableSetColumnIndex(3);
-                ImGui::TextColored(color, "%s", message.m_Content.c_str());
-                if (ImGui::IsItemHovered() && !message.m_MessageId.empty())
+                ImGui::TextColored(color, "%s", message.Content.c_str());
+                if (ImGui::IsItemHovered() && !message.MessageId.empty())
                     ImGui::SetTooltip(
-                        "Message ID: %s\nOccurrence limit: %u", message.m_MessageId.c_str(), message.m_OccurrenceLimit);
+                        "Message ID: %s\nOccurrence limit: %u", message.MessageId.c_str(), message.OccurrenceLimit);
                 ImGui::PopID();
             }
 
@@ -180,15 +180,15 @@ namespace PureMirror::Overlay
 
     bool ConsoleWindow::PassesFilter(const LogMessage& message) const
     {
-        const auto levelIndex = static_cast<std::size_t>(message.m_Level);
+        const auto levelIndex = static_cast<std::size_t>(message.Level);
         if (levelIndex >= m_EnabledLevels.size() || !m_EnabledLevels[levelIndex])
             return false;
 
         const std::string_view textFilter(m_TextFilter.data());
         const std::string_view originFilter(m_OriginFilter.data());
-        return ContainsIgnoringCase(message.m_Origin, originFilter) &&
-               (ContainsIgnoringCase(message.m_Content, textFilter) ||
-                ContainsIgnoringCase(message.m_MessageId, textFilter));
+        return ContainsIgnoringCase(message.Origin, originFilter) &&
+               (ContainsIgnoringCase(message.Content, textFilter) ||
+                ContainsIgnoringCase(message.MessageId, textFilter));
     }
 
     void ConsoleWindow::ExecuteInput()
@@ -200,12 +200,12 @@ namespace PureMirror::Overlay
 
         m_Logger.Debug("PureMirror.Console", "> " + input, "console.command.input");
         const auto result = m_Commands.Execute(input);
-        if (!result.m_Message.empty())
+        if (!result.Message.empty())
         {
-            if (result.m_Status == CommandStatus::Executed)
-                m_Logger.Info("PureMirror.Console", result.m_Message, "console.command.result");
+            if (result.Status == CommandStatus::Executed)
+                m_Logger.Info("PureMirror.Console", result.Message, "console.command.result");
             else
-                m_Logger.Error("PureMirror.Console", result.m_Message, "console.command.error");
+                m_Logger.Error("PureMirror.Console", result.Message, "console.command.error");
         }
         m_ScrollToBottom = true;
     }

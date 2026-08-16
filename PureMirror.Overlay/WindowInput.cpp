@@ -1,6 +1,4 @@
-// clang-format off
 #include "pch.h"
-// clang-format on
 
 #include "WindowInput.h"
 
@@ -10,21 +8,21 @@
 
 namespace PureMirror
 {
-    WindowInput::WindowInput(const HWND window) noexcept : m_window(window) {}
+    WindowInput::WindowInput(const HWND window) noexcept : m_Window(window) {}
 
     void WindowInput::SetWindow(const HWND window) noexcept
     {
-        m_window = window;
+        m_Window = window;
     }
 
     HWND WindowInput::GetWindow() const noexcept
     {
-        return m_window;
+        return m_Window;
     }
 
     bool WindowInput::IsAvailable() const noexcept
     {
-        return m_window != nullptr && IsWindow(m_window);
+        return m_Window != nullptr && IsWindow(m_Window);
     }
 
     bool WindowInput::IsForeground() const noexcept
@@ -33,7 +31,7 @@ namespace PureMirror
             return false;
 
         const auto foreground = GetForegroundWindow();
-        return foreground == m_window || GetAncestor(foreground, GA_ROOT) == m_window;
+        return foreground == m_Window || GetAncestor(foreground, GA_ROOT) == m_Window;
     }
 
     bool WindowInput::SendKey(const UINT virtualKey) const

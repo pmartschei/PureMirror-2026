@@ -18,12 +18,12 @@ namespace PureMirror::Overlay
 
     bool CommandRegistry::Register(ConsoleCommand command)
     {
-        command.m_Name = NormalizeName(command.m_Name);
-        if (command.m_Name.empty() || !command.m_Handler || command.m_Origin.empty())
+        command.Name = NormalizeName(command.Name);
+        if (command.Name.empty() || !command.Handler || command.Origin.empty())
             return false;
 
         std::scoped_lock lock(m_Mutex);
-        const auto name = command.m_Name;
+        const auto name = command.Name;
         return m_Commands.emplace(name, std::move(command)).second;
     }
 
@@ -32,7 +32,7 @@ namespace PureMirror::Overlay
         const auto normalized = NormalizeName(name);
         std::scoped_lock lock(m_Mutex);
         const auto command = m_Commands.find(normalized);
-        if (command == m_Commands.end() || command->second.m_Origin != origin)
+        if (command == m_Commands.end() || command->second.Origin != origin)
             return false;
         m_Commands.erase(command);
         return true;
@@ -42,7 +42,7 @@ namespace PureMirror::Overlay
     {
         auto remaining = Trim(input);
         if (remaining.empty() || remaining.front() != '/')
-            return {.m_Status = CommandStatus::NotACommand, .m_Message = "Commands start with '/'."};
+            return {.Status = CommandStatus::NotACommand, .Message = "Commands start with '/'."};
 
         remaining.remove_prefix(1);
         const auto separator = remaining.find_first_of(" \t\r\n");
@@ -55,8 +55,8 @@ namespace PureMirror::Overlay
             std::scoped_lock lock(m_Mutex);
             const auto command = m_Commands.find(name);
             if (command == m_Commands.end())
-                return {.m_Status = CommandStatus::UnknownCommand, .m_Message = "Unknown command: /" + name};
-            handler = command->second.m_Handler;
+                return {.Status = CommandStatus::UnknownCommand, .Message = "Unknown command: /" + name};
+            handler = command->second.Handler;
         }
 
         try
@@ -79,8 +79,8 @@ namespace PureMirror::Overlay
         std::vector<CommandDescriptor> result;
         result.reserve(m_Commands.size());
         for (const auto& [name, command] : m_Commands)
-            result.push_back({.m_Name = name, .m_Description = command.m_Description, .m_Origin = command.m_Origin});
-        std::ranges::sort(result, {}, &CommandDescriptor::m_Name);
+            result.push_back({.Name = name, .Description = command.Description, .Origin = command.Origin});
+        std::ranges::sort(result, {}, &CommandDescriptor::Name);
         return result;
     }
 

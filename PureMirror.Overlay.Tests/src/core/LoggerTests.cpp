@@ -20,13 +20,13 @@ namespace PureMirror::Overlay::Tests
 
             const auto messages = logger.Snapshot();
             Assert::AreEqual(std::size_t{1}, messages.size());
-            Assert::AreEqual(std::string{"example.plugin"}, messages[0].m_Origin);
-            Assert::AreEqual(std::string{"Something happened"}, messages[0].m_Content);
-            Assert::AreEqual(std::string{"plugin.warning"}, messages[0].m_MessageId);
-            Assert::AreEqual(std::uint32_t{10}, messages[0].m_OccurrenceLimit);
-            Assert::IsTrue(messages[0].m_Level == LogLevel::Warning);
-            Assert::AreEqual(0.1f, messages[0].m_Color.m_Red);
-            Assert::IsTrue(messages[0].m_Timestamp.time_since_epoch().count() > 0);
+            Assert::AreEqual(std::string{"example.plugin"}, messages[0].Origin);
+            Assert::AreEqual(std::string{"Something happened"}, messages[0].Content);
+            Assert::AreEqual(std::string{"plugin.warning"}, messages[0].MessageId);
+            Assert::AreEqual(std::uint32_t{10}, messages[0].OccurrenceLimit);
+            Assert::IsTrue(messages[0].Level == LogLevel::Warning);
+            Assert::AreEqual(0.1f, messages[0].Color.Red);
+            Assert::IsTrue(messages[0].Timestamp.time_since_epoch().count() > 0);
         }
 
         TEST_METHOD(Log_AppendsOccurrencesWithoutChangingHistory)
@@ -37,10 +37,10 @@ namespace PureMirror::Overlay::Tests
 
             const auto messages = logger.Snapshot();
             Assert::AreEqual(std::size_t{2}, messages.size());
-            Assert::AreEqual(std::string{"first occurrence"}, messages[0].m_Content);
-            Assert::IsTrue(messages[0].m_Level == LogLevel::Info);
-            Assert::AreEqual(std::string{"latest occurrence"}, messages[1].m_Content);
-            Assert::IsTrue(messages[1].m_Level == LogLevel::Warning);
+            Assert::AreEqual(std::string{"first occurrence"}, messages[0].Content);
+            Assert::IsTrue(messages[0].Level == LogLevel::Info);
+            Assert::AreEqual(std::string{"latest occurrence"}, messages[1].Content);
+            Assert::IsTrue(messages[1].Level == LogLevel::Warning);
         }
 
         TEST_METHOD(Log_StopsAppendingMessageAfterItsOccurrenceLimit)
@@ -52,9 +52,9 @@ namespace PureMirror::Overlay::Tests
 
             const auto messages = logger.Snapshot();
             Assert::AreEqual(std::size_t{2}, messages.size());
-            Assert::AreEqual(std::string{"first"}, messages[0].m_Content);
-            Assert::AreEqual(std::string{"second"}, messages[1].m_Content);
-            Assert::AreEqual(std::uint32_t{2}, messages[0].m_OccurrenceLimit);
+            Assert::AreEqual(std::string{"first"}, messages[0].Content);
+            Assert::AreEqual(std::string{"second"}, messages[1].Content);
+            Assert::AreEqual(std::uint32_t{2}, messages[0].OccurrenceLimit);
         }
 
         TEST_METHOD(Log_UsesDefaultOccurrenceLimitOfTen)
@@ -76,10 +76,10 @@ namespace PureMirror::Overlay::Tests
             const auto messages = logger.Snapshot();
 
             Assert::AreEqual(std::size_t{2}, messages.size());
-            Assert::AreEqual(std::string{"second"}, messages[0].m_Content);
-            Assert::AreEqual(std::string{"third"}, messages[1].m_Content);
-            Assert::IsFalse(messages[0].m_MessageId.empty());
-            Assert::IsTrue(messages[0].m_Sequence < messages[1].m_Sequence);
+            Assert::AreEqual(std::string{"second"}, messages[0].Content);
+            Assert::AreEqual(std::string{"third"}, messages[1].Content);
+            Assert::IsFalse(messages[0].MessageId.empty());
+            Assert::IsTrue(messages[0].Sequence < messages[1].Sequence);
         }
 
         TEST_METHOD(Clear_RemovesAllMessages)

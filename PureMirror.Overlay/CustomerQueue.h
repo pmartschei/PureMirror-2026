@@ -1,29 +1,13 @@
 #pragma once
 
-#include "ClientListener.h"
+#include "ClientMessage.h"
+#include "Customer.h"
 
-#include <chrono>
 #include <cstddef>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
-
-enum class CustomerState
-{
-    Customer,
-    Waiting,
-    Invited
-};
-
-struct Customer
-{
-    std::string Character;
-    std::vector<std::string> Messages;
-    CustomerState State{CustomerState::Customer};
-    bool WaitingOffered{false};
-    std::chrono::steady_clock::time_point QueuedAt{std::chrono::steady_clock::now()};
-};
 
 class CustomerQueue final
 {
@@ -49,6 +33,6 @@ class CustomerQueue final
     Customer* Find(std::string_view character);
     void MoveToWaiting(std::size_t customerIndex, CustomerState state);
 
-    std::vector<Customer> m_customers;
-    std::vector<Customer> m_waiting;
+    std::vector<Customer> m_Customers;
+    std::vector<Customer> m_Waiting;
 };

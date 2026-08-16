@@ -13,26 +13,26 @@ namespace PureMirror::Overlay
                      const LogColor* color,
                      const std::uint32_t occurrenceLimit)
     {
-        LogMessage message{.m_MessageId = std::string(messageId),
-                           .m_Timestamp = std::chrono::system_clock::now(),
-                           .m_Content = std::string(content),
-                           .m_Level = level,
-                           .m_Color = color ? *color : DefaultColor(level),
-                           .m_Origin = origin.empty() ? "PureMirror" : std::string(origin),
-                           .m_OccurrenceLimit = occurrenceLimit};
+        LogMessage message{.MessageId = std::string(messageId),
+                           .Timestamp = std::chrono::system_clock::now(),
+                           .Content = std::string(content),
+                           .Level = level,
+                           .Color = color ? *color : DefaultColor(level),
+                           .Origin = origin.empty() ? "PureMirror" : std::string(origin),
+                           .OccurrenceLimit = occurrenceLimit};
 
         std::scoped_lock lock(m_Mutex);
-        if (!message.m_MessageId.empty())
+        if (!message.MessageId.empty())
         {
-            auto& occurrenceCount = m_OccurrenceCounts[message.m_MessageId];
-            if (occurrenceCount >= message.m_OccurrenceLimit)
+            auto& occurrenceCount = m_OccurrenceCounts[message.MessageId];
+            if (occurrenceCount >= message.OccurrenceLimit)
                 return;
             ++occurrenceCount;
         }
 
-        message.m_Sequence = m_NextSequence++;
-        if (message.m_MessageId.empty())
-            message.m_MessageId = "log." + std::to_string(message.m_Sequence);
+        message.Sequence = m_NextSequence++;
+        if (message.MessageId.empty())
+            message.MessageId = "log." + std::to_string(message.Sequence);
 
         if (m_Messages.size() == m_Capacity)
             m_Messages.pop_front();

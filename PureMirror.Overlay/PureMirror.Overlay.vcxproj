@@ -124,7 +124,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)PureMirror.Imgui\include;$(SolutionDir)PureMirror.Runtime\include;$(SolutionDir)PureMirror.Runtime\src\external\imgui</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)PureMirror.Imgui\include;$(SolutionDir)PureMirror.Runtime\include;$(SolutionDir)PureMirror.Runtime\src\external\imgui;$(ProjectDir);$(ProjectDir)src</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
@@ -148,7 +148,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)PureMirror.Imgui\include;$(SolutionDir)PureMirror.Runtime\include;$(SolutionDir)PureMirror.Runtime\src\external\imgui</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)PureMirror.Imgui\include;$(SolutionDir)PureMirror.Runtime\include;$(SolutionDir)PureMirror.Runtime\src\external\imgui;$(ProjectDir);$(ProjectDir)src</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
@@ -165,11 +165,17 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ClientMessage.h" />
     <ClInclude Include="ClientListener.h" />
+    <ClInclude Include="Customer.h" />
     <ClInclude Include="CustomerQueue.h" />
-    <ClInclude Include="framework.h" />
+    <ClInclude Include="CustomerState.h" />
+    <ClInclude Include="src\framework.h" />
     <ClInclude Include="imgui_extension.h" />
     <ClInclude Include="LogFileListener.h" />
+    <ClInclude Include="LogFileListenerOptions.h" />
+    <ClInclude Include="LogFileStartPosition.h" />
+    <ClInclude Include="LogFileSubscription.h" />
     <ClInclude Include="src\core\CommandDescriptor.h" />
     <ClInclude Include="src\core\CommandRegistry.h" />
     <ClInclude Include="src\core\CommandResult.h" />
@@ -182,11 +188,12 @@
     <ClInclude Include="src\ui\console\ConsoleWindow.h" />
     <ClInclude Include="src\ui\logging\LogMessageDesignerWindow.h" />
     <ClInclude Include="WindowInput.h" />
-    <ClInclude Include="pch.h" />
+    <ClInclude Include="src\pch.h" />
     <ClInclude Include="PureMirror.Overlay.h" />
     <ClInclude Include="src\external\imgui\imgui_impl_win32.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ClientListener.cpp" />
     <ClCompile Include="CustomerQueue.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="LogFileListener.cpp" />
@@ -196,7 +203,7 @@
     <ClCompile Include="src\ui\console\ConsoleWindow.cpp" />
     <ClCompile Include="src\ui\logging\LogMessageDesignerWindow.cpp" />
     <ClCompile Include="WindowInput.cpp" />
-    <ClCompile Include="pch.cpp">
+    <ClCompile Include="src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

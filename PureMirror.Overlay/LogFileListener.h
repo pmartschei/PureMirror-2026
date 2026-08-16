@@ -1,28 +1,28 @@
 #pragma once
 
-// clang-format off
-#include "pch.h"
-// clang-format on
+#include "LogFileListenerOptions.h"
+#include "LogFileSubscription.h"
+
+#include <atomic>
+#include <condition_variable>
+#include <cstdint>
+#include <filesystem>
+#include <functional>
+#include <mutex>
+#include <regex>
+#include <string>
+#include <thread>
+#include <unordered_map>
 
 namespace PureMirror
 {
     class LogFileListener final
     {
       public:
-        enum class StartPosition
-        {
-            End,
-            Beginning
-        };
-
-        struct Options
-        {
-            std::chrono::milliseconds PollInterval{100};
-            StartPosition InitialPosition{StartPosition::End};
-        };
-
+        using StartPosition = LogFileStartPosition;
+        using Options = LogFileListenerOptions;
         using SubscriptionId = std::uint64_t;
-        using MatchCallback = std::function<void(const std::string& line, const std::smatch& match)>;
+        using MatchCallback = LogFileMatchCallback;
         using ErrorCallback = std::function<void(const std::string& message)>;
 
         explicit LogFileListener(std::filesystem::path path);
@@ -45,27 +45,21 @@ namespace PureMirror
         [[nodiscard]] bool IsRunning() const noexcept;
 
       private:
-        struct Subscription
-        {
-            std::regex Pattern;
-            MatchCallback Callback;
-        };
-
         void Run();
         void Dispatch(const std::string& line);
         void ReportError(const std::string& message);
         bool WaitForNextPoll();
 
-        std::filesystem::path m_path;
-        Options m_options;
-        std::atomic_bool m_running{false};
-        std::thread m_worker;
-        std::mutex m_waitMutex;
-        std::condition_variable m_waitCondition;
+        std::filesystem::path m_Path;
+        Options m_Options;
+        std::atomic_bool m_Running{};
+        std::thread m_Worker;
+        std::mutex m_WaitMutex;
+        std::condition_variable m_WaitCondition;
 
-        std::mutex m_subscriptionsMutex;
-        std::unordered_map<SubscriptionId, Subscription> m_subscriptions;
-        SubscriptionId m_nextSubscriptionId{1};
-        ErrorCallback m_errorCallback;
+        std::mutex m_SubscriptionsMutex;
+        std::unordered_map<SubscriptionId, LogFileSubscription> m_Subscriptions;
+        SubscriptionId m_NextSubscriptionId{1};
+        ErrorCallback m_ErrorCallback;
     };
 }  // namespace PureMirror

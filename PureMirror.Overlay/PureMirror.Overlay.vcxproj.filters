@@ -16,27 +16,15 @@
     <Filter Include="Header Files\Core">
       <UniqueIdentifier>{F97B2F90-CED3-40D0-A235-B8A888D7D76B}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\UI\Console">
-      <UniqueIdentifier>{BB76BB8C-C895-40E9-86CA-FD0C0B2E3620}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Core">
       <UniqueIdentifier>{F732BDB2-F78F-4117-B9FB-A64C197EED80}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\UI\Console">
-      <UniqueIdentifier>{D8196228-2256-499B-998B-E06940366BDA}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\UI\Debug">
-      <UniqueIdentifier>{8233CFB1-994E-4BC3-B7B7-F975EB56F833}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\UI\Debug">
-      <UniqueIdentifier>{10EC131A-91E2-4B98-9DA5-E95001D31939}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CustomerQueue.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClInclude Include="framework.h">
+    <ClInclude Include="src\framework.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="LogFileListener.h">
@@ -48,7 +36,7 @@
     <ClInclude Include="PureMirror.Overlay.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pch.h">
+    <ClInclude Include="src\pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\external\imgui\imgui_impl_win32.h">
@@ -57,7 +45,25 @@
     <ClInclude Include="ClientListener.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ClientMessage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Customer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="CustomerQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CustomerState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LogFileListenerOptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LogFileStartPosition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LogFileSubscription.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="imgui_extension.h">
@@ -90,14 +96,17 @@
     <ClInclude Include="src\core\Logger.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\console\ConsoleWindow.h">
-      <Filter>Header Files\UI\Console</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ui\logging\LogMessageDesignerWindow.h">
-      <Filter>Header Files\UI\Debug</Filter>
-    </ClInclude>
+    <ClCompile Include="src\ui\console\ConsoleWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\logging\LogMessageDesignerWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ClientListener.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="PureMirror.Overlay.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -110,17 +119,11 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="pch.cpp">
+    <ClCompile Include="src\pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\external\imgui\imgui_impl_win32.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ui\console\ConsoleWindow.cpp">
-      <Filter>Source Files\UI\Console</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ui\logging\LogMessageDesignerWindow.cpp">
-      <Filter>Source Files\UI\Debug</Filter>
     </ClCompile>
     <ClCompile Include="src\core\CommandRegistry.cpp">
       <Filter>Source Files\Core</Filter>
@@ -136,5 +139,13 @@
     <ResourceCompile Include="VersionInfo.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\ui\console\ConsoleWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\logging\LogMessageDesignerWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

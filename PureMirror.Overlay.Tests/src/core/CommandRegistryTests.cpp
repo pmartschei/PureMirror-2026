@@ -15,10 +15,10 @@ namespace PureMirror::Overlay::Tests
         {
             CommandRegistry registry;
             std::string receivedArguments;
-            const auto registered = registry.Register({.m_Name = "/Echo",
-                                                       .m_Description = "Echoes text.",
-                                                       .m_Origin = "example.plugin",
-                                                       .m_Handler = [&](const std::string_view arguments)
+            const auto registered = registry.Register({.Name = "/Echo",
+                                                       .Description = "Echoes text.",
+                                                       .Origin = "example.plugin",
+                                                       .Handler = [&](const std::string_view arguments)
                                                        {
                                                            receivedArguments = arguments;
                                                            return CommandResult::Success(std::string(arguments));
@@ -27,9 +27,9 @@ namespace PureMirror::Overlay::Tests
             const auto result = registry.Execute("  /ECHO hello world  ");
 
             Assert::IsTrue(registered);
-            Assert::IsTrue(result.m_Status == CommandStatus::Executed);
+            Assert::IsTrue(result.Status == CommandStatus::Executed);
             Assert::AreEqual(std::string{"hello world"}, receivedArguments);
-            Assert::AreEqual(std::string{"hello world"}, result.m_Message);
+            Assert::AreEqual(std::string{"hello world"}, result.Message);
         }
 
         TEST_METHOD(Register_RejectsDuplicateCommand)
@@ -53,7 +53,7 @@ namespace PureMirror::Overlay::Tests
             Assert::IsTrue(registered);
             Assert::IsFalse(registry.Unregister("test", "another-plugin"));
             Assert::IsTrue(registry.Unregister("test", "owner"));
-            Assert::IsTrue(registry.Execute("/test").m_Status == CommandStatus::UnknownCommand);
+            Assert::IsTrue(registry.Execute("/test").Status == CommandStatus::UnknownCommand);
         }
     };
 }  // namespace PureMirror::Overlay::Tests

@@ -1,6 +1,4 @@
-// clang-format off
 #include "pch.h"
-// clang-format on
 
 #include "CustomerQueue.h"
 
@@ -21,7 +19,7 @@ void CustomerQueue::Process(ClientMessage message)
         if (customer->State == CustomerState::Customer && customer->WaitingOffered &&
             EqualsIgnoreCase(message.Text, "yes"))
         {
-            const auto index = static_cast<std::size_t>(customer - m_customers.data());
+            const auto index = static_cast<std::size_t>(customer - m_Customers.data());
             MoveToWaiting(index, CustomerState::Waiting);
         }
         return;
@@ -29,7 +27,7 @@ void CustomerQueue::Process(ClientMessage message)
 
     if (ContainsIgnoreCase(message.Text, "Need uber elder"))
     {
-        m_customers.push_back({.Character = std::move(message.Character),
+        m_Customers.push_back({.Character = std::move(message.Character),
                                .Messages = {std::move(message.Text)},
                                .State = CustomerState::Customer});
     }
@@ -37,18 +35,18 @@ void CustomerQueue::Process(ClientMessage message)
 
 std::vector<Customer>& CustomerQueue::Customers() noexcept
 {
-    return m_customers;
+    return m_Customers;
 }
 
 std::vector<Customer>& CustomerQueue::Waiting() noexcept
 {
-    return m_waiting;
+    return m_Waiting;
 }
 
 void CustomerQueue::MarkWaitingOffered(const std::size_t customerIndex)
 {
-    if (customerIndex < m_customers.size())
-        m_customers[customerIndex].WaitingOffered = true;
+    if (customerIndex < m_Customers.size())
+        m_Customers[customerIndex].WaitingOffered = true;
 }
 
 void CustomerQueue::InviteCustomer(const std::size_t customerIndex)
@@ -58,36 +56,36 @@ void CustomerQueue::InviteCustomer(const std::size_t customerIndex)
 
 void CustomerQueue::InviteWaiting(const std::size_t waitingIndex)
 {
-    if (waitingIndex < m_waiting.size())
-        m_waiting[waitingIndex].State = CustomerState::Invited;
+    if (waitingIndex < m_Waiting.size())
+        m_Waiting[waitingIndex].State = CustomerState::Invited;
 }
 
 void CustomerQueue::RemoveCustomer(const std::size_t customerIndex)
 {
-    if (customerIndex < m_customers.size())
-        m_customers.erase(m_customers.begin() + static_cast<std::ptrdiff_t>(customerIndex));
+    if (customerIndex < m_Customers.size())
+        m_Customers.erase(m_Customers.begin() + static_cast<std::ptrdiff_t>(customerIndex));
 }
 
 void CustomerQueue::RemoveWaiting(const std::size_t waitingIndex)
 {
-    if (waitingIndex < m_waiting.size())
-        m_waiting.erase(m_waiting.begin() + static_cast<std::ptrdiff_t>(waitingIndex));
+    if (waitingIndex < m_Waiting.size())
+        m_Waiting.erase(m_Waiting.begin() + static_cast<std::ptrdiff_t>(waitingIndex));
 }
 
 void CustomerQueue::ClearCustomers() noexcept
 {
-    m_customers.clear();
+    m_Customers.clear();
 }
 
 std::optional<std::size_t> CustomerQueue::WaitingPosition(const std::size_t waitingIndex) const
 {
-    if (waitingIndex >= m_waiting.size() || m_waiting[waitingIndex].State == CustomerState::Invited)
+    if (waitingIndex >= m_Waiting.size() || m_Waiting[waitingIndex].State == CustomerState::Invited)
         return std::nullopt;
 
     std::size_t position = 0;
     for (std::size_t index = 0; index <= waitingIndex; ++index)
     {
-        if (m_waiting[index].State != CustomerState::Invited)
+        if (m_Waiting[index].State != CustomerState::Invited)
             ++position;
     }
     return position;
@@ -137,19 +135,19 @@ Customer* CustomerQueue::Find(const std::string_view character)
         return found == customers.end() ? nullptr : &*found;
     };
 
-    if (auto* customer = findIn(m_customers))
+    if (auto* customer = findIn(m_Customers))
         return customer;
-    return findIn(m_waiting);
+    return findIn(m_Waiting);
 }
 
 void CustomerQueue::MoveToWaiting(const std::size_t customerIndex, const CustomerState state)
 {
-    if (customerIndex >= m_customers.size())
+    if (customerIndex >= m_Customers.size())
         return;
 
-    auto customer = std::move(m_customers[customerIndex]);
+    auto customer = std::move(m_Customers[customerIndex]);
     customer.State = state;
     customer.WaitingOffered = false;
-    m_customers.erase(m_customers.begin() + static_cast<std::ptrdiff_t>(customerIndex));
-    m_waiting.push_back(std::move(customer));
+    m_Customers.erase(m_Customers.begin() + static_cast<std::ptrdiff_t>(customerIndex));
+    m_Waiting.push_back(std::move(customer));
 }

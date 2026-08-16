@@ -1,3 +1,5 @@
+#pragma once
+
 #ifdef PUREMIRROROVERLAY_EXPORTS
 #define PUREMIRROROVERLAY_API __declspec(dllexport)
 #else
