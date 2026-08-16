@@ -25,6 +25,12 @@
     <Filter Include="Source Files\UI\Console">
       <UniqueIdentifier>{D8196228-2256-499B-998B-E06940366BDA}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\UI\Debug">
+      <UniqueIdentifier>{8233CFB1-994E-4BC3-B7B7-F975EB56F833}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\UI\Debug">
+      <UniqueIdentifier>{10EC131A-91E2-4B98-9DA5-E95001D31939}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CustomerQueue.cpp">
@@ -87,6 +93,9 @@
     <ClInclude Include="src\ui\console\ConsoleWindow.h">
       <Filter>Header Files\UI\Console</Filter>
     </ClInclude>
+    <ClInclude Include="src\ui\logging\LogMessageDesignerWindow.h">
+      <Filter>Header Files\UI\Debug</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PureMirror.Overlay.cpp">
@@ -109,6 +118,9 @@
     </ClCompile>
     <ClCompile Include="src\ui\console\ConsoleWindow.cpp">
       <Filter>Source Files\UI\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\logging\LogMessageDesignerWindow.cpp">
+      <Filter>Source Files\UI\Debug</Filter>
     </ClCompile>
     <ClCompile Include="src\core\CommandRegistry.cpp">
       <Filter>Source Files\Core</Filter>

@@ -3,6 +3,7 @@
 #include "../../core/CommandRegistry.h"
 #include "../../core/LogMessage.h"
 #include "../../core/Logger.h"
+#include "../logging/LogMessageDesignerWindow.h"
 
 #include <array>
 #include <cstdint>
@@ -24,6 +25,7 @@ namespace PureMirror::Overlay
 
         Logger& m_Logger;
         CommandRegistry& m_Commands;
+        LogMessageDesignerWindow m_MessageDesigner;
         bool m_Open{true};
         bool m_AutoScroll{true};
         bool m_ScrollToBottom{true};

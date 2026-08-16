@@ -44,10 +44,15 @@ namespace PureMirror::Overlay
         }
     }  // namespace
 
-    ConsoleWindow::ConsoleWindow(Logger& logger, CommandRegistry& commands) : m_Logger(logger), m_Commands(commands) {}
+    ConsoleWindow::ConsoleWindow(Logger& logger, CommandRegistry& commands)
+        : m_Logger(logger), m_Commands(commands), m_MessageDesigner(logger)
+    {
+    }
 
     void ConsoleWindow::Render()
     {
+        m_MessageDesigner.Render();
+
         if (!m_Open)
             return;
 
@@ -75,6 +80,9 @@ namespace PureMirror::Overlay
         }
         ImGui::SameLine();
         ImGui::Checkbox("Auto-scroll", &m_AutoScroll);
+        ImGui::SameLine();
+        if (ImGui::Button("Message Designer"))
+            m_MessageDesigner.Open();
 
         ImGui::SetNextItemWidth(230.0f);
         ImGui::InputTextWithHint(
