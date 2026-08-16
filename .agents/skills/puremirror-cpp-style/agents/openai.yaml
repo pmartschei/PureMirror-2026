@@ -1,0 +1,4 @@
+interface:
+  display_name: "PureMirror C++ Style"
+  short_description: "Apply PureMirror C++ formatting conventions"
+  default_prompt: "Use $puremirror-cpp-style when creating or editing C++ code in PureMirror."
