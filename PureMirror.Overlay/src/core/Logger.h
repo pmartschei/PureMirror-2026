@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ILogWriter.h"
 #include "LogColor.h"
 #include "LogLevel.h"
 #include "LogMessage.h"
@@ -7,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <string_view>
@@ -19,6 +21,7 @@ namespace PureMirror::Overlay
     {
       public:
         explicit Logger(std::size_t capacity = 2'000);
+        explicit Logger(std::shared_ptr<ILogWriter> writer, std::size_t capacity = 2'000);
 
         void Log(LogLevel level,
                  std::string_view origin,
@@ -58,6 +61,8 @@ namespace PureMirror::Overlay
 
       private:
         const std::size_t m_Capacity;
+        const std::shared_ptr<ILogWriter> m_Writer;
+        std::mutex m_WriteMutex;
         mutable std::mutex m_Mutex;
         std::deque<LogMessage> m_Messages;
         std::unordered_map<std::string, std::uint32_t> m_OccurrenceCounts;

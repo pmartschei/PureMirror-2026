@@ -4,7 +4,12 @@
 
 namespace PureMirror::Overlay
 {
-    Logger::Logger(const std::size_t capacity) : m_Capacity(std::max<std::size_t>(capacity, 1)) {}
+    Logger::Logger(const std::size_t capacity) : Logger(nullptr, capacity) {}
+
+    Logger::Logger(std::shared_ptr<ILogWriter> writer, const std::size_t capacity)
+        : m_Capacity(std::max<std::size_t>(capacity, 1)), m_Writer(std::move(writer))
+    {
+    }
 
     void Logger::Log(const LogLevel level,
                      const std::string_view origin,
@@ -13,6 +18,8 @@ namespace PureMirror::Overlay
                      const LogColor* color,
                      const std::uint32_t occurrenceLimit)
     {
+        std::scoped_lock writeLock(m_WriteMutex);
+
         LogMessage message{.MessageId = std::string(messageId),
                            .Timestamp = std::chrono::system_clock::now(),
                            .Content = std::string(content),
@@ -21,22 +28,27 @@ namespace PureMirror::Overlay
                            .Origin = origin.empty() ? "PureMirror" : std::string(origin),
                            .OccurrenceLimit = occurrenceLimit};
 
-        std::scoped_lock lock(m_Mutex);
-        if (!message.MessageId.empty())
         {
-            auto& occurrenceCount = m_OccurrenceCounts[message.MessageId];
-            if (occurrenceCount >= message.OccurrenceLimit)
-                return;
-            ++occurrenceCount;
+            std::scoped_lock lock(m_Mutex);
+            if (!message.MessageId.empty())
+            {
+                auto& occurrenceCount = m_OccurrenceCounts[message.MessageId];
+                if (occurrenceCount >= message.OccurrenceLimit)
+                    return;
+                ++occurrenceCount;
+            }
+
+            message.Sequence = m_NextSequence++;
+            if (message.MessageId.empty())
+                message.MessageId = "log." + std::to_string(message.Sequence);
+
+            if (m_Messages.size() == m_Capacity)
+                m_Messages.pop_front();
+            m_Messages.push_back(message);
         }
 
-        message.Sequence = m_NextSequence++;
-        if (message.MessageId.empty())
-            message.MessageId = "log." + std::to_string(message.Sequence);
-
-        if (m_Messages.size() == m_Capacity)
-            m_Messages.pop_front();
-        m_Messages.push_back(std::move(message));
+        if (m_Writer)
+            m_Writer->Write(message);
     }
 
     void Logger::Trace(const std::string_view origin,

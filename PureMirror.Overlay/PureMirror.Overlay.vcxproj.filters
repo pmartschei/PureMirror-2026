@@ -84,6 +84,9 @@
     <ClInclude Include="src\core\ConsoleCommand.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
+    <ClInclude Include="src\core\ILogWriter.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
     <ClInclude Include="src\core\LogColor.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>

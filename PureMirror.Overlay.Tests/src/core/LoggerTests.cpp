@@ -2,12 +2,28 @@
 #include "src/core/Logger.h"
 
 #include <cstddef>
+#include <memory>
 #include <string>
+#include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace PureMirror::Overlay::Tests
 {
+    namespace
+    {
+        class RecordingLogWriter final : public ILogWriter
+        {
+          public:
+            void Write(const LogMessage& message) override
+            {
+                Messages.push_back(message);
+            }
+
+            std::vector<LogMessage> Messages;
+        };
+    }  // namespace
+
     TEST_CLASS(LoggerTests)
     {
       public:
@@ -93,6 +109,33 @@ namespace PureMirror::Overlay::Tests
 
             logger.Error("test", "failure", "clear.message", 1);
             Assert::AreEqual(std::size_t{1}, logger.Size());
+        }
+
+        TEST_METHOD(Log_ForwardsAcceptedMessageToWriter)
+        {
+            const auto writer = std::make_shared<RecordingLogWriter>();
+            Logger logger(writer, 4);
+
+            logger.Warning("example.plugin", "Something happened", "plugin.warning");
+
+            Assert::AreEqual(std::size_t{1}, writer->Messages.size());
+            Assert::AreEqual(std::string{"example.plugin"}, writer->Messages[0].Origin);
+            Assert::AreEqual(std::string{"Something happened"}, writer->Messages[0].Content);
+            Assert::AreEqual(std::string{"plugin.warning"}, writer->Messages[0].MessageId);
+            Assert::IsTrue(writer->Messages[0].Level == LogLevel::Warning);
+            Assert::AreEqual(std::uint64_t{1}, writer->Messages[0].Sequence);
+        }
+
+        TEST_METHOD(Log_DoesNotForwardMessageRejectedByOccurrenceLimit)
+        {
+            const auto writer = std::make_shared<RecordingLogWriter>();
+            Logger logger(writer);
+
+            logger.Info("test", "first", "limited.message", 1);
+            logger.Info("test", "second", "limited.message", 1);
+
+            Assert::AreEqual(std::size_t{1}, writer->Messages.size());
+            Assert::AreEqual(std::string{"first"}, writer->Messages[0].Content);
         }
     };
 }  // namespace PureMirror::Overlay::Tests

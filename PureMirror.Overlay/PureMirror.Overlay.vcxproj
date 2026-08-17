@@ -181,6 +181,7 @@
     <ClInclude Include="src\core\CommandResult.h" />
     <ClInclude Include="src\core\CommandStatus.h" />
     <ClInclude Include="src\core\ConsoleCommand.h" />
+    <ClInclude Include="src\core\ILogWriter.h" />
     <ClInclude Include="src\core\LogColor.h" />
     <ClInclude Include="src\core\LogLevel.h" />
     <ClInclude Include="src\core\LogMessage.h" />
