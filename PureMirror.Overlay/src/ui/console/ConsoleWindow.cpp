@@ -103,11 +103,10 @@ namespace PureMirror::Overlay
         }
 
         const auto messages = m_Logger.Snapshot();
-        if (!messages.empty() && messages.back().Sequence != m_LastSequence)
+        const bool hasNewMessages = !messages.empty() && messages.back().Sequence != m_LastSequence;
+        if (hasNewMessages)
         {
             m_LastSequence = messages.back().Sequence;
-            if (m_AutoScroll)
-                m_ScrollToBottom = true;
         }
 
         const auto footerHeight = ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y;
@@ -117,6 +116,8 @@ namespace PureMirror::Overlay
                               ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable |
                                   ImGuiTableFlags_ScrollY))
         {
+            const bool wasScrolledToBottom = ImGui::GetScrollY() >= ImGui::GetScrollMaxY();
+
             ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 95.0f);
             ImGui::TableSetupColumn("Level", ImGuiTableColumnFlags_WidthFixed, 58.0f);
             ImGui::TableSetupColumn("Origin", ImGuiTableColumnFlags_WidthFixed, 145.0f);
@@ -145,11 +146,9 @@ namespace PureMirror::Overlay
                 ImGui::PopID();
             }
 
-            if (m_ScrollToBottom)
-            {
+            if (m_ScrollToBottom || (m_AutoScroll && hasNewMessages && wasScrolledToBottom))
                 ImGui::SetScrollHereY(1.0f);
-                m_ScrollToBottom = false;
-            }
+            m_ScrollToBottom = false;
             ImGui::EndTable();
         }
         ImGui::EndChild();
