@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../core/CommandRegistry.h"
-#include "../../core/LogMessage.h"
-#include "../../core/Logger.h"
+#include "../../core/commands/CommandRegistry.h"
+#include "../../core/logger/LogMessage.h"
+#include "../../core/logger/Logger.h"
 #include "../logging/LogMessageDesignerWindow.h"
 
 #include <array>

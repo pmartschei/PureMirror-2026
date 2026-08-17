@@ -4,3 +4,5 @@ Engine- und UI-unabhängige Bausteine: Logger, Events, IDs, semantische Versione
 
 Dieser Ordner darf nicht von AngelScript, Dear ImGui oder Win32 abhängen.
 
+- `commands`: Konsolenbefehle, Registry und Command-Ergebnisse
+- `logger`: strukturierte Log-Nachrichten, Origins, Writer und Logger

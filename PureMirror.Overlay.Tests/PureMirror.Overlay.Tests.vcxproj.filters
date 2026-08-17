@@ -8,6 +8,12 @@
     <Filter Include="Source Files\Core">
       <UniqueIdentifier>{8D67CCF8-13C9-46C2-A9F4-A29F14DAF5C9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Core\Commands">
+      <UniqueIdentifier>{AE444568-51BE-4D33-B0AA-1232A20ED4D0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Logger">
+      <UniqueIdentifier>{B909DB74-8BF7-4731-AEAB-B5AF9CC5C823}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4B04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
@@ -26,11 +32,11 @@
     <ClCompile Include="CustomerQueueTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\core\CommandRegistryTests.cpp">
-      <Filter>Source Files\Core</Filter>
+    <ClCompile Include="src\core\commands\CommandRegistryTests.cpp">
+      <Filter>Source Files\Core\Commands</Filter>
     </ClCompile>
-    <ClCompile Include="src\core\LoggerTests.cpp">
-      <Filter>Source Files\Core</Filter>
+    <ClCompile Include="src\core\logger\LoggerTests.cpp">
+      <Filter>Source Files\Core\Logger</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

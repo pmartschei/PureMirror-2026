@@ -64,8 +64,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CustomerQueueTests.cpp" />
-    <ClCompile Include="src\core\CommandRegistryTests.cpp" />
-    <ClCompile Include="src\core\LoggerTests.cpp" />
+    <ClCompile Include="src\core\commands\CommandRegistryTests.cpp" />
+    <ClCompile Include="src\core\logger\LoggerTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dummy.h" />

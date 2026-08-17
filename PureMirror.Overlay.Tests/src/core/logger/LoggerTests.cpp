@@ -1,5 +1,5 @@
 #include "CppUnitTest.h"
-#include "src/core/Logger.h"
+#include "src/core/logger/Logger.h"
 
 #include <cstddef>
 #include <memory>

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../core/LogColor.h"
-#include "../../core/Logger.h"
+#include "../../core/logger/LogColor.h"
+#include "../../core/logger/Logger.h"
 
 #include <array>
 #include <cstdint>

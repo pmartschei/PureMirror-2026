@@ -19,6 +19,18 @@
     <Filter Include="Source Files\Core">
       <UniqueIdentifier>{F732BDB2-F78F-4117-B9FB-A64C197EED80}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Core\Commands">
+      <UniqueIdentifier>{F5A71F72-0459-49CE-941A-1049584F5E96}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\Logger">
+      <UniqueIdentifier>{86B32889-03CB-433C-B3F5-D660EAEC47A4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Commands">
+      <UniqueIdentifier>{BD84DB16-C872-474D-8DB8-6DB540362D9F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Logger">
+      <UniqueIdentifier>{CA959728-747D-4361-82F9-1D6C9E761F6A}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CustomerQueue.cpp">
@@ -69,41 +81,41 @@
     <ClInclude Include="imgui_extension.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\CommandRegistry.h">
-      <Filter>Header Files\Core</Filter>
+    <ClInclude Include="src\core\commands\CommandRegistry.h">
+      <Filter>Header Files\Core\Commands</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\CommandDescriptor.h">
-      <Filter>Header Files\Core</Filter>
+    <ClInclude Include="src\core\commands\CommandDescriptor.h">
+      <Filter>Header Files\Core\Commands</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\CommandResult.h">
-      <Filter>Header Files\Core</Filter>
+    <ClInclude Include="src\core\commands\CommandResult.h">
+      <Filter>Header Files\Core\Commands</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\CommandStatus.h">
-      <Filter>Header Files\Core</Filter>
+    <ClInclude Include="src\core\commands\CommandStatus.h">
+      <Filter>Header Files\Core\Commands</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\ConsoleCommand.h">
-      <Filter>Header Files\Core</Filter>
+    <ClInclude Include="src\core\commands\ConsoleCommand.h">
+      <Filter>Header Files\Core\Commands</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\ILogWriter.h">
-      <Filter>Header Files\Core</Filter>
+    <ClInclude Include="src\core\logger\ILogWriter.h">
+      <Filter>Header Files\Core\Logger</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\LogColor.h">
-      <Filter>Header Files\Core</Filter>
+    <ClInclude Include="src\core\logger\LogColor.h">
+      <Filter>Header Files\Core\Logger</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\LogLevel.h">
-      <Filter>Header Files\Core</Filter>
+    <ClInclude Include="src\core\logger\LogLevel.h">
+      <Filter>Header Files\Core\Logger</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\LogMessage.h">
-      <Filter>Header Files\Core</Filter>
+    <ClInclude Include="src\core\logger\LogMessage.h">
+      <Filter>Header Files\Core\Logger</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\LogOrigin.h">
-      <Filter>Header Files\Core</Filter>
+    <ClInclude Include="src\core\logger\LogOrigin.h">
+      <Filter>Header Files\Core\Logger</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\LogOriginType.h">
-      <Filter>Header Files\Core</Filter>
+    <ClInclude Include="src\core\logger\LogOriginType.h">
+      <Filter>Header Files\Core\Logger</Filter>
     </ClInclude>
-    <ClInclude Include="src\core\Logger.h">
-      <Filter>Header Files\Core</Filter>
+    <ClInclude Include="src\core\logger\Logger.h">
+      <Filter>Header Files\Core\Logger</Filter>
     </ClInclude>
     <ClCompile Include="src\ui\console\ConsoleWindow.cpp">
       <Filter>Source Files</Filter>
@@ -134,14 +146,14 @@
     <ClCompile Include="src\external\imgui\imgui_impl_win32.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\core\CommandRegistry.cpp">
-      <Filter>Source Files\Core</Filter>
+    <ClCompile Include="src\core\commands\CommandRegistry.cpp">
+      <Filter>Source Files\Core\Commands</Filter>
     </ClCompile>
-    <ClCompile Include="src\core\CommandResult.cpp">
-      <Filter>Source Files\Core</Filter>
+    <ClCompile Include="src\core\commands\CommandResult.cpp">
+      <Filter>Source Files\Core\Commands</Filter>
     </ClCompile>
-    <ClCompile Include="src\core\Logger.cpp">
-      <Filter>Source Files\Core</Filter>
+    <ClCompile Include="src\core\logger\Logger.cpp">
+      <Filter>Source Files\Core\Logger</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

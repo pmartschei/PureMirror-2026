@@ -1,5 +1,5 @@
 #include "CppUnitTest.h"
-#include "src/core/CommandRegistry.h"
+#include "src/core/commands/CommandRegistry.h"
 
 #include <string>
 #include <string_view>

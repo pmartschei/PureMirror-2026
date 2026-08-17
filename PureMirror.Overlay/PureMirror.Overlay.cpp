@@ -6,8 +6,8 @@
 #include "CustomerQueue.h"
 #include "WindowInput.h"
 #include "imgui_extension.h"
-#include "src/core/CommandRegistry.h"
-#include "src/core/Logger.h"
+#include "src/core/commands/CommandRegistry.h"
+#include "src/core/logger/Logger.h"
 #include "src/ui/console/ConsoleWindow.h"
 
 #include <imgui.h>
