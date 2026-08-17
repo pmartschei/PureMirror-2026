@@ -1,0 +1,96 @@
+#include "CppUnitTest.h"
+#include "src/plugins/PluginManifestParser.h"
+#include "src/scripting/IScriptHost.h"
+#include "src/scripting/PluginScriptInstance.h"
+#include "src/scripting/angelscript/AngelScriptEngine.h"
+
+#include <filesystem>
+#include <fstream>
+#include <iterator>
+#include <string>
+#include <vector>
+
+using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+
+namespace PureMirror::Overlay::Tests
+{
+    namespace
+    {
+        class RecordingScriptHost final : public IScriptHost
+        {
+          public:
+            void LogInfo(const std::string_view pluginId, const std::string_view message) override
+            {
+                PluginIds.emplace_back(pluginId);
+                LogMessages.emplace_back(message);
+            }
+
+            bool BeginWindow(std::string_view pluginId, std::string_view title) override
+            {
+                static_cast<void>(pluginId);
+                static_cast<void>(title);
+                return true;
+            }
+
+            void EndWindow(std::string_view pluginId) override
+            {
+                static_cast<void>(pluginId);
+            }
+
+            void Text(std::string_view pluginId, const std::string_view value) override
+            {
+                static_cast<void>(pluginId);
+                TextValues.emplace_back(value);
+            }
+
+            bool Button(std::string_view pluginId, std::string_view label) override
+            {
+                static_cast<void>(pluginId);
+                static_cast<void>(label);
+                return false;
+            }
+
+            std::vector<std::string> PluginIds;
+            std::vector<std::string> LogMessages;
+            std::vector<std::string> TextValues;
+        };
+
+        std::filesystem::path ExamplePluginRoot()
+        {
+            auto repositoryRoot = std::filesystem::path(__FILE__).parent_path();
+            for (int level{}; level < 3; ++level)
+                repositoryRoot = repositoryRoot.parent_path();
+            return repositoryRoot / "PureMirror.Overlay/examples/plugins/hello-overlay";
+        }
+    }  // namespace
+
+    TEST_CLASS(ExamplePluginIntegrationTests)
+    {
+      public:
+        TEST_METHOD(LoadRenderAndUnload_ExecutesHelloOverlayExample)
+        {
+            const auto pluginRoot = ExamplePluginRoot();
+            std::ifstream manifestStream(pluginRoot / "plugin.json", std::ios::binary);
+            const std::string json{std::istreambuf_iterator<char>{manifestStream}, std::istreambuf_iterator<char>{}};
+            const auto parsedManifest = PluginManifestParser{}.Parse(json);
+            Assert::IsTrue(parsedManifest.IsSuccessful());
+
+            RecordingScriptHost host;
+            AngelScriptEngine engine(&host);
+            PluginScriptInstance plugin(engine, parsedManifest.Manifest, pluginRoot);
+
+            const auto loaded = plugin.Load();
+            const auto rendered = plugin.Render();
+            const auto unloaded = plugin.Unload();
+
+            Assert::IsTrue(loaded.IsSuccessful());
+            Assert::IsTrue(rendered.IsSuccessful());
+            Assert::IsTrue(unloaded.IsSuccessful());
+            Assert::AreEqual(std::size_t{2}, host.LogMessages.size());
+            Assert::AreEqual(std::string{"Hello Overlay loaded"}, host.LogMessages.front());
+            Assert::AreEqual(std::string{"Hello Overlay unloaded"}, host.LogMessages.back());
+            Assert::AreEqual(std::string{"com.puremirror.example.hello-overlay"}, host.PluginIds.front());
+            Assert::AreEqual(std::size_t{2}, host.TextValues.size());
+        }
+    };
+}  // namespace PureMirror::Overlay::Tests

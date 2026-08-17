@@ -1,7 +1,7 @@
 # PureMirror Overlay: Plugin-System
 
-Status: Architekturentwurf  
-Vorgeschlagene Script-Engine: AngelScript  
+Status: Architektur und laufende Implementierung  
+Script-Engine: AngelScript 2.38.0  
 Scope: Script-Plugins; native DLL-Plugins sind bewusst nicht Teil der ersten Version.
 
 ## Zielbild
@@ -158,13 +158,15 @@ public:
 
 Der AngelScript-Adapter besitzt Engine, Module, Context-Pool, Message-Callback, Include-Resolver und alle Bindings. AngelScript-Typen dürfen diesen Ordner nicht verlassen.
 
+Implementierter Stand: AngelScript wird als separates statisches Projekt gebaut. `IScriptEngine` und der Pimpl-Adapter kapseln Engine-Typen; Manifest-`entry` und alle `exports` werden als Script-Sections eines Moduls kompiliert. Compilerdiagnostik enthält Severity, Section, Zeile und Spalte. Die Lifecycle-Callbacks und die minimale `log`-/`ui`-Host-API sind angebunden. Context-Pool, Includes, Capability-Prüfungen, Zeitlimits und Import-Bindung folgen als nächste Schritte.
+
 ### UI
 
 Plugins erhalten eine bewusst kuratierte API im Namespace `ui`, zum Beispiel:
 
 ```angelscript
 namespace ui {
-    bool begin_window(const string &in title, bool &inout open);
+    bool begin_window(const string &in title);
     void end_window();
     void text(const string &in value);
     bool button(const string &in label);

@@ -54,7 +54,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(VCInstallDir)Auxiliary\VS\UnitTest\include;$(ProjectDir)..\PureMirror.Overlay;$(ProjectDir)..\PureMirror.Overlay\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VCInstallDir)Auxiliary\VS\UnitTest\include;$(ProjectDir)..\PureMirror.Overlay;$(ProjectDir)..\PureMirror.Overlay\src;$(SolutionDir)PureMirror.AngelScript\vendor\include;$(SolutionDir)PureMirror.AngelScript\vendor\add_on\scriptstdstring;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -69,9 +69,13 @@
     <ClCompile Include="src\core\versions\SemanticVersionRangeTests.cpp" />
     <ClCompile Include="src\plugins\PluginDependencyResolverTests.cpp" />
     <ClCompile Include="src\plugins\PluginManifestParserTests.cpp" />
+    <ClCompile Include="src\plugins\PluginManagerTests.cpp" />
     <ClCompile Include="src\plugins\PluginPackagePlannerTests.cpp" />
     <ClCompile Include="src\plugins\PluginReloadPlannerTests.cpp" />
     <ClCompile Include="src\plugins\PluginVersionSolverTests.cpp" />
+    <ClCompile Include="src\scripting\PluginScriptCompilerTests.cpp" />
+    <ClCompile Include="src\scripting\ExamplePluginIntegrationTests.cpp" />
+    <ClCompile Include="src\scripting\angelscript\AngelScriptEngineTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dummy.h" />
@@ -80,12 +84,20 @@
     <_OverlayTestSource Include="..\PureMirror.Overlay\CustomerQueue.cpp" />
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\core\**\*.cpp" />
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\plugins\**\*.cpp" />
+    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\PluginScriptCompiler.cpp" />
+    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\PluginScriptInstance.cpp" />
+    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\AngelScriptEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectCapability Include="TestContainer" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VersionInfo.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PureMirror.AngelScript\PureMirror.AngelScript.vcxproj">
+      <Project>{E7575634-B411-49F6-A23D-E925685682A8}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
     <ComputeCompileInputsTargets>

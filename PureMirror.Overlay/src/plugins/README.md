@@ -30,3 +30,9 @@ Versionsbereiche bestehen in V1 aus durch Leerzeichen verknüpften Vergleichen w
 Der Aufrufer zeigt diesen Plan an, lädt benötigte Remote-Pakete in einen temporären Bereich, validiert sie und übernimmt den Plan erst danach atomar. Bei einem Fehler bleibt der bisherige `PluginInstallation`-Zustand aktiv.
 
 `PluginReloadPlanner` ermittelt für einen Reload das Ziel, alle direkten und transitiven Consumer sowie vollständige zyklische Ladegruppen. Entladen wird in umgekehrter, Laden in normaler Dependency-Reihenfolge.
+
+## Runtime-Manager
+
+`PluginManager` scannt beim Overlay-Start den Ordner `puremirror/plugins` relativ zur geladenen Overlay-DLL. Jeder direkte Unterordner mit einer `plugin.json` ist ein lokales Paket. Der Versionssolver wählt bei mehreren lokalen Versionen eine kompatible Version je Plugin-ID; anschließend validiert der Dependency-Resolver die Auswahl und bestimmt die Ladegruppen.
+
+Erst danach kompiliert der Manager die ausgewählten Scripts und führt `on_load` aus. Während jedes Overlay-Frames wird `on_render` aufgerufen. Ein Plugin mit einem Laufzeitfehler wird protokolliert und entladen; beim Abbau des Managers laufen `on_unload` und das Entladen in umgekehrter Reihenfolge.

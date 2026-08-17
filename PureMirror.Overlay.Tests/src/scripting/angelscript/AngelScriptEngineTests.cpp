@@ -1,0 +1,71 @@
+#include "CppUnitTest.h"
+#include "src/scripting/angelscript/AngelScriptEngine.h"
+
+#include <string>
+#include <vector>
+
+using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+
+namespace PureMirror::Overlay::Tests
+{
+    TEST_CLASS(AngelScriptEngineTests)
+    {
+      public:
+        TEST_METHOD(LoadModule_CompilesMultipleSectionsAndStandardStrings)
+        {
+            AngelScriptEngine engine;
+            const std::vector sources{ScriptSource{"main.as", R"(
+                string greeting = "Hello";
+                void on_load() { exported_helper(); }
+            )"},
+                                      ScriptSource{"exports/helper.as", "void exported_helper() {}"}};
+
+            const auto result = engine.LoadModule("com.example.valid", sources);
+
+            Assert::IsTrue(engine.IsInitialized());
+            Assert::IsTrue(result.IsSuccessful());
+            Assert::AreEqual(std::size_t{0}, result.Diagnostics.size());
+        }
+
+        TEST_METHOD(LoadModule_ReturnsCompilerDiagnosticsWithSectionAndPosition)
+        {
+            AngelScriptEngine engine;
+            const std::vector sources{ScriptSource{"broken.as", "void on_load( {"}};
+
+            const auto result = engine.LoadModule("com.example.broken", sources);
+
+            Assert::IsFalse(result.IsSuccessful());
+            Assert::IsFalse(result.Diagnostics.empty());
+            Assert::AreEqual(std::string{"broken.as"}, result.Diagnostics.back().Section);
+            Assert::IsTrue(result.Diagnostics.back().Row > 0);
+        }
+
+        TEST_METHOD(UnloadModule_AllowsModuleToBeCompiledAgain)
+        {
+            AngelScriptEngine engine;
+            const std::vector sources{ScriptSource{"main.as", "void on_load() {}"}};
+            Assert::IsTrue(engine.LoadModule("com.example.reload", sources).IsSuccessful());
+
+            engine.UnloadModule("com.example.reload");
+            const auto result = engine.LoadModule("com.example.reload", sources);
+
+            Assert::IsTrue(result.IsSuccessful());
+        }
+
+        TEST_METHOD(CallFunction_TreatsMissingCallbackAsSuccessfulAndReportsExceptions)
+        {
+            AngelScriptEngine engine;
+            const std::vector sources{
+                ScriptSource{"main.as", "int divide(int value) { return 1 / value; } void explode() { divide(0); }"}};
+            Assert::IsTrue(engine.LoadModule("com.example.calls", sources).IsSuccessful());
+
+            const auto missing = engine.CallFunction("com.example.calls", "void optional_callback()");
+            const auto failed = engine.CallFunction("com.example.calls", "void explode()");
+
+            Assert::IsTrue(missing.IsSuccessful());
+            Assert::IsTrue(missing.Status == ScriptCallStatus::NotFound);
+            Assert::IsFalse(failed.IsSuccessful());
+            Assert::IsFalse(failed.Diagnostics.empty());
+        }
+    };
+}  // namespace PureMirror::Overlay::Tests

@@ -135,7 +135,8 @@
       <AdditionalDependencies>PureMirror.Imgui.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "$(OutDir)$(TargetFileName)" "D:\Spiele\Path of Exile\$(TargetFileName)"</Command>
+      <Command>copy /Y "$(OutDir)$(TargetFileName)" "D:\Spiele\Path of Exile\$(TargetFileName)"
+xcopy /Y /E /I "$(ProjectDir)examples\plugins\hello-overlay" "D:\Spiele\Path of Exile\puremirror\plugins\hello-overlay"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -161,8 +162,14 @@
       <AdditionalDependencies>PureMirror.Imgui.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "$(OutDir)$(TargetFileName)" "D:\Spiele\Path of Exile\$(TargetFileName)"</Command>
+      <Command>copy /Y "$(OutDir)$(TargetFileName)" "D:\Spiele\Path of Exile\$(TargetFileName)"
+xcopy /Y /E /I "$(ProjectDir)examples\plugins\hello-overlay" "D:\Spiele\Path of Exile\puremirror\plugins\hello-overlay"</Command>
     </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(SolutionDir)PureMirror.AngelScript\vendor\include;$(SolutionDir)PureMirror.AngelScript\vendor\add_on\scriptstdstring;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ClientMessage.h" />
@@ -200,6 +207,7 @@
     <ClInclude Include="src\plugins\PluginDependencyResolution.h" />
     <ClInclude Include="src\plugins\PluginDependencyResolver.h" />
     <ClInclude Include="src\plugins\PluginManifest.h" />
+    <ClInclude Include="src\plugins\PluginManager.h" />
     <ClInclude Include="src\plugins\PluginManifestError.h" />
     <ClInclude Include="src\plugins\PluginManifestParseResult.h" />
     <ClInclude Include="src\plugins\PluginManifestParser.h" />
@@ -212,6 +220,18 @@
     <ClInclude Include="src\plugins\PluginVersionSelectionError.h" />
     <ClInclude Include="src\plugins\PluginVersionSelectionResult.h" />
     <ClInclude Include="src\plugins\PluginVersionSolver.h" />
+    <ClInclude Include="src\scripting\IScriptEngine.h" />
+    <ClInclude Include="src\scripting\IScriptHost.h" />
+    <ClInclude Include="src\scripting\OverlayScriptHost.h" />
+    <ClInclude Include="src\scripting\PluginScriptCompiler.h" />
+    <ClInclude Include="src\scripting\PluginScriptInstance.h" />
+    <ClInclude Include="src\scripting\ScriptCallResult.h" />
+    <ClInclude Include="src\scripting\ScriptCallStatus.h" />
+    <ClInclude Include="src\scripting\ScriptDiagnostic.h" />
+    <ClInclude Include="src\scripting\ScriptDiagnosticSeverity.h" />
+    <ClInclude Include="src\scripting\ScriptModuleLoadResult.h" />
+    <ClInclude Include="src\scripting\ScriptSource.h" />
+    <ClInclude Include="src\scripting\angelscript\AngelScriptEngine.h" />
     <ClInclude Include="src\ui\console\ConsoleWindow.h" />
     <ClInclude Include="src\ui\logging\LogMessageDesignerWindow.h" />
     <ClInclude Include="WindowInput.h" />
@@ -231,9 +251,14 @@
     <ClCompile Include="src\core\versions\SemanticVersionRange.cpp" />
     <ClCompile Include="src\plugins\PluginDependencyResolver.cpp" />
     <ClCompile Include="src\plugins\PluginManifestParser.cpp" />
+    <ClCompile Include="src\plugins\PluginManager.cpp" />
     <ClCompile Include="src\plugins\PluginPackagePlanner.cpp" />
     <ClCompile Include="src\plugins\PluginReloadPlanner.cpp" />
     <ClCompile Include="src\plugins\PluginVersionSolver.cpp" />
+    <ClCompile Include="src\scripting\PluginScriptCompiler.cpp" />
+    <ClCompile Include="src\scripting\PluginScriptInstance.cpp" />
+    <ClCompile Include="src\scripting\OverlayScriptHost.cpp" />
+    <ClCompile Include="src\scripting\angelscript\AngelScriptEngine.cpp" />
     <ClCompile Include="src\ui\console\ConsoleWindow.cpp" />
     <ClCompile Include="src\ui\logging\LogMessageDesignerWindow.cpp" />
     <ClCompile Include="WindowInput.cpp" />
@@ -252,6 +277,19 @@
   <ItemGroup>
     <ResourceCompile Include="VersionInfo.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PureMirror.AngelScript\PureMirror.AngelScript.vcxproj">
+      <Project>{E7575634-B411-49F6-A23D-E925685682A8}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Target Name="CopyExamplePlugin" AfterTargets="Build">
+    <ItemGroup>
+      <_ExamplePluginFile Include="$(ProjectDir)examples\plugins\hello-overlay\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_ExamplePluginFile)"
+          DestinationFiles="@(_ExamplePluginFile-&gt;'$(OutDir)puremirror\plugins\hello-overlay\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

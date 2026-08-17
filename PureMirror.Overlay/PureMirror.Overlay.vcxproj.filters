@@ -39,6 +39,10 @@
     </Filter>
     <Filter Include="Header Files\Core\Versions"><UniqueIdentifier>{BE98340B-0020-4369-A40F-3A65A6123396}</UniqueIdentifier></Filter>
     <Filter Include="Source Files\Core\Versions"><UniqueIdentifier>{80DB4A82-A04D-4249-9593-562D2E09B046}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\Scripting"><UniqueIdentifier>{570ED7B3-E905-46D4-8B7C-76BD26C42C3F}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\Scripting\AngelScript"><UniqueIdentifier>{0582D12F-77B0-4309-AE7D-23FA84AA4DA7}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Scripting"><UniqueIdentifier>{3608E473-FF2C-45EF-B5B8-D15B431D4642}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Scripting\AngelScript"><UniqueIdentifier>{1292EFB2-E4D7-468A-8869-4A0A572F1453}</UniqueIdentifier></Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CustomerQueue.cpp">
@@ -135,6 +139,7 @@
     <ClInclude Include="src\plugins\PluginDependencyResolution.h"><Filter>Header Files\Plugins</Filter></ClInclude>
     <ClInclude Include="src\plugins\PluginDependencyResolver.h"><Filter>Header Files\Plugins</Filter></ClInclude>
     <ClInclude Include="src\plugins\PluginManifest.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginManager.h"><Filter>Header Files\Plugins</Filter></ClInclude>
     <ClInclude Include="src\plugins\PluginManifestError.h"><Filter>Header Files\Plugins</Filter></ClInclude>
     <ClInclude Include="src\plugins\PluginManifestParseResult.h"><Filter>Header Files\Plugins</Filter></ClInclude>
     <ClInclude Include="src\plugins\PluginManifestParser.h"><Filter>Header Files\Plugins</Filter></ClInclude>
@@ -149,6 +154,18 @@
     <ClInclude Include="src\plugins\PluginVersionSolver.h"><Filter>Header Files\Plugins</Filter></ClInclude>
     <ClInclude Include="src\core\versions\SemanticVersion.h"><Filter>Header Files\Core\Versions</Filter></ClInclude>
     <ClInclude Include="src\core\versions\SemanticVersionRange.h"><Filter>Header Files\Core\Versions</Filter></ClInclude>
+    <ClInclude Include="src\scripting\IScriptEngine.h"><Filter>Header Files\Scripting</Filter></ClInclude>
+    <ClInclude Include="src\scripting\IScriptHost.h"><Filter>Header Files\Scripting</Filter></ClInclude>
+    <ClInclude Include="src\scripting\OverlayScriptHost.h"><Filter>Header Files\Scripting</Filter></ClInclude>
+    <ClInclude Include="src\scripting\PluginScriptCompiler.h"><Filter>Header Files\Scripting</Filter></ClInclude>
+    <ClInclude Include="src\scripting\PluginScriptInstance.h"><Filter>Header Files\Scripting</Filter></ClInclude>
+    <ClInclude Include="src\scripting\ScriptCallResult.h"><Filter>Header Files\Scripting</Filter></ClInclude>
+    <ClInclude Include="src\scripting\ScriptCallStatus.h"><Filter>Header Files\Scripting</Filter></ClInclude>
+    <ClInclude Include="src\scripting\ScriptDiagnostic.h"><Filter>Header Files\Scripting</Filter></ClInclude>
+    <ClInclude Include="src\scripting\ScriptDiagnosticSeverity.h"><Filter>Header Files\Scripting</Filter></ClInclude>
+    <ClInclude Include="src\scripting\ScriptModuleLoadResult.h"><Filter>Header Files\Scripting</Filter></ClInclude>
+    <ClInclude Include="src\scripting\ScriptSource.h"><Filter>Header Files\Scripting</Filter></ClInclude>
+    <ClInclude Include="src\scripting\angelscript\AngelScriptEngine.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
     <ClCompile Include="src\ui\console\ConsoleWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -189,11 +206,16 @@
     </ClCompile>
     <ClCompile Include="src\plugins\PluginDependencyResolver.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
     <ClCompile Include="src\plugins\PluginManifestParser.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
+    <ClCompile Include="src\plugins\PluginManager.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
     <ClCompile Include="src\plugins\PluginPackagePlanner.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
     <ClCompile Include="src\plugins\PluginReloadPlanner.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
     <ClCompile Include="src\plugins\PluginVersionSolver.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
     <ClCompile Include="src\core\versions\SemanticVersion.cpp"><Filter>Source Files\Core\Versions</Filter></ClCompile>
     <ClCompile Include="src\core\versions\SemanticVersionRange.cpp"><Filter>Source Files\Core\Versions</Filter></ClCompile>
+    <ClCompile Include="src\scripting\PluginScriptCompiler.cpp"><Filter>Source Files\Scripting</Filter></ClCompile>
+    <ClCompile Include="src\scripting\PluginScriptInstance.cpp"><Filter>Source Files\Scripting</Filter></ClCompile>
+    <ClCompile Include="src\scripting\OverlayScriptHost.cpp"><Filter>Source Files\Scripting</Filter></ClCompile>
+    <ClCompile Include="src\scripting\angelscript\AngelScriptEngine.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VersionInfo.rc">

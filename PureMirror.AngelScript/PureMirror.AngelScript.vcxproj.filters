@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files"><UniqueIdentifier>{B3023652-F3A2-4624-8813-5D09DCE1059F}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files"><UniqueIdentifier>{201870CD-7D16-4719-9D1B-2A593A09A83A}</UniqueIdentifier></Filter>
+    <Filter Include="Add-ons"><UniqueIdentifier>{11017F74-AB59-497A-B6DF-9E49B277B798}</UniqueIdentifier></Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="vendor\source\*.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="vendor\add_on\scriptstdstring\scriptstdstring.cpp"><Filter>Add-ons</Filter></ClCompile>
+    <ClInclude Include="vendor\include\angelscript.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="vendor\source\*.h"><Filter>Header Files</Filter></ClInclude>
+    <ClInclude Include="vendor\add_on\scriptstdstring\scriptstdstring.h"><Filter>Add-ons</Filter></ClInclude>
+    <CustomBuild Include="vendor\source\as_callfunc_x64_msvc_asm.asm"><Filter>Source Files</Filter></CustomBuild>
+  </ItemGroup>
+</Project>

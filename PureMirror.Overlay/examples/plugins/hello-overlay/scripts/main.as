@@ -1,4 +1,3 @@
-bool window_open = true;
 uint click_count = 0;
 
 void on_load()
@@ -8,10 +7,7 @@ void on_load()
 
 void on_render()
 {
-    if (!window_open)
-        return;
-
-    if (ui::begin_window("Hello Overlay", window_open))
+    if (ui::begin_window("Hello Overlay"))
     {
         ui::text("This UI is rendered by a script plugin.");
         if (ui::button("Count click"))

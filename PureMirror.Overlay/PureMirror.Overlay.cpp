@@ -8,6 +8,9 @@
 #include "imgui_extension.h"
 #include "src/core/commands/CommandRegistry.h"
 #include "src/core/logger/Logger.h"
+#include "src/plugins/PluginManager.h"
+#include "src/scripting/OverlayScriptHost.h"
+#include "src/scripting/angelscript/AngelScriptEngine.h"
 #include "src/ui/console/ConsoleWindow.h"
 
 #include <imgui.h>
@@ -23,6 +26,9 @@ std::unique_ptr<PureMirror::WindowInput> g_WindowInput;
 PureMirror::Overlay::Logger g_Logger;
 PureMirror::Overlay::CommandRegistry g_ConsoleCommands;
 PureMirror::Overlay::ConsoleWindow g_ConsoleWindow(g_Logger, g_ConsoleCommands);
+std::unique_ptr<PureMirror::Overlay::OverlayScriptHost> g_ScriptHost;
+std::unique_ptr<PureMirror::Overlay::AngelScriptEngine> g_ScriptEngine;
+std::unique_ptr<PureMirror::Overlay::PluginManager> g_PluginManager;
 
 Texture g_BtnErrorTexture;
 Texture g_BtnErrorPressedTexture;
@@ -38,6 +44,22 @@ Texture g_IconTradeTexture;
 namespace
 {
     constexpr ImVec2 QueueWindowSize{430.0f, 360.0f};
+
+    std::filesystem::path OverlayModuleDirectory()
+    {
+        HMODULE module{};
+        const auto address = reinterpret_cast<LPCWSTR>(std::addressof(g_Logger));
+        if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                                address,
+                                &module))
+            return std::filesystem::current_path();
+
+        std::array<wchar_t, 32'768> path{};
+        const auto length = GetModuleFileNameW(module, path.data(), static_cast<DWORD>(path.size()));
+        if (length == 0 || length == path.size())
+            return std::filesystem::current_path();
+        return std::filesystem::path(std::wstring_view(path.data(), length)).parent_path();
+    }
 
     bool AnimatedButton(ImTextureID bgNormal,
                         ImTextureID bgPressed,
@@ -651,6 +673,11 @@ void Initialize(const RendererAPI* rendererAPI)
                                                        .Identifier = "puremirror.overlay",
                                                        .DisplayName = "PureMirror.Overlay"};
     g_Logger.Info(overlayOrigin, "Console initialized. Type /help for available commands.", "console.ready");
+
+    g_ScriptHost = std::make_unique<PureMirror::Overlay::OverlayScriptHost>(g_Logger);
+    g_ScriptEngine = std::make_unique<PureMirror::Overlay::AngelScriptEngine>(g_ScriptHost.get());
+    g_PluginManager = std::make_unique<PureMirror::Overlay::PluginManager>(*g_ScriptEngine, g_Logger);
+    static_cast<void>(g_PluginManager->LoadStartupPlugins(OverlayModuleDirectory() / "puremirror" / "plugins"));
 }
 
 const char* GetImguiVersion()
@@ -730,6 +757,8 @@ void Render(const RenderContext* renderContext)
     RenderCustomers();
     RenderWaitingQueue();
     RenderInvitedCustomers();
+    if (g_PluginManager)
+        g_PluginManager->Render();
     g_ConsoleWindow.Render();
 
     PureMirror::ImGuiExtension::SetWindowsVoidInputPassthrough({ImGui::FindWindowByName("Customers"),
