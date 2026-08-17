@@ -8,6 +8,26 @@ namespace PureMirror::Overlay
 {
     namespace
     {
+        const LogOrigin ConsoleOrigin{
+            .Type = LogOriginType::Host, .Identifier = "puremirror.console", .DisplayName = "PureMirror.Console"};
+
+        const char* OriginTypeName(const LogOriginType type)
+        {
+            switch (type)
+            {
+            case LogOriginType::Host:
+                return "HOST";
+            case LogOriginType::Plugin:
+                return "PLUGIN";
+            }
+            return "Unknown";
+        }
+
+        std::string FormatOrigin(const LogOrigin& origin)
+        {
+            return std::string(OriginTypeName(origin.Type)) + ":" + origin.Identifier + "/" + origin.DisplayName;
+        }
+
         bool ContainsIgnoringCase(const std::string_view value, const std::string_view search)
         {
             if (search.empty())
@@ -74,7 +94,7 @@ namespace PureMirror::Overlay
                 if (!PassesFilter(message))
                     continue;
                 clipboard += '[' + FormatTimestamp(message.Timestamp) + "] [" + Logger::LevelName(message.Level) +
-                             "] [" + message.Origin + "] " + message.Content + '\n';
+                             "] [" + FormatOrigin(message.Origin) + "] " + message.Content + '\n';
             }
             ImGui::SetClipboardText(clipboard.c_str());
         }
@@ -92,6 +112,9 @@ namespace PureMirror::Overlay
         ImGui::InputTextWithHint(
             "##console-origin-filter", "Filter origin", m_OriginFilter.data(), m_OriginFilter.size());
         ImGui::SameLine();
+        ImGui::Checkbox("HOST", &m_EnabledOriginTypes[static_cast<std::size_t>(LogOriginType::Host)]);
+        ImGui::SameLine();
+        ImGui::Checkbox("PLUGIN", &m_EnabledOriginTypes[static_cast<std::size_t>(LogOriginType::Plugin)]);
 
         constexpr std::array levels{
             LogLevel::Trace, LogLevel::Debug, LogLevel::Info, LogLevel::Warning, LogLevel::Error};
@@ -112,7 +135,7 @@ namespace PureMirror::Overlay
         const auto footerHeight = ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y;
         ImGui::BeginChild("ConsoleMessages", ImVec2(0.0f, -footerHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
         if (ImGui::BeginTable("ConsoleTable",
-                              4,
+                              5,
                               ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable |
                                   ImGuiTableFlags_ScrollY))
         {
@@ -120,6 +143,7 @@ namespace PureMirror::Overlay
 
             ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 95.0f);
             ImGui::TableSetupColumn("Level", ImGuiTableColumnFlags_WidthFixed, 58.0f);
+            ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 65.0f);
             ImGui::TableSetupColumn("Origin", ImGuiTableColumnFlags_WidthFixed, 145.0f);
             ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableHeadersRow();
@@ -137,8 +161,12 @@ namespace PureMirror::Overlay
                 ImGui::TableSetColumnIndex(1);
                 ImGui::TextColored(color, "%s", Logger::LevelName(message.Level));
                 ImGui::TableSetColumnIndex(2);
-                ImGui::TextUnformatted(message.Origin.c_str());
+                ImGui::TextUnformatted(OriginTypeName(message.Origin.Type));
                 ImGui::TableSetColumnIndex(3);
+                ImGui::TextUnformatted(message.Origin.DisplayName.c_str());
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Origin ID: %s", message.Origin.Identifier.c_str());
+                ImGui::TableSetColumnIndex(4);
                 ImGui::TextColored(color, "%s", message.Content.c_str());
                 if (ImGui::IsItemHovered() && !message.MessageId.empty())
                     ImGui::SetTooltip(
@@ -183,9 +211,14 @@ namespace PureMirror::Overlay
         if (levelIndex >= m_EnabledLevels.size() || !m_EnabledLevels[levelIndex])
             return false;
 
+        const auto originTypeIndex = static_cast<std::size_t>(message.Origin.Type);
+        if (originTypeIndex >= m_EnabledOriginTypes.size() || !m_EnabledOriginTypes[originTypeIndex])
+            return false;
+
         const std::string_view textFilter(m_TextFilter.data());
         const std::string_view originFilter(m_OriginFilter.data());
-        return ContainsIgnoringCase(message.Origin, originFilter) &&
+        return (ContainsIgnoringCase(message.Origin.DisplayName, originFilter) ||
+                ContainsIgnoringCase(message.Origin.Identifier, originFilter)) &&
                (ContainsIgnoringCase(message.Content, textFilter) ||
                 ContainsIgnoringCase(message.MessageId, textFilter));
     }
@@ -197,14 +230,14 @@ namespace PureMirror::Overlay
         if (input.empty())
             return;
 
-        m_Logger.Debug("PureMirror.Console", "> " + input, "console.command.input");
+        m_Logger.Debug(ConsoleOrigin, "> " + input, "console.command.input");
         const auto result = m_Commands.Execute(input);
         if (!result.Message.empty())
         {
             if (result.Status == CommandStatus::Executed)
-                m_Logger.Info("PureMirror.Console", result.Message, "console.command.result");
+                m_Logger.Info(ConsoleOrigin, result.Message, "console.command.result");
             else
-                m_Logger.Error("PureMirror.Console", result.Message, "console.command.error");
+                m_Logger.Error(ConsoleOrigin, result.Message, "console.command.error");
         }
         m_ScrollToBottom = true;
     }

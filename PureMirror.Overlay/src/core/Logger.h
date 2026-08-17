@@ -24,29 +24,29 @@ namespace PureMirror::Overlay
         explicit Logger(std::shared_ptr<ILogWriter> writer, std::size_t capacity = 2'000);
 
         void Log(LogLevel level,
-                 std::string_view origin,
+                 const LogOrigin& origin,
                  std::string_view content,
                  std::string_view messageId = {},
                  const LogColor* color = nullptr,
                  std::uint32_t occurrenceLimit = LogMessage::DefaultOccurrenceLimit);
 
-        void Trace(std::string_view origin,
+        void Trace(const LogOrigin& origin,
                    std::string_view content,
                    std::string_view messageId = {},
                    std::uint32_t occurrenceLimit = LogMessage::DefaultOccurrenceLimit);
-        void Debug(std::string_view origin,
+        void Debug(const LogOrigin& origin,
                    std::string_view content,
                    std::string_view messageId = {},
                    std::uint32_t occurrenceLimit = LogMessage::DefaultOccurrenceLimit);
-        void Info(std::string_view origin,
+        void Info(const LogOrigin& origin,
                   std::string_view content,
                   std::string_view messageId = {},
                   std::uint32_t occurrenceLimit = LogMessage::DefaultOccurrenceLimit);
-        void Warning(std::string_view origin,
+        void Warning(const LogOrigin& origin,
                      std::string_view content,
                      std::string_view messageId = {},
                      std::uint32_t occurrenceLimit = LogMessage::DefaultOccurrenceLimit);
-        void Error(std::string_view origin,
+        void Error(const LogOrigin& origin,
                    std::string_view content,
                    std::string_view messageId = {},
                    std::uint32_t occurrenceLimit = LogMessage::DefaultOccurrenceLimit);

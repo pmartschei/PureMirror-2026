@@ -29,6 +29,7 @@ namespace PureMirror::Overlay
         bool m_Open{true};
         bool m_AutoScroll{true};
         bool m_ScrollToBottom{true};
+        std::array<bool, 2> m_EnabledOriginTypes{true, true};
         std::array<bool, 5> m_EnabledLevels{true, true, true, true, true};
         std::array<char, 192> m_TextFilter{};
         std::array<char, 96> m_OriginFilter{};

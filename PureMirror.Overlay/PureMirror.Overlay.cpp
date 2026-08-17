@@ -647,7 +647,10 @@ void Initialize(const RendererAPI* rendererAPI)
          }});
     static_cast<void>(clearRegistered);
     static_cast<void>(helpRegistered);
-    g_Logger.Info("PureMirror.Overlay", "Console initialized. Type /help for available commands.", "console.ready");
+    const PureMirror::Overlay::LogOrigin overlayOrigin{.Type = PureMirror::Overlay::LogOriginType::Host,
+                                                       .Identifier = "puremirror.overlay",
+                                                       .DisplayName = "PureMirror.Overlay"};
+    g_Logger.Info(overlayOrigin, "Console initialized. Type /help for available commands.", "console.ready");
 }
 
 const char* GetImguiVersion()

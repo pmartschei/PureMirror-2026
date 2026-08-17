@@ -12,7 +12,7 @@ namespace PureMirror::Overlay
     }
 
     void Logger::Log(const LogLevel level,
-                     const std::string_view origin,
+                     const LogOrigin& origin,
                      const std::string_view content,
                      const std::string_view messageId,
                      const LogColor* color,
@@ -25,7 +25,7 @@ namespace PureMirror::Overlay
                            .Content = std::string(content),
                            .Level = level,
                            .Color = color ? *color : DefaultColor(level),
-                           .Origin = origin.empty() ? "PureMirror" : std::string(origin),
+                           .Origin = origin,
                            .OccurrenceLimit = occurrenceLimit};
 
         {
@@ -51,7 +51,7 @@ namespace PureMirror::Overlay
             m_Writer->Write(message);
     }
 
-    void Logger::Trace(const std::string_view origin,
+    void Logger::Trace(const LogOrigin& origin,
                        const std::string_view content,
                        const std::string_view messageId,
                        const std::uint32_t occurrenceLimit)
@@ -59,7 +59,7 @@ namespace PureMirror::Overlay
         Log(LogLevel::Trace, origin, content, messageId, nullptr, occurrenceLimit);
     }
 
-    void Logger::Debug(const std::string_view origin,
+    void Logger::Debug(const LogOrigin& origin,
                        const std::string_view content,
                        const std::string_view messageId,
                        const std::uint32_t occurrenceLimit)
@@ -67,7 +67,7 @@ namespace PureMirror::Overlay
         Log(LogLevel::Debug, origin, content, messageId, nullptr, occurrenceLimit);
     }
 
-    void Logger::Info(const std::string_view origin,
+    void Logger::Info(const LogOrigin& origin,
                       const std::string_view content,
                       const std::string_view messageId,
                       const std::uint32_t occurrenceLimit)
@@ -75,7 +75,7 @@ namespace PureMirror::Overlay
         Log(LogLevel::Info, origin, content, messageId, nullptr, occurrenceLimit);
     }
 
-    void Logger::Warning(const std::string_view origin,
+    void Logger::Warning(const LogOrigin& origin,
                          const std::string_view content,
                          const std::string_view messageId,
                          const std::uint32_t occurrenceLimit)
@@ -83,7 +83,7 @@ namespace PureMirror::Overlay
         Log(LogLevel::Warning, origin, content, messageId, nullptr, occurrenceLimit);
     }
 
-    void Logger::Error(const std::string_view origin,
+    void Logger::Error(const LogOrigin& origin,
                        const std::string_view content,
                        const std::string_view messageId,
                        const std::uint32_t occurrenceLimit)

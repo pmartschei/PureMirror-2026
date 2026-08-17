@@ -185,6 +185,8 @@
     <ClInclude Include="src\core\LogColor.h" />
     <ClInclude Include="src\core\LogLevel.h" />
     <ClInclude Include="src\core\LogMessage.h" />
+    <ClInclude Include="src\core\LogOrigin.h" />
+    <ClInclude Include="src\core\LogOriginType.h" />
     <ClInclude Include="src\core\Logger.h" />
     <ClInclude Include="src\ui\console\ConsoleWindow.h" />
     <ClInclude Include="src\ui\logging\LogMessageDesignerWindow.h" />

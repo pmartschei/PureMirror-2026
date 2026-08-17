@@ -96,6 +96,12 @@
     <ClInclude Include="src\core\LogMessage.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
+    <ClInclude Include="src\core\LogOrigin.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\LogOriginType.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
     <ClInclude Include="src\core\Logger.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>

@@ -2,6 +2,7 @@
 
 #include "LogColor.h"
 #include "LogLevel.h"
+#include "LogOrigin.h"
 
 #include <chrono>
 #include <cstdint>
@@ -19,7 +20,7 @@ namespace PureMirror::Overlay
         std::string Content;
         LogLevel Level{LogLevel::Info};
         LogColor Color;
-        std::string Origin;
+        LogOrigin Origin;
         std::uint32_t OccurrenceLimit{DefaultOccurrenceLimit};
     };
 }  // namespace PureMirror::Overlay

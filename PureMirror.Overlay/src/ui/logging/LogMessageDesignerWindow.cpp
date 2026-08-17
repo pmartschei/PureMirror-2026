@@ -38,7 +38,10 @@ namespace PureMirror::Overlay
         }
 
         ImGui::InputTextWithHint("Message ID", "Empty creates a unique ID", m_MessageId.data(), m_MessageId.size());
-        ImGui::InputTextWithHint("Origin", "PureMirror.Debug", m_Origin.data(), m_Origin.size());
+        ImGui::Combo("Origin type", &m_OriginTypeIndex, "Host\0Plugin\0");
+        ImGui::InputTextWithHint("Origin ID", "puremirror.debug", m_OriginIdentifier.data(), m_OriginIdentifier.size());
+        ImGui::InputTextWithHint(
+            "Origin name", "PureMirror.Debug", m_OriginDisplayName.data(), m_OriginDisplayName.size());
 
         ImGui::SetNextItemWidth(180.0f);
         ImGui::Combo("Level", &m_LevelIndex, "Trace\0Debug\0Info\0Warning\0Error\0");
@@ -62,9 +65,10 @@ namespace PureMirror::Overlay
         const auto previewColor = m_UseCustomColor ? m_Color : Logger::DefaultColor(level);
         ImGui::TextUnformatted("Preview");
         ImGui::TextColored(ImVec4(previewColor.Red, previewColor.Green, previewColor.Blue, previewColor.Alpha),
-                           "[%s] [%s] %s",
+                           "[%s] [%s: %s] %s",
                            Logger::LevelName(level),
-                           m_Origin.data(),
+                           m_OriginTypeIndex == 0 ? "Host" : "Plugin",
+                           m_OriginDisplayName.data(),
                            m_Content.data());
 
         if (ImGui::Button("Send"))
@@ -93,12 +97,15 @@ namespace PureMirror::Overlay
     void LogMessageDesignerWindow::ResetForm()
     {
         m_MessageId.fill('\0');
-        m_Origin.fill('\0');
+        m_OriginIdentifier.fill('\0');
+        m_OriginDisplayName.fill('\0');
         m_Content.fill('\0');
         CopyToBuffer("debug.message", m_MessageId);
-        CopyToBuffer("PureMirror.Debug", m_Origin);
+        CopyToBuffer("puremirror.debug", m_OriginIdentifier);
+        CopyToBuffer("PureMirror.Debug", m_OriginDisplayName);
         CopyToBuffer("Designed log message", m_Content);
         m_LevelIndex = static_cast<int>(LogLevel::Info);
+        m_OriginTypeIndex = static_cast<int>(LogOriginType::Host);
         m_UseCustomColor = false;
         m_Color = Logger::DefaultColor(LogLevel::Info);
         m_OccurrenceLimit = LogMessage::DefaultOccurrenceLimit;
@@ -113,7 +120,11 @@ namespace PureMirror::Overlay
         const auto levelIndex = std::clamp(m_LevelIndex, 0, static_cast<int>(Levels.size() - 1));
         const auto level = Levels[static_cast<std::size_t>(levelIndex)];
         const auto* color = m_UseCustomColor ? &m_Color : nullptr;
-        m_Logger.Log(level, m_Origin.data(), m_Content.data(), m_MessageId.data(), color, m_OccurrenceLimit);
+        const auto originType =
+            m_OriginTypeIndex == static_cast<int>(LogOriginType::Plugin) ? LogOriginType::Plugin : LogOriginType::Host;
+        const LogOrigin origin{
+            .Type = originType, .Identifier = m_OriginIdentifier.data(), .DisplayName = m_OriginDisplayName.data()};
+        m_Logger.Log(level, origin, m_Content.data(), m_MessageId.data(), color, m_OccurrenceLimit);
 
         const auto messagesAfter = m_Logger.Snapshot();
         m_LastSendWasLogged = !messagesAfter.empty() && messagesAfter.back().Sequence != lastSequenceBefore;
