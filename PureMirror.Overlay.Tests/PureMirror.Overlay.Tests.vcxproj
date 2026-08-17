@@ -66,6 +66,12 @@
     <ClCompile Include="CustomerQueueTests.cpp" />
     <ClCompile Include="src\core\commands\CommandRegistryTests.cpp" />
     <ClCompile Include="src\core\logger\LoggerTests.cpp" />
+    <ClCompile Include="src\core\versions\SemanticVersionRangeTests.cpp" />
+    <ClCompile Include="src\plugins\PluginDependencyResolverTests.cpp" />
+    <ClCompile Include="src\plugins\PluginManifestParserTests.cpp" />
+    <ClCompile Include="src\plugins\PluginPackagePlannerTests.cpp" />
+    <ClCompile Include="src\plugins\PluginReloadPlannerTests.cpp" />
+    <ClCompile Include="src\plugins\PluginVersionSolverTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dummy.h" />
@@ -73,6 +79,7 @@
   <ItemGroup>
     <_OverlayTestSource Include="..\PureMirror.Overlay\CustomerQueue.cpp" />
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\core\**\*.cpp" />
+    <_OverlayTestSource Include="..\PureMirror.Overlay\src\plugins\**\*.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectCapability Include="TestContainer" />

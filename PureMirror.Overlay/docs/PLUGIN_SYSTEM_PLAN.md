@@ -13,7 +13,7 @@ Wichtige Grenzen:
 - Der Renderer und der ImGui-Kontext gehören immer dem Host.
 - Plugins bekommen eine versionierte Script-API, keine rohen C++-Pointer und keine direkte Binärabhängigkeit auf Dear ImGui.
 - Jedes Plugin ist ein Paket mit Manifest und mindestens einer Script-Datei.
-- Abhängigkeiten werden vor dem Laden validiert und topologisch sortiert.
+- Abhängigkeiten werden vor dem Laden validiert; zyklische Komponenten werden gruppiert und der daraus entstehende Graph topologisch sortiert.
 - Ein fehlerhaftes Plugin darf andere Plugins und den Render-Loop nicht stoppen.
 - Script-Ausführung im Prozess ist Fehlerisolation, aber keine echte Sicherheits-Sandbox.
 
@@ -87,8 +87,12 @@ Minimalbeispiel:
   "version": "0.1.0",
   "apiVersion": "1.0",
   "entry": "scripts/main.as",
+  "exports": ["scripts/public/widgets.as"],
   "dependencies": {
     "com.example.shared": ">=1.2.0 <2.0.0"
+  },
+  "optionalDependencies": {
+    "com.example.shared2": ">=1.2.0 <2.0.0"
   },
   "capabilities": ["ui", "logging"]
 }
@@ -98,9 +102,11 @@ Regeln:
 
 - `id` ist global eindeutig, unveränderlich und wird als Modulname verwendet.
 - `schemaVersion` versioniert das Manifestformat; `apiVersion` die Host-API.
+- Pluginversionen verwenden zunächst `major.minor.patch`. Versionsbereiche unterstützen `>`, `>=`, `<`, `<=`, `=` und exakte Versionen; mehrere Vergleiche werden mit Leerzeichen verknüpft.
 - Pfade sind relativ zum Plugin-Paket. Absolute Pfade und `..` werden abgelehnt.
-- Fehlende, zyklische oder inkompatible Abhängigkeiten verhindern das Laden des betroffenen Teilgraphen und erscheinen in der Konsole.
-- Optionale Abhängigkeiten und Load-Order-Hints kommen erst hinzu, wenn ein echter Anwendungsfall existiert.
+- Fehlende Pflichtabhängigkeiten verhindern das Laden des betroffenen Teilgraphen und erscheinen in der Konsole.
+- Zyklen sind zulässig und werden als gemeinsame Ladegruppe behandelt; fehlende oder versionsinkompatible optionale Abhängigkeiten werden ignoriert.
+- `IPluginPackageProvider` abstrahiert lokale Pakete und später vom PureMirror-Server geladene beziehungsweise gecachte Pakete.
 
 ## Komponenten
 
@@ -128,7 +134,10 @@ Die ImGui-Konsole liest einen Snapshot des Logger-Puffers. Filter nach Level, Pl
 
 - `PluginDiscovery`: findet direkte Unterordner mit `plugin.json`.
 - `PluginManifest`: geparste und validierte Metadaten.
-- `DependencyResolver`: prüft Versionen, erkennt Zyklen und erzeugt eine topologische Reihenfolge.
+- `DependencyResolver`: prüft Pflichtabhängigkeiten, fasst Zyklen zusammen und erzeugt eine Dependency-zuerst-Reihenfolge von Ladegruppen.
+- `PluginVersionSolver`: wählt aus lokalen und entfernten Kandidaten eine gemeinsame Version pro Plugin-ID und bevorzugt kompatible installierte Versionen.
+- `PluginPackagePlanner`: plant Installation, Update und Entfernung einschließlich transitiver Dependencies und Orphan-Cleanup, ohne den aktiven Zustand direkt zu verändern.
+- `PluginReloadPlanner`: berechnet die für einen Reload betroffenen Consumer und zyklischen Gruppen.
 - `PluginManager`: alleiniger Besitzer der Zustände `Discovered`, `Loaded`, `Active`, `Failed`, `Disabled`.
 - `PluginInstance`: Manifest, Script-Modul, Callback-Handles, Laufzeitfehler und Timing.
 - `ServiceRegistry`: kontrollierter Austausch von Hilfsfunktionen zwischen Plugins.
@@ -213,6 +222,7 @@ Geteilte veränderliche globale Variablen werden nicht unterstützt. Daten werde
 - ImGui-Aufrufe sind ausschließlich während `on_render` erlaubt.
 - Plugin-Reload erfolgt zunächst manuell. Automatisches File-Watching kommt erst, wenn Unload und State-Verlust zuverlässig getestet sind.
 - Native DLL-Plugins wären vollständig vertrauenswürdig und könnten den Prozess kompromittieren; dafür wäre später eine separate, versionierte C-ABI nötig.
+- Paketänderungen werden zuerst vollständig aufgelöst und als Plan angezeigt. Downloads landen in einem temporären Bereich; erst nach erfolgreicher Validierung wird der neue Lock-Zustand atomar aktiviert.
 
 ## Umsetzung in Phasen
 
@@ -245,10 +255,10 @@ Abnahme: Ein Script kann ein Fenster anzeigen; Syntax- und Laufzeitfehler bleibe
 ### Phase 4: Pakete und Dependencies
 
 - JSON-Manifestparser, Schema-Prüfung und sichere Pfadauflösung.
-- SemVer-Bereiche, Zyklenerkennung und topologische Sortierung.
+- SemVer-Bereiche ergänzen, zyklische Ladegruppen bilden und deren Graph topologisch sortieren.
 - Imports und Service Registry implementieren.
 
-Abnahme: Tests für fehlende Dependency, falsche Version, Zyklus, deterministische Reihenfolge und Export/Import.
+Abnahme: Tests für fehlende Dependency, falsche Version, Pflicht- und optionale Zyklen, deterministische Gruppenreihenfolge und Export/Import.
 
 ### Phase 5: Betrieb
 
@@ -287,4 +297,3 @@ Nach Phase 1 und 2 nicht sofort die komplette ImGui-API binden. Der erste End-to
 - sichtbarer Status in der Host-Konsole.
 
 Damit werden Pfade, Ownership, Callbacks, Fehlerbehandlung und Rendering einmal vollständig bewiesen, bevor die API-Fläche wächst.
-

@@ -14,6 +14,10 @@
     <Filter Include="Source Files\Core\Logger">
       <UniqueIdentifier>{B909DB74-8BF7-4731-AEAB-B5AF9CC5C823}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Plugins">
+      <UniqueIdentifier>{82160E59-D147-4C82-93AE-8911733607C5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core\Versions"><UniqueIdentifier>{75E219E6-C7DE-4D48-B642-9E7465584214}</UniqueIdentifier></Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4B04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
@@ -38,6 +42,12 @@
     <ClCompile Include="src\core\logger\LoggerTests.cpp">
       <Filter>Source Files\Core\Logger</Filter>
     </ClCompile>
+    <ClCompile Include="src\plugins\PluginDependencyResolverTests.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
+    <ClCompile Include="src\plugins\PluginManifestParserTests.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
+    <ClCompile Include="src\plugins\PluginPackagePlannerTests.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
+    <ClCompile Include="src\plugins\PluginReloadPlannerTests.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
+    <ClCompile Include="src\plugins\PluginVersionSolverTests.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
+    <ClCompile Include="src\core\versions\SemanticVersionRangeTests.cpp"><Filter>Source Files\Core\Versions</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VersionInfo.rc">

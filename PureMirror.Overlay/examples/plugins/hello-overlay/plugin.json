@@ -5,7 +5,14 @@
   "version": "0.1.0",
   "apiVersion": "1.0",
   "entry": "scripts/main.as",
-  "dependencies": {},
-  "capabilities": ["ui", "logging"]
+  "exports": [
+    "scripts/exports/export1.as"
+  ],
+  "dependencies": {
+    "com.example.shared": ">=1.2.0 <2.0.0"
+  },
+  "optionalDependencies": {
+    "com.example.shared2": ">=1.2.0 <2.0.0"
+  },
+  "capabilities": [ "ui", "logging" ]
 }
-

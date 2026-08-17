@@ -31,6 +31,14 @@
     <Filter Include="Source Files\Core\Logger">
       <UniqueIdentifier>{CA959728-747D-4361-82F9-1D6C9E761F6A}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Plugins">
+      <UniqueIdentifier>{A7600B79-66B1-4E71-A41B-F951238BEF5B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Plugins">
+      <UniqueIdentifier>{02D9098C-B8EA-4C76-A1B8-1739D4C7B637}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core\Versions"><UniqueIdentifier>{BE98340B-0020-4369-A40F-3A65A6123396}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Core\Versions"><UniqueIdentifier>{80DB4A82-A04D-4249-9593-562D2E09B046}</UniqueIdentifier></Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CustomerQueue.cpp">
@@ -117,6 +125,30 @@
     <ClInclude Include="src\core\logger\Logger.h">
       <Filter>Header Files\Core\Logger</Filter>
     </ClInclude>
+    <ClInclude Include="src\plugins\IPluginPackageProvider.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginChange.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginChangePlan.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginChangeType.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginDependency.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginDependencyIssue.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginDependencyIssueType.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginDependencyResolution.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginDependencyResolver.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginManifest.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginManifestError.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginManifestParseResult.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginManifestParser.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginInstallation.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginPackage.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginPackagePlanner.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginPackageOrigin.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginReloadPlan.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginReloadPlanner.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginVersionSelectionError.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginVersionSelectionResult.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\plugins\PluginVersionSolver.h"><Filter>Header Files\Plugins</Filter></ClInclude>
+    <ClInclude Include="src\core\versions\SemanticVersion.h"><Filter>Header Files\Core\Versions</Filter></ClInclude>
+    <ClInclude Include="src\core\versions\SemanticVersionRange.h"><Filter>Header Files\Core\Versions</Filter></ClInclude>
     <ClCompile Include="src\ui\console\ConsoleWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -155,6 +187,13 @@
     <ClCompile Include="src\core\logger\Logger.cpp">
       <Filter>Source Files\Core\Logger</Filter>
     </ClCompile>
+    <ClCompile Include="src\plugins\PluginDependencyResolver.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
+    <ClCompile Include="src\plugins\PluginManifestParser.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
+    <ClCompile Include="src\plugins\PluginPackagePlanner.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
+    <ClCompile Include="src\plugins\PluginReloadPlanner.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
+    <ClCompile Include="src\plugins\PluginVersionSolver.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
+    <ClCompile Include="src\core\versions\SemanticVersion.cpp"><Filter>Source Files\Core\Versions</Filter></ClCompile>
+    <ClCompile Include="src\core\versions\SemanticVersionRange.cpp"><Filter>Source Files\Core\Versions</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VersionInfo.rc">
