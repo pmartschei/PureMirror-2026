@@ -20,6 +20,16 @@ namespace PureMirror::Overlay::Tests
         class PluginManagerScriptHost final : public IScriptHost
         {
           public:
+            void BeginScriptCall(std::string_view pluginId) override
+            {
+                static_cast<void>(pluginId);
+            }
+
+            void EndScriptCall(std::string_view pluginId) override
+            {
+                static_cast<void>(pluginId);
+            }
+
             void LogInfo(std::string_view pluginId, std::string_view message) override
             {
                 static_cast<void>(pluginId);
@@ -151,9 +161,9 @@ namespace PureMirror::Overlay::Tests
 
             const auto discoveredCount = manager.ScanPlugins(ExamplePluginsRoot());
 
-            Assert::AreEqual(std::size_t{5}, discoveredCount);
+            Assert::AreEqual(std::size_t{6}, discoveredCount);
             Assert::AreEqual(std::size_t{0}, manager.LoadedPluginCount());
-            Assert::AreEqual(std::size_t{5}, manager.AvailablePlugins().size());
+            Assert::AreEqual(std::size_t{6}, manager.AvailablePlugins().size());
 
             Assert::IsTrue(manager.LoadPlugin("com.puremirror.example.hello-overlay"));
             Assert::AreEqual(std::size_t{1}, manager.LoadedPluginCount());
@@ -171,7 +181,7 @@ namespace PureMirror::Overlay::Tests
             AngelScriptEngine scriptEngine(&scriptHost);
             PluginManager manager(scriptEngine, logger);
 
-            Assert::AreEqual(std::size_t{5}, manager.ScanPlugins(ExamplePluginsRoot()));
+            Assert::AreEqual(std::size_t{6}, manager.ScanPlugins(ExamplePluginsRoot()));
 
             Assert::IsTrue(manager.LoadPlugin("com.puremirror.example.dependency-consumer"));
             Assert::AreEqual(std::size_t{2}, manager.LoadedPluginCount());
@@ -245,6 +255,35 @@ namespace PureMirror::Overlay::Tests
             Assert::AreEqual(std::size_t{2}, manager.LoadedPluginCount());
 
             manager.UnloadAll();
+            std::filesystem::remove_all(pluginsRoot, error);
+        }
+
+        TEST_METHOD(RenderFailure_LogsSubsequentUnloadFailure)
+        {
+            const auto pluginsRoot = std::filesystem::temp_directory_path() / "PureMirror.PluginUnloadTimeoutTests";
+            std::error_code error;
+            std::filesystem::remove_all(pluginsRoot, error);
+            CreatePlugin(pluginsRoot, "com.test.timeout", "Timeout");
+            std::ofstream(pluginsRoot / "com.test.timeout/scripts/main.as") << "void on_load() {}\n"
+                                                                               "void on_render() { while (true) {} }\n"
+                                                                               "void on_unload() { while (true) {} }\n";
+
+            Logger logger;
+            PluginManagerScriptHost scriptHost;
+            AngelScriptEngine scriptEngine(&scriptHost);
+            PluginManager manager(scriptEngine, logger);
+
+            Assert::AreEqual(std::size_t{1}, manager.ScanPlugins(pluginsRoot));
+            Assert::IsTrue(manager.LoadPlugin("com.test.timeout"));
+            manager.Render();
+
+            const auto messages = logger.Snapshot();
+            const auto containsMessageId = [&](const std::string_view messageId)
+            { return std::ranges::find(messages, messageId, &LogMessage::MessageId) != messages.end(); };
+            Assert::IsTrue(containsMessageId("plugins.script.render.com.test.timeout"));
+            Assert::IsTrue(containsMessageId("plugins.script.unload.com.test.timeout"));
+            Assert::AreEqual(std::size_t{0}, manager.LoadedPluginCount());
+
             std::filesystem::remove_all(pluginsRoot, error);
         }
     };

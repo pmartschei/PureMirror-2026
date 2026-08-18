@@ -74,6 +74,7 @@
     <ClCompile Include="src\plugins\PluginReloadPlannerTests.cpp" />
     <ClCompile Include="src\plugins\PluginVersionSolverTests.cpp" />
     <ClCompile Include="src\scripting\PluginScriptCompilerTests.cpp" />
+    <ClCompile Include="src\scripting\ScriptUiScopeStackTests.cpp" />
     <ClCompile Include="src\scripting\ExamplePluginIntegrationTests.cpp" />
     <ClCompile Include="src\scripting\angelscript\AngelScriptEngineTests.cpp" />
   </ItemGroup>
@@ -86,6 +87,7 @@
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\plugins\**\*.cpp" />
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\PluginScriptCompiler.cpp" />
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\PluginScriptInstance.cpp" />
+    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\ScriptUiScopeStack.cpp" />
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\AngelScriptEngine.cpp" />
   </ItemGroup>
   <ItemGroup>

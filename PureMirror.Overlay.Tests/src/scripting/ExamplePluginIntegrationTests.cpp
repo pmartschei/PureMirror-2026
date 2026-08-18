@@ -19,6 +19,16 @@ namespace PureMirror::Overlay::Tests
         class RecordingScriptHost final : public IScriptHost
         {
           public:
+            void BeginScriptCall(std::string_view pluginId) override
+            {
+                static_cast<void>(pluginId);
+            }
+
+            void EndScriptCall(std::string_view pluginId) override
+            {
+                static_cast<void>(pluginId);
+            }
+
             void LogInfo(const std::string_view pluginId, const std::string_view message) override
             {
                 PluginIds.emplace_back(pluginId);
@@ -29,12 +39,14 @@ namespace PureMirror::Overlay::Tests
             {
                 static_cast<void>(pluginId);
                 static_cast<void>(title);
+                ++BeginWindowCallCount;
                 return true;
             }
 
             void EndWindow(std::string_view pluginId) override
             {
                 static_cast<void>(pluginId);
+                ++EndWindowCallCount;
             }
 
             void Text(std::string_view pluginId, const std::string_view value) override
@@ -53,14 +65,16 @@ namespace PureMirror::Overlay::Tests
             std::vector<std::string> PluginIds;
             std::vector<std::string> LogMessages;
             std::vector<std::string> TextValues;
+            std::size_t BeginWindowCallCount{};
+            std::size_t EndWindowCallCount{};
         };
 
-        std::filesystem::path ExamplePluginRoot()
+        std::filesystem::path ExamplePluginRoot(const std::string_view pluginDirectory = "hello-overlay")
         {
             auto repositoryRoot = std::filesystem::path(__FILE__).parent_path();
             for (int level{}; level < 3; ++level)
                 repositoryRoot = repositoryRoot.parent_path();
-            return repositoryRoot / "PureMirror.Overlay/examples/plugins/hello-overlay";
+            return repositoryRoot / "PureMirror.Overlay/examples/plugins" / pluginDirectory;
         }
     }  // namespace
 
@@ -91,6 +105,29 @@ namespace PureMirror::Overlay::Tests
             Assert::AreEqual(std::string{"Hello Overlay unloaded"}, host.LogMessages.back());
             Assert::AreEqual(std::string{"com.puremirror.example.hello-overlay"}, host.PluginIds.front());
             Assert::AreEqual(std::size_t{2}, host.TextValues.size());
+        }
+
+        TEST_METHOD(Render_IntentionalTimeoutExampleExceedsDeadlineBeforeClosingWindow)
+        {
+            const auto pluginRoot = ExamplePluginRoot("render-timeout");
+            std::ifstream manifestStream(pluginRoot / "plugin.json", std::ios::binary);
+            const std::string json{std::istreambuf_iterator<char>{manifestStream}, std::istreambuf_iterator<char>{}};
+            const auto parsedManifest = PluginManifestParser{}.Parse(json);
+            Assert::IsTrue(parsedManifest.IsSuccessful());
+
+            RecordingScriptHost host;
+            AngelScriptEngine engine(&host);
+            PluginScriptInstance plugin(engine, parsedManifest.Manifest, pluginRoot);
+
+            Assert::IsTrue(plugin.Load().IsSuccessful());
+            const auto rendered = plugin.Render();
+
+            Assert::IsFalse(rendered.IsSuccessful());
+            Assert::IsFalse(rendered.Diagnostics.empty());
+            Assert::IsTrue(rendered.Diagnostics.front().Message.find("100 ms") != std::string::npos);
+            Assert::AreEqual(std::size_t{1}, host.BeginWindowCallCount);
+            Assert::AreEqual(std::size_t{0}, host.EndWindowCallCount);
+            Assert::IsTrue(plugin.Unload().IsSuccessful());
         }
     };
 }  // namespace PureMirror::Overlay::Tests

@@ -1,0 +1,12 @@
+{
+    "schemaVersion": 1,
+    "id": "com.puremirror.example.render-timeout",
+    "name": "Render Timeout (Intentional)",
+    "version": "1.0.0",
+    "apiVersion": "1.0",
+    "entry": "scripts/main.as",
+    "exports": [],
+    "dependencies": {},
+    "optionalDependencies": {},
+    "capabilities": [ "ui", "logging" ]
+}

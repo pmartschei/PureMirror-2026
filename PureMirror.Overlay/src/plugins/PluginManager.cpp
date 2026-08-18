@@ -293,7 +293,11 @@ namespace PureMirror::Overlay
                 m_Logger.Error(PluginManagerOrigin,
                                "Plugin '" + result.ModuleId + "': " + DiagnosticMessage(diagnostic),
                                "plugins.script.render." + result.ModuleId);
-            static_cast<void>((*plugin)->Unload());
+            const auto unloadResult = (*plugin)->Unload();
+            for (const auto& diagnostic : unloadResult.Diagnostics)
+                m_Logger.Error(PluginManagerOrigin,
+                               "Plugin '" + unloadResult.ModuleId + "': " + DiagnosticMessage(diagnostic),
+                               "plugins.script.unload." + unloadResult.ModuleId);
             failedPluginIds.push_back(result.ModuleId);
             plugin = m_LoadedPlugins.erase(plugin);
         }

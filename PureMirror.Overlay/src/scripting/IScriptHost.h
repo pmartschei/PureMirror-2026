@@ -9,6 +9,8 @@ namespace PureMirror::Overlay
       public:
         virtual ~IScriptHost() = default;
 
+        virtual void BeginScriptCall(std::string_view pluginId) = 0;
+        virtual void EndScriptCall(std::string_view pluginId) = 0;
         virtual void LogInfo(std::string_view pluginId, std::string_view message) = 0;
         [[nodiscard]] virtual bool BeginWindow(std::string_view pluginId, std::string_view title) = 0;
         virtual void EndWindow(std::string_view pluginId) = 0;

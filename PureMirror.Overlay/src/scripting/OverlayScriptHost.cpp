@@ -6,26 +6,50 @@
 
 namespace PureMirror::Overlay
 {
+    namespace
+    {
+        LogOrigin PluginOrigin(const std::string_view pluginId)
+        {
+            return {.Type = LogOriginType::Plugin,
+                    .Identifier = std::string(pluginId),
+                    .DisplayName = std::string(pluginId)};
+        }
+    }  // namespace
+
     OverlayScriptHost::OverlayScriptHost(Logger& logger) : m_Logger(logger) {}
+
+    void OverlayScriptHost::BeginScriptCall(const std::string_view pluginId)
+    {
+        static_cast<void>(pluginId);
+        RecoverOpenScopes();
+    }
+
+    void OverlayScriptHost::EndScriptCall(const std::string_view pluginId)
+    {
+        static_cast<void>(pluginId);
+        RecoverOpenScopes();
+    }
 
     void OverlayScriptHost::LogInfo(const std::string_view pluginId, const std::string_view message)
     {
-        m_Logger.Info(
-            {.Type = LogOriginType::Plugin, .Identifier = std::string(pluginId), .DisplayName = std::string(pluginId)},
-            message);
+        m_Logger.Info(PluginOrigin(pluginId), message);
     }
 
     bool OverlayScriptHost::BeginWindow(const std::string_view pluginId, const std::string_view title)
     {
         static_cast<void>(pluginId);
         const std::string ownedTitle(title);
-        return ImGui::Begin(ownedTitle.c_str());
+        const auto isVisible = ImGui::Begin(ownedTitle.c_str());
+        m_UiScopes.Open(std::string(pluginId), "ImGui::Begin()", "ImGui::End()", [] { ImGui::End(); });
+        return isVisible;
     }
 
     void OverlayScriptHost::EndWindow(const std::string_view pluginId)
     {
-        static_cast<void>(pluginId);
-        ImGui::End();
+        const auto closed =
+            m_UiScopes.Close("ImGui::End()", [this](const ScriptUiScope& scope) { LogRecoveredScope(scope); });
+        if (!closed)
+            LogUnexpectedClose(pluginId, "ImGui::End()");
     }
 
     void OverlayScriptHost::Text(const std::string_view pluginId, const std::string_view value)
@@ -40,5 +64,26 @@ namespace PureMirror::Overlay
         static_cast<void>(pluginId);
         const std::string ownedLabel(label);
         return ImGui::Button(ownedLabel.c_str());
+    }
+
+    void OverlayScriptHost::RecoverOpenScopes()
+    {
+        m_UiScopes.CloseAll([this](const ScriptUiScope& scope) { LogRecoveredScope(scope); });
+    }
+
+    void OverlayScriptHost::LogRecoveredScope(const ScriptUiScope& scope)
+    {
+        m_Logger.Warning(PluginOrigin(scope.OwnerId),
+                         "Plugin did not call " + scope.ClosingCommand + " after " + scope.OpeningCommand +
+                             "; the host closed the UI scope automatically.",
+                         "script.ui.scope.recovered." + scope.OwnerId + '.' + scope.ClosingCommand);
+    }
+
+    void OverlayScriptHost::LogUnexpectedClose(const std::string_view pluginId, const std::string_view closingCommand)
+    {
+        m_Logger.Warning(PluginOrigin(pluginId),
+                         "Plugin called " + std::string(closingCommand) +
+                             " without a matching open UI scope; the call was ignored.",
+                         "script.ui.scope.unmatched." + std::string(pluginId) + '.' + std::string(closingCommand));
     }
 }  // namespace PureMirror::Overlay

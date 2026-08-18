@@ -232,6 +232,8 @@ xcopy /Y /E /I "$(ProjectDir)examples\plugins" "D:\Spiele\Path of Exile\puremirr
     <ClInclude Include="src\scripting\ScriptDiagnosticSeverity.h" />
     <ClInclude Include="src\scripting\ScriptModuleLoadResult.h" />
     <ClInclude Include="src\scripting\ScriptSource.h" />
+    <ClInclude Include="src\scripting\ScriptUiScope.h" />
+    <ClInclude Include="src\scripting\ScriptUiScopeStack.h" />
     <ClInclude Include="src\scripting\angelscript\AngelScriptEngine.h" />
     <ClInclude Include="src\ui\MainMenuBar.h" />
     <ClInclude Include="src\ui\console\ConsoleWindow.h" />
@@ -259,6 +261,7 @@ xcopy /Y /E /I "$(ProjectDir)examples\plugins" "D:\Spiele\Path of Exile\puremirr
     <ClCompile Include="src\plugins\PluginVersionSolver.cpp" />
     <ClCompile Include="src\scripting\PluginScriptCompiler.cpp" />
     <ClCompile Include="src\scripting\PluginScriptInstance.cpp" />
+    <ClCompile Include="src\scripting\ScriptUiScopeStack.cpp" />
     <ClCompile Include="src\scripting\OverlayScriptHost.cpp" />
     <ClCompile Include="src\scripting\angelscript\AngelScriptEngine.cpp" />
     <ClCompile Include="src\ui\MainMenuBar.cpp" />

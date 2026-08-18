@@ -7,6 +7,11 @@
 
 namespace PureMirror::Overlay
 {
+    namespace
+    {
+        constexpr auto ScriptExecutionTimeLimit = std::chrono::milliseconds(100);
+    }
+
     class AngelScriptEngine::Implementation
     {
       public:
@@ -118,8 +123,33 @@ namespace PureMirror::Overlay
                 return result;
             }
 
+            m_DidExecutionTimeOut = false;
+            m_ExecutionDeadline = std::chrono::steady_clock::now() + ScriptExecutionTimeLimit;
+            if (context->SetLineCallback(asMETHOD(Implementation, EnforceExecutionDeadline), this, asCALL_THISCALL) < 0)
+            {
+                context->Release();
+                result.Status = ScriptCallStatus::Failed;
+                result.Diagnostics.push_back({.Severity = ScriptDiagnosticSeverity::Error,
+                                              .Message = "AngelScript execution deadline could not be installed."});
+                return result;
+            }
+
+            if (m_ScriptHost != nullptr)
+                m_ScriptHost->BeginScriptCall(moduleId);
+            const auto executionStartedAt = std::chrono::steady_clock::now();
             const auto execution = context->Execute();
-            if (execution == asEXECUTION_FINISHED)
+            const auto executionDuration = std::chrono::steady_clock::now() - executionStartedAt;
+            if (m_ScriptHost != nullptr)
+                m_ScriptHost->EndScriptCall(moduleId);
+            context->ClearLineCallback();
+
+            if (m_DidExecutionTimeOut || executionDuration > ScriptExecutionTimeLimit)
+            {
+                result.Status = ScriptCallStatus::Failed;
+                result.Diagnostics.push_back({.Severity = ScriptDiagnosticSeverity::Error,
+                                              .Message = "Script execution exceeded the 100 ms time limit."});
+            }
+            else if (execution == asEXECUTION_FINISHED)
             {
                 result.Status = ScriptCallStatus::Executed;
             }
@@ -182,6 +212,14 @@ namespace PureMirror::Overlay
         }
 
       private:
+        void EnforceExecutionDeadline(asIScriptContext* context)
+        {
+            if (context == nullptr || std::chrono::steady_clock::now() <= m_ExecutionDeadline)
+                return;
+            m_DidExecutionTimeOut = true;
+            static_cast<void>(context->Abort());
+        }
+
         bool RegisterHostBindings()
         {
             const auto require = [&](const int code, const std::string_view operation)
@@ -283,6 +321,8 @@ namespace PureMirror::Overlay
         std::string m_InitializationError;
         std::vector<ScriptDiagnostic> m_Diagnostics;
         std::mutex m_Mutex;
+        std::chrono::steady_clock::time_point m_ExecutionDeadline;
+        bool m_DidExecutionTimeOut{};
     };
 
     AngelScriptEngine::AngelScriptEngine(IScriptHost* scriptHost)

@@ -1,13 +1,69 @@
 #include "CppUnitTest.h"
 #include "src/scripting/angelscript/AngelScriptEngine.h"
 
+#include <chrono>
+#include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace PureMirror::Overlay::Tests
 {
+    namespace
+    {
+        class ExecutionTrackingScriptHost final : public IScriptHost
+        {
+          public:
+            void BeginScriptCall(std::string_view pluginId) override
+            {
+                static_cast<void>(pluginId);
+                ++BeginCallCount;
+            }
+
+            void EndScriptCall(std::string_view pluginId) override
+            {
+                static_cast<void>(pluginId);
+                ++EndCallCount;
+            }
+
+            void LogInfo(std::string_view pluginId, std::string_view message) override
+            {
+                static_cast<void>(pluginId);
+                static_cast<void>(message);
+            }
+
+            bool BeginWindow(std::string_view pluginId, std::string_view title) override
+            {
+                static_cast<void>(pluginId);
+                static_cast<void>(title);
+                return true;
+            }
+
+            void EndWindow(std::string_view pluginId) override
+            {
+                static_cast<void>(pluginId);
+            }
+
+            void Text(std::string_view pluginId, std::string_view value) override
+            {
+                static_cast<void>(pluginId);
+                static_cast<void>(value);
+            }
+
+            bool Button(std::string_view pluginId, std::string_view label) override
+            {
+                static_cast<void>(pluginId);
+                static_cast<void>(label);
+                return false;
+            }
+
+            std::size_t BeginCallCount{};
+            std::size_t EndCallCount{};
+        };
+    }  // namespace
+
     TEST_CLASS(AngelScriptEngineTests)
     {
       public:
@@ -84,6 +140,25 @@ namespace PureMirror::Overlay::Tests
             Assert::IsTrue(missing.Status == ScriptCallStatus::NotFound);
             Assert::IsFalse(failed.IsSuccessful());
             Assert::IsFalse(failed.Diagnostics.empty());
+        }
+
+        TEST_METHOD(CallFunction_AbortsAfterOneHundredMillisecondsAndFinishesHostCall)
+        {
+            ExecutionTrackingScriptHost host;
+            AngelScriptEngine engine(&host);
+            const std::vector sources{ScriptSource{"main.as", "void run() { while (true) {} }"}};
+            Assert::IsTrue(engine.LoadModule("com.example.timeout", sources).IsSuccessful());
+
+            const auto startedAt = std::chrono::steady_clock::now();
+            const auto result = engine.CallFunction("com.example.timeout", "void run()");
+            const auto duration = std::chrono::steady_clock::now() - startedAt;
+
+            Assert::IsFalse(result.IsSuccessful());
+            Assert::IsTrue(duration < std::chrono::seconds(1));
+            Assert::AreEqual(std::size_t{1}, host.BeginCallCount);
+            Assert::AreEqual(std::size_t{1}, host.EndCallCount);
+            Assert::IsFalse(result.Diagnostics.empty());
+            Assert::IsTrue(result.Diagnostics.front().Message.find("100 ms") != std::string::npos);
         }
     };
 }  // namespace PureMirror::Overlay::Tests
