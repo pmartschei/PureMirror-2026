@@ -8,6 +8,7 @@
 #include "PluginReloadPlanner.h"
 #include "PluginVersionSolver.h"
 #include "src/core/versions/SemanticVersion.h"
+#include "src/core/versions/SemanticVersionRange.h"
 #include "src/scripting/PluginScriptInstance.h"
 
 #include <fstream>
@@ -56,6 +57,32 @@ namespace PureMirror::Overlay
             return std::ranges::find(
                        packages, pluginId, [](const PluginPackage& package) { return package.Manifest.Id; }) !=
                    packages.end();
+        }
+
+        std::vector<PluginPackage> DependencyPackages(const PluginPackage& package,
+                                                      const std::vector<PluginInstallation>& installations)
+        {
+            std::vector<PluginPackage> result;
+            std::unordered_set<std::string> addedIds;
+            const auto addDependency = [&](const PluginDependency& dependency)
+            {
+                const auto installation =
+                    std::ranges::find(installations,
+                                      dependency.Id,
+                                      [](const PluginInstallation& value) { return value.Package.Manifest.Id; });
+                if (installation == installations.end())
+                    return;
+                const auto version = SemanticVersion::Parse(installation->Package.Manifest.Version);
+                if (!version || !SemanticVersionRange::Contains(dependency.VersionRange, *version))
+                    return;
+                if (addedIds.insert(dependency.Id).second)
+                    result.push_back(installation->Package);
+            };
+            for (const auto& dependency : package.Manifest.Dependencies)
+                addDependency(dependency);
+            for (const auto& dependency : package.Manifest.OptionalDependencies)
+                addDependency(dependency);
+            return result;
         }
     }  // namespace
 
@@ -298,6 +325,18 @@ namespace PureMirror::Overlay
                                            const std::vector<std::vector<std::string>>& loadGroups)
     {
         const auto previousInstallations = m_Installations;
+        const auto restorePreviousInstallations = [&]
+        {
+            UnloadAll();
+            std::vector<PluginManifest> previousManifests;
+            previousManifests.reserve(previousInstallations.size());
+            for (const auto& installation : previousInstallations)
+                previousManifests.push_back(installation.Package.Manifest);
+            const auto previousResolution = PluginDependencyResolver{}.Resolve(previousManifests);
+            if (previousResolution.IsSuccessful() && LoadGroups(previousInstallations, previousResolution.LoadGroups))
+                m_Installations = previousInstallations;
+        };
+
         std::map<std::string, const PluginInstallation*> currentById;
         for (const auto& installation : m_Installations)
             currentById.emplace(installation.Package.Manifest.Id, &installation);
@@ -313,12 +352,33 @@ namespace PureMirror::Overlay
                                     return current != currentById.end() && current->second->Package.Manifest.Version !=
                                                                                desired.second->Package.Manifest.Version;
                                 });
-        if (versionChanged)
+        const auto hasCompatibleDependency = [](const auto& installationsById, const PluginDependency& dependency)
+        {
+            const auto installation = installationsById.find(dependency.Id);
+            if (installation == installationsById.end())
+                return false;
+            const auto version = SemanticVersion::Parse(installation->second->Package.Manifest.Version);
+            return version && SemanticVersionRange::Contains(dependency.VersionRange, *version);
+        };
+        const auto optionalDependenciesChanged = std::ranges::any_of(
+            desiredById,
+            [&](const auto& desired)
+            {
+                const auto current = currentById.find(desired.first);
+                if (current == currentById.end())
+                    return false;
+                return std::ranges::any_of(desired.second->Package.Manifest.OptionalDependencies,
+                                           [&](const PluginDependency& dependency) {
+                                               return hasCompatibleDependency(currentById, dependency) !=
+                                                      hasCompatibleDependency(desiredById, dependency);
+                                           });
+            });
+        if (versionChanged || optionalDependenciesChanged)
         {
             UnloadAll();
             if (!LoadGroups(installations, loadGroups))
             {
-                UnloadAll();
+                restorePreviousInstallations();
                 return false;
             }
             m_Installations = std::move(installations);
@@ -352,14 +412,7 @@ namespace PureMirror::Overlay
 
         if (!LoadGroups(installations, loadGroups))
         {
-            UnloadAll();
-            std::vector<PluginManifest> previousManifests;
-            previousManifests.reserve(previousInstallations.size());
-            for (const auto& installation : previousInstallations)
-                previousManifests.push_back(installation.Package.Manifest);
-            const auto previousResolution = PluginDependencyResolver{}.Resolve(previousManifests);
-            if (previousResolution.IsSuccessful() && LoadGroups(previousInstallations, previousResolution.LoadGroups))
-                m_Installations = previousInstallations;
+            restorePreviousInstallations();
             return false;
         }
         m_Installations = std::move(installations);
@@ -371,37 +424,71 @@ namespace PureMirror::Overlay
     {
         for (const auto& loadGroup : loadGroups)
         {
+            std::vector<std::unique_ptr<PluginScriptInstance>> groupInstances;
+            std::vector<const PluginPackage*> groupPackages;
             for (const auto& pluginId : loadGroup)
             {
                 if (IsPluginLoaded(pluginId))
                     continue;
                 const auto installation = std::ranges::find(
                     installations, pluginId, [](const PluginInstallation& value) { return value.Package.Manifest.Id; });
-                if (installation == installations.end() || !LoadPackage(installation->Package))
+                if (installation == installations.end())
                     return false;
+
+                auto instance =
+                    std::make_unique<PluginScriptInstance>(m_ScriptEngine,
+                                                           installation->Package.Manifest,
+                                                           std::filesystem::path(installation->Package.Location));
+                const auto compileResult = instance->Compile(DependencyPackages(installation->Package, installations));
+                if (!compileResult.IsSuccessful())
+                {
+                    for (const auto& diagnostic : compileResult.Diagnostics)
+                        m_Logger.Error(PluginManagerOrigin,
+                                       "Plugin '" + pluginId + "': " + DiagnosticMessage(diagnostic),
+                                       "plugins.script.compile");
+                    return false;
+                }
+                groupPackages.push_back(&installation->Package);
+                groupInstances.push_back(std::move(instance));
+            }
+
+            for (std::size_t index{}; index < groupInstances.size(); ++index)
+            {
+                const auto bindResult = groupInstances[index]->BindImports();
+                if (!bindResult.IsSuccessful())
+                {
+                    for (const auto& diagnostic : bindResult.Diagnostics)
+                        m_Logger.Error(PluginManagerOrigin,
+                                       "Plugin '" + groupPackages[index]->Manifest.Id +
+                                           "': " + DiagnosticMessage(diagnostic),
+                                       "plugins.script.bind");
+                    return false;
+                }
+            }
+
+            for (std::size_t index{}; index < groupInstances.size(); ++index)
+            {
+                const auto activation = groupInstances[index]->Activate();
+                if (!activation.IsSuccessful())
+                {
+                    for (const auto& diagnostic : activation.Diagnostics)
+                        m_Logger.Error(PluginManagerOrigin,
+                                       "Plugin '" + groupPackages[index]->Manifest.Id +
+                                           "': " + DiagnosticMessage(diagnostic),
+                                       "plugins.script.load");
+                    return false;
+                }
+            }
+
+            for (std::size_t index{}; index < groupInstances.size(); ++index)
+            {
+                const auto& package = *groupPackages[index];
+                m_Logger.Info(PluginManagerOrigin,
+                              "Loaded plugin '" + package.Manifest.Name + "' " + package.Manifest.Version + ".",
+                              "plugins.loaded." + package.Manifest.Id);
+                m_LoadedPlugins.push_back(std::move(groupInstances[index]));
             }
         }
-        return true;
-    }
-
-    bool PluginManager::LoadPackage(const PluginPackage& package)
-    {
-        auto instance = std::make_unique<PluginScriptInstance>(
-            m_ScriptEngine, package.Manifest, std::filesystem::path(package.Location));
-        const auto loadResult = instance->Load();
-        if (!loadResult.IsSuccessful())
-        {
-            for (const auto& diagnostic : loadResult.Diagnostics)
-                m_Logger.Error(PluginManagerOrigin,
-                               "Plugin '" + package.Manifest.Id + "': " + DiagnosticMessage(diagnostic),
-                               "plugins.script.load");
-            return false;
-        }
-
-        m_Logger.Info(PluginManagerOrigin,
-                      "Loaded plugin '" + package.Manifest.Name + "' " + package.Manifest.Version + ".",
-                      "plugins.loaded." + package.Manifest.Id);
-        m_LoadedPlugins.push_back(std::move(instance));
         return true;
     }
 

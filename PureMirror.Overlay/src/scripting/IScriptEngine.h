@@ -16,6 +16,7 @@ namespace PureMirror::Overlay
 
         [[nodiscard]] virtual ScriptModuleLoadResult LoadModule(std::string_view moduleId,
                                                                 const std::vector<ScriptSource>& sources) = 0;
+        [[nodiscard]] virtual ScriptModuleLoadResult BindModuleImports(std::string_view moduleId) = 0;
         [[nodiscard]] virtual ScriptCallResult CallFunction(std::string_view moduleId,
                                                             std::string_view functionDeclaration) = 0;
         virtual void UnloadModule(std::string_view moduleId) = 0;

@@ -52,6 +52,24 @@ namespace PureMirror::Overlay::Tests
             Assert::IsTrue(result.IsSuccessful());
         }
 
+        TEST_METHOD(BindModuleImports_BindsFunctionsFromLoadedProvider)
+        {
+            AngelScriptEngine engine;
+            const std::vector providerSources{ScriptSource{"main.as", "int exported_value() { return 42; }"}};
+            const std::vector consumerSources{ScriptSource{"main.as",
+                                                           "import int exported_value() from \"com.example.provider\"; "
+                                                           "void on_load() { exported_value(); }"}};
+
+            Assert::IsTrue(engine.LoadModule("com.example.provider", providerSources).IsSuccessful());
+            Assert::IsTrue(engine.LoadModule("com.example.consumer", consumerSources).IsSuccessful());
+
+            const auto bindings = engine.BindModuleImports("com.example.consumer");
+            const auto callback = engine.CallFunction("com.example.consumer", "void on_load()");
+
+            Assert::IsTrue(bindings.IsSuccessful());
+            Assert::IsTrue(callback.IsSuccessful());
+        }
+
         TEST_METHOD(CallFunction_TreatsMissingCallbackAsSuccessfulAndReportsExceptions)
         {
             AngelScriptEngine engine;

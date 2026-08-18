@@ -13,29 +13,67 @@ namespace PureMirror::Overlay
 
     PluginScriptInstance::~PluginScriptInstance()
     {
-        if (m_IsLoaded)
-        {
-            static_cast<void>(m_ScriptEngine.CallFunction(m_Manifest.Id, "void on_unload()"));
-            m_ScriptEngine.UnloadModule(m_Manifest.Id);
-        }
+        if (m_IsCompiled)
+            static_cast<void>(Unload());
     }
 
-    ScriptModuleLoadResult PluginScriptInstance::Load()
+    ScriptModuleLoadResult PluginScriptInstance::Load(const std::vector<PluginPackage>& dependencies)
     {
-        if (m_IsLoaded)
-            static_cast<void>(Unload());
-
-        auto result = PluginScriptCompiler(m_ScriptEngine).Compile(m_Manifest, m_PackageRoot);
+        auto result = Compile(dependencies);
         if (!result.IsSuccessful())
             return result;
 
-        const auto callback = m_ScriptEngine.CallFunction(m_Manifest.Id, "void on_load()");
-        if (!callback.IsSuccessful())
+        auto bindResult = BindImports();
+        result.Diagnostics.insert(
+            result.Diagnostics.end(), bindResult.Diagnostics.begin(), bindResult.Diagnostics.end());
+        if (!bindResult.IsSuccessful())
         {
-            result.Diagnostics.insert(
-                result.Diagnostics.end(), callback.Diagnostics.begin(), callback.Diagnostics.end());
             result.IsLoaded = false;
+            static_cast<void>(Unload());
+            return result;
+        }
+
+        const auto activation = Activate();
+        result.Diagnostics.insert(
+            result.Diagnostics.end(), activation.Diagnostics.begin(), activation.Diagnostics.end());
+        if (!activation.IsSuccessful())
+            result.IsLoaded = false;
+        return result;
+    }
+
+    ScriptModuleLoadResult PluginScriptInstance::Compile(const std::vector<PluginPackage>& dependencies)
+    {
+        if (m_IsCompiled)
+            static_cast<void>(Unload());
+
+        auto result = PluginScriptCompiler(m_ScriptEngine).Compile(m_Manifest, m_PackageRoot, dependencies);
+        m_IsCompiled = result.IsSuccessful();
+        return result;
+    }
+
+    ScriptModuleLoadResult PluginScriptInstance::BindImports()
+    {
+        if (!m_IsCompiled)
+            return {.ModuleId = m_Manifest.Id,
+                    .Diagnostics = {
+                        {.Severity = ScriptDiagnosticSeverity::Error, .Message = "Plugin script is not compiled."}}};
+        return m_ScriptEngine.BindModuleImports(m_Manifest.Id);
+    }
+
+    ScriptCallResult PluginScriptInstance::Activate()
+    {
+        if (!m_IsCompiled)
+            return {.Status = ScriptCallStatus::Failed,
+                    .ModuleId = m_Manifest.Id,
+                    .FunctionDeclaration = "void on_load()",
+                    .Diagnostics = {
+                        {.Severity = ScriptDiagnosticSeverity::Error, .Message = "Plugin script is not compiled."}}};
+
+        auto result = m_ScriptEngine.CallFunction(m_Manifest.Id, "void on_load()");
+        if (!result.IsSuccessful())
+        {
             m_ScriptEngine.UnloadModule(m_Manifest.Id);
+            m_IsCompiled = false;
             return result;
         }
         m_IsLoaded = true;
@@ -55,10 +93,13 @@ namespace PureMirror::Overlay
 
     ScriptCallResult PluginScriptInstance::Unload()
     {
-        if (!m_IsLoaded)
+        if (!m_IsCompiled)
             return {.ModuleId = m_Manifest.Id, .FunctionDeclaration = "void on_unload()"};
-        auto result = m_ScriptEngine.CallFunction(m_Manifest.Id, "void on_unload()");
+        auto result = m_IsLoaded
+                          ? m_ScriptEngine.CallFunction(m_Manifest.Id, "void on_unload()")
+                          : ScriptCallResult{.ModuleId = m_Manifest.Id, .FunctionDeclaration = "void on_unload()"};
         m_ScriptEngine.UnloadModule(m_Manifest.Id);
+        m_IsCompiled = false;
         m_IsLoaded = false;
         return result;
     }

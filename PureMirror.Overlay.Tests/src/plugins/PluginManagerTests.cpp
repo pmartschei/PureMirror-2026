@@ -90,6 +90,49 @@ namespace PureMirror::Overlay::Tests
                                                              "void on_unload() {}\n";
         }
 
+        void CreateOptionalExportPlugins(const std::filesystem::path& pluginsRoot)
+        {
+            CreatePlugin(pluginsRoot, "com.test.optional-provider", "Optional Provider");
+            const auto providerRoot = pluginsRoot / "com.test.optional-provider";
+            std::filesystem::create_directories(providerRoot / "scripts/exports");
+            std::ofstream(providerRoot / "plugin.json") << R"({
+  "schemaVersion": 1,
+  "id": "com.test.optional-provider",
+  "name": "Optional Provider",
+  "version": "1.0.0",
+  "apiVersion": "1.0",
+  "entry": "scripts/main.as",
+  "exports": ["scripts/exports/api.as"],
+  "dependencies": {},
+  "optionalDependencies": {},
+  "capabilities": []
+})";
+            std::ofstream(providerRoot / "scripts/main.as") << "int optional_value() { return 42; }\n"
+                                                               "void on_load() {}\n"
+                                                               "void on_render() {}\n"
+                                                               "void on_unload() {}\n";
+            std::ofstream(providerRoot / "scripts/exports/api.as")
+                << "import int optional_value() from \"com.test.optional-provider\";\n";
+
+            CreatePlugin(pluginsRoot, "com.test.optional-consumer", "Optional Consumer");
+            const auto consumerRoot = pluginsRoot / "com.test.optional-consumer";
+            std::ofstream(consumerRoot / "plugin.json") << R"({
+  "schemaVersion": 1,
+  "id": "com.test.optional-consumer",
+  "name": "Optional Consumer",
+  "version": "1.0.0",
+  "apiVersion": "1.0",
+  "entry": "scripts/main.as",
+  "exports": [],
+  "dependencies": {},
+  "optionalDependencies": {"com.test.optional-provider": ">=1.0.0"},
+  "capabilities": []
+})";
+            std::ofstream(consumerRoot / "scripts/main.as") << "void on_load() {}\n"
+                                                               "void on_render() { optional_value(); }\n"
+                                                               "void on_unload() {}\n";
+        }
+
         bool ContainsPlugin(const std::vector<PluginInfo>& plugins, const std::string_view pluginId)
         {
             return std::ranges::find(plugins, pluginId, &PluginInfo::Id) != plugins.end();
@@ -134,6 +177,8 @@ namespace PureMirror::Overlay::Tests
             Assert::AreEqual(std::size_t{2}, manager.LoadedPluginCount());
             Assert::IsTrue(ContainsPlugin(manager.LoadedPlugins(), "com.puremirror.example.dependency-consumer"));
             Assert::IsTrue(ContainsPlugin(manager.LoadedPlugins(), "com.puremirror.example.dependency-shared"));
+            manager.Render();
+            Assert::AreEqual(std::size_t{2}, manager.LoadedPluginCount());
             manager.UnloadAll();
 
             Assert::IsTrue(manager.LoadPlugin("com.puremirror.example.cyclic-a"));
@@ -178,6 +223,28 @@ namespace PureMirror::Overlay::Tests
             Assert::IsTrue(manager.UnloadPlugin("com.test.shared"));
             Assert::AreEqual(std::size_t{0}, manager.LoadedPluginCount());
 
+            std::filesystem::remove_all(pluginsRoot, error);
+        }
+
+        TEST_METHOD(LoadPlugin_IncludesExportsFromLoadedOptionalDependency)
+        {
+            const auto pluginsRoot = std::filesystem::temp_directory_path() / "PureMirror.OptionalPluginTests";
+            std::error_code error;
+            std::filesystem::remove_all(pluginsRoot, error);
+            CreateOptionalExportPlugins(pluginsRoot);
+
+            Logger logger;
+            PluginManagerScriptHost scriptHost;
+            AngelScriptEngine scriptEngine(&scriptHost);
+            PluginManager manager(scriptEngine, logger);
+
+            Assert::AreEqual(std::size_t{2}, manager.ScanPlugins(pluginsRoot));
+            Assert::IsTrue(manager.LoadPlugin("com.test.optional-provider"));
+            Assert::IsTrue(manager.LoadPlugin("com.test.optional-consumer"));
+            manager.Render();
+            Assert::AreEqual(std::size_t{2}, manager.LoadedPluginCount());
+
+            manager.UnloadAll();
             std::filesystem::remove_all(pluginsRoot, error);
         }
     };

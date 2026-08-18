@@ -17,6 +17,7 @@ namespace PureMirror::Overlay
 
         std::optional<ScriptSource> ReadSource(const std::filesystem::path& packageRoot,
                                                const std::string& relativePath,
+                                               const std::string& sectionName,
                                                ScriptModuleLoadResult& result)
         {
             std::error_code error;
@@ -24,7 +25,7 @@ namespace PureMirror::Overlay
             if (error || !IsWithinRoot(sourcePath, packageRoot))
             {
                 result.Diagnostics.push_back({.Severity = ScriptDiagnosticSeverity::Error,
-                                              .Section = relativePath,
+                                              .Section = sectionName,
                                               .Message = "Script path leaves the plugin package."});
                 return std::nullopt;
             }
@@ -33,11 +34,11 @@ namespace PureMirror::Overlay
             if (!stream)
             {
                 result.Diagnostics.push_back({.Severity = ScriptDiagnosticSeverity::Error,
-                                              .Section = relativePath,
+                                              .Section = sectionName,
                                               .Message = "Script source could not be opened."});
                 return std::nullopt;
             }
-            return ScriptSource{.Name = relativePath,
+            return ScriptSource{.Name = sectionName,
                                 .Code = {std::istreambuf_iterator<char>{stream}, std::istreambuf_iterator<char>{}}};
         }
     }  // namespace
@@ -45,7 +46,8 @@ namespace PureMirror::Overlay
     PluginScriptCompiler::PluginScriptCompiler(IScriptEngine& scriptEngine) : m_ScriptEngine(scriptEngine) {}
 
     ScriptModuleLoadResult PluginScriptCompiler::Compile(const PluginManifest& manifest,
-                                                         const std::filesystem::path& packageRoot) const
+                                                         const std::filesystem::path& packageRoot,
+                                                         const std::vector<PluginPackage>& dependencies) const
     {
         ScriptModuleLoadResult result{.ModuleId = manifest.Id};
         std::error_code error;
@@ -59,17 +61,30 @@ namespace PureMirror::Overlay
 
         std::vector<ScriptSource> sources;
         std::unordered_set<std::string> sourcePaths;
-        const auto addSource = [&](const std::string& path)
+        const auto addSource =
+            [&](const std::filesystem::path& root, const std::string& path, const std::string& sectionName)
         {
-            if (!sourcePaths.insert(path).second)
+            if (!sourcePaths.insert(sectionName).second)
                 return;
-            auto source = ReadSource(canonicalRoot, path, result);
+            auto source = ReadSource(root, path, sectionName, result);
             if (source)
                 sources.push_back(std::move(*source));
         };
-        addSource(manifest.Entry);
-        for (const auto& exportPath : manifest.Exports)
-            addSource(exportPath);
+        addSource(canonicalRoot, manifest.Entry, manifest.Entry);
+        for (const auto& dependency : dependencies)
+        {
+            const auto dependencyRoot = std::filesystem::weakly_canonical(dependency.Location, error);
+            if (error || !std::filesystem::is_directory(dependencyRoot))
+            {
+                result.Diagnostics.push_back({.Severity = ScriptDiagnosticSeverity::Error,
+                                              .Section = dependency.Manifest.Id,
+                                              .Message = "Dependency package root does not exist."});
+                error.clear();
+                continue;
+            }
+            for (const auto& exportPath : dependency.Manifest.Exports)
+                addSource(dependencyRoot, exportPath, dependency.Manifest.Id + '/' + exportPath);
+        }
         if (!result.Diagnostics.empty())
             return result;
 

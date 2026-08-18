@@ -40,7 +40,6 @@ namespace PureMirror::Overlay
                                               const std::vector<std::vector<std::string>>& loadGroups);
         [[nodiscard]] bool LoadGroups(const std::vector<PluginInstallation>& installations,
                                       const std::vector<std::vector<std::string>>& loadGroups);
-        [[nodiscard]] bool LoadPackage(const PluginPackage& package);
         void UnloadGroups(const std::vector<std::vector<std::string>>& unloadGroups);
         [[nodiscard]] bool IsPluginLoaded(std::string_view pluginId) const;
 

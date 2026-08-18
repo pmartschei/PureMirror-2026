@@ -8,6 +8,7 @@ void on_render()
     if (ui::begin_window("Dependency Example - Consumer"))
     {
         ui::text("Loading this plugin automatically loads the shared plugin.");
+        ui::text(DependencyExample::message());
     }
     ui::end_window();
 }

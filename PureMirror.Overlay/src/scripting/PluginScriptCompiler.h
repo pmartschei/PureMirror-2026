@@ -2,8 +2,10 @@
 
 #include "IScriptEngine.h"
 #include "src/plugins/PluginManifest.h"
+#include "src/plugins/PluginPackage.h"
 
 #include <filesystem>
+#include <vector>
 
 namespace PureMirror::Overlay
 {
@@ -13,7 +15,8 @@ namespace PureMirror::Overlay
         explicit PluginScriptCompiler(IScriptEngine& scriptEngine);
 
         [[nodiscard]] ScriptModuleLoadResult Compile(const PluginManifest& manifest,
-                                                     const std::filesystem::path& packageRoot) const;
+                                                     const std::filesystem::path& packageRoot,
+                                                     const std::vector<PluginPackage>& dependencies = {}) const;
 
       private:
         IScriptEngine& m_ScriptEngine;

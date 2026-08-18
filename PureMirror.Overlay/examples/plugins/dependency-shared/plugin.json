@@ -5,7 +5,9 @@
     "version": "1.0.0",
     "apiVersion": "1.0",
     "entry": "scripts/main.as",
-    "exports": [],
+    "exports": [
+        "scripts/exports/api.as"
+    ],
     "dependencies": {},
     "optionalDependencies": {},
     "capabilities": [ "ui", "logging" ]

@@ -49,11 +49,11 @@ namespace PureMirror::Overlay::Tests
     TEST_CLASS(PluginScriptCompilerTests)
     {
       public:
-        TEST_METHOD(Compile_LoadsManifestEntryAndAllExportsAsOneModule)
+        TEST_METHOD(Compile_ExcludesProvidingPluginsOwnExportDeclarations)
         {
             TemporaryPluginDirectory package;
-            package.Write("scripts/main.as", "void on_load() { exported_helper(); }");
-            package.Write("scripts/exports/helper.as", "void exported_helper() {}");
+            package.Write("scripts/main.as", "void exported_helper() {} void on_load() { exported_helper(); }");
+            package.Write("scripts/exports/helper.as", "this is intentionally not valid AngelScript");
             const PluginManifest manifest{
                 .Id = "com.example.files", .Entry = "scripts/main.as", .Exports = {"scripts/exports/helper.as"}};
             AngelScriptEngine engine;
@@ -64,18 +64,52 @@ namespace PureMirror::Overlay::Tests
             Assert::AreEqual(std::string{"com.example.files"}, result.ModuleId);
         }
 
-        TEST_METHOD(Compile_ReportsMissingExportWithoutReplacingExistingModule)
+        TEST_METHOD(Compile_IncludesDependencyExportDeclarations)
         {
-            TemporaryPluginDirectory package;
-            package.Write("scripts/main.as", "void on_load() {}");
-            const PluginManifest manifest{
-                .Id = "com.example.missing", .Entry = "scripts/main.as", .Exports = {"scripts/exports/missing.as"}};
+            TemporaryPluginDirectory provider;
+            provider.Write("scripts/main.as", "int exported_value() { return 42; }");
+            provider.Write("scripts/exports/helper.as", "import int exported_value() from \"com.example.provider\";");
+            const PluginManifest providerManifest{
+                .Id = "com.example.provider", .Entry = "scripts/main.as", .Exports = {"scripts/exports/helper.as"}};
+
+            TemporaryPluginDirectory consumer;
+            consumer.Write("scripts/main.as", "void on_load() { exported_value(); }");
+            const PluginManifest consumerManifest{.Id = "com.example.consumer", .Entry = "scripts/main.as"};
+            const PluginPackage providerPackage{.Manifest = providerManifest, .Location = provider.Path().string()};
             AngelScriptEngine engine;
 
-            const auto result = PluginScriptCompiler(engine).Compile(manifest, package.Path());
+            const auto providerResult = PluginScriptCompiler(engine).Compile(providerManifest, provider.Path());
+            const auto providerBindings = engine.BindModuleImports(providerManifest.Id);
+            const auto consumerResult =
+                PluginScriptCompiler(engine).Compile(consumerManifest, consumer.Path(), {providerPackage});
+            const auto consumerBindings = engine.BindModuleImports(consumerManifest.Id);
+            const auto callback = engine.CallFunction(consumerManifest.Id, "void on_load()");
+
+            Assert::IsTrue(providerResult.IsSuccessful());
+            Assert::IsTrue(providerBindings.IsSuccessful());
+            Assert::IsTrue(consumerResult.IsSuccessful());
+            Assert::IsTrue(consumerBindings.IsSuccessful());
+            Assert::IsTrue(callback.IsSuccessful());
+        }
+
+        TEST_METHOD(Compile_ReportsMissingDependencyExport)
+        {
+            TemporaryPluginDirectory provider;
+            provider.Write("scripts/main.as", "void exported_helper() {}");
+            const PluginManifest providerManifest{
+                .Id = "com.example.provider", .Entry = "scripts/main.as", .Exports = {"scripts/exports/missing.as"}};
+            TemporaryPluginDirectory consumer;
+            consumer.Write("scripts/main.as", "void on_load() {}");
+            const PluginManifest consumerManifest{.Id = "com.example.consumer", .Entry = "scripts/main.as"};
+            const PluginPackage providerPackage{.Manifest = providerManifest, .Location = provider.Path().string()};
+            AngelScriptEngine engine;
+
+            const auto result =
+                PluginScriptCompiler(engine).Compile(consumerManifest, consumer.Path(), {providerPackage});
 
             Assert::IsFalse(result.IsSuccessful());
-            Assert::AreEqual(std::string{"scripts/exports/missing.as"}, result.Diagnostics.front().Section);
+            Assert::AreEqual(std::string{"com.example.provider/scripts/exports/missing.as"},
+                             result.Diagnostics.front().Section);
         }
     };
 }  // namespace PureMirror::Overlay::Tests

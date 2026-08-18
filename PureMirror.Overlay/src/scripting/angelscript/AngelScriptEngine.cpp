@@ -141,6 +141,37 @@ namespace PureMirror::Overlay
             return result;
         }
 
+        ScriptModuleLoadResult BindModuleImports(const std::string_view moduleId)
+        {
+            std::scoped_lock lock(m_Mutex);
+            m_Diagnostics.clear();
+            ScriptModuleLoadResult result{.ModuleId = std::string(moduleId)};
+            if (m_Engine == nullptr)
+            {
+                result.Diagnostics.push_back(
+                    {.Severity = ScriptDiagnosticSeverity::Error, .Message = "AngelScript engine is not initialized."});
+                return result;
+            }
+
+            const std::string moduleName(moduleId);
+            auto* module = m_Engine->GetModule(moduleName.c_str(), asGM_ONLY_IF_EXISTS);
+            if (module == nullptr)
+            {
+                result.Diagnostics.push_back(
+                    {.Severity = ScriptDiagnosticSeverity::Error, .Message = "AngelScript module does not exist."});
+                return result;
+            }
+
+            result.IsLoaded = module->BindAllImportedFunctions() >= 0;
+            result.Diagnostics = m_Diagnostics;
+            if (!result.IsLoaded && result.Diagnostics.empty())
+            {
+                result.Diagnostics.push_back({.Severity = ScriptDiagnosticSeverity::Error,
+                                              .Message = "Not all imported functions could be bound."});
+            }
+            return result;
+        }
+
         void UnloadModule(const std::string_view moduleId)
         {
             std::scoped_lock lock(m_Mutex);
@@ -288,6 +319,15 @@ namespace PureMirror::Overlay
                     .Diagnostics = {{.Severity = ScriptDiagnosticSeverity::Error,
                                      .Message = "AngelScript engine is not available."}}};
         return m_Implementation->CallFunction(moduleId, functionDeclaration);
+    }
+
+    ScriptModuleLoadResult AngelScriptEngine::BindModuleImports(const std::string_view moduleId)
+    {
+        if (m_Implementation == nullptr)
+            return {.ModuleId = std::string(moduleId),
+                    .Diagnostics = {{.Severity = ScriptDiagnosticSeverity::Error,
+                                     .Message = "AngelScript engine is not available."}}};
+        return m_Implementation->BindModuleImports(moduleId);
     }
 
     void AngelScriptEngine::UnloadModule(const std::string_view moduleId)

@@ -21,6 +21,7 @@ namespace PureMirror::Overlay
         [[nodiscard]] bool IsInitialized() const noexcept;
         [[nodiscard]] ScriptModuleLoadResult LoadModule(std::string_view moduleId,
                                                         const std::vector<ScriptSource>& sources) override;
+        [[nodiscard]] ScriptModuleLoadResult BindModuleImports(std::string_view moduleId) override;
         [[nodiscard]] ScriptCallResult CallFunction(std::string_view moduleId,
                                                     std::string_view functionDeclaration) override;
         void UnloadModule(std::string_view moduleId) override;
