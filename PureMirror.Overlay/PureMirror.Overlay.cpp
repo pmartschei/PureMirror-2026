@@ -11,6 +11,7 @@
 #include "src/plugins/PluginManager.h"
 #include "src/scripting/OverlayScriptHost.h"
 #include "src/scripting/angelscript/AngelScriptEngine.h"
+#include "src/ui/MainMenuBar.h"
 #include "src/ui/console/ConsoleWindow.h"
 
 #include <imgui.h>
@@ -29,6 +30,8 @@ PureMirror::Overlay::ConsoleWindow g_ConsoleWindow(g_Logger, g_ConsoleCommands);
 std::unique_ptr<PureMirror::Overlay::OverlayScriptHost> g_ScriptHost;
 std::unique_ptr<PureMirror::Overlay::AngelScriptEngine> g_ScriptEngine;
 std::unique_ptr<PureMirror::Overlay::PluginManager> g_PluginManager;
+std::unique_ptr<PureMirror::Overlay::MainMenuBar> g_MainMenuBar;
+std::atomic_bool g_IsOverlayActive{true};
 
 Texture g_BtnErrorTexture;
 Texture g_BtnErrorPressedTexture;
@@ -646,6 +649,7 @@ namespace
 void Initialize(const RendererAPI* rendererAPI)
 {
     g_rendererAPI = rendererAPI;
+    g_IsOverlayActive.store(true, std::memory_order_release);
     g_WindowInput = std::make_unique<PureMirror::WindowInput>(g_rendererAPI->GetWindow());
 
     const auto clearRegistered = g_ConsoleCommands.Register({.Name = "clear",
@@ -676,8 +680,14 @@ void Initialize(const RendererAPI* rendererAPI)
 
     g_ScriptHost = std::make_unique<PureMirror::Overlay::OverlayScriptHost>(g_Logger);
     g_ScriptEngine = std::make_unique<PureMirror::Overlay::AngelScriptEngine>(g_ScriptHost.get());
+    g_MainMenuBar.reset();
     g_PluginManager = std::make_unique<PureMirror::Overlay::PluginManager>(*g_ScriptEngine, g_Logger);
-    static_cast<void>(g_PluginManager->LoadStartupPlugins(OverlayModuleDirectory() / "puremirror" / "plugins"));
+    g_MainMenuBar = std::make_unique<PureMirror::Overlay::MainMenuBar>(
+        *g_PluginManager,
+        g_Logger,
+        OverlayModuleDirectory() / "puremirror",
+        [] { g_IsOverlayActive.store(false, std::memory_order_release); });
+    static_cast<void>(g_PluginManager->LoadStartupPlugins(g_MainMenuBar->PluginsRoot()));
 }
 
 const char* GetImguiVersion()
@@ -693,6 +703,9 @@ void SetContext(ImGuiContext* context)
 LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT HandleInput(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    if (!g_IsOverlayActive.load(std::memory_order_acquire))
+        return 0;
+
     auto result = ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
 
     if (result != 0)
@@ -740,6 +753,9 @@ LRESULT HandleInput(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void Render(const RenderContext* renderContext)
 {
+    if (!g_IsOverlayActive.load(std::memory_order_acquire))
+        return;
+
     g_BtnErrorTexture = g_rendererAPI->LoadTexture("puremirror/btn_error.png");
     g_BtnErrorPressedTexture = g_rendererAPI->LoadTexture("puremirror/btn_error_pressed.png");
     g_BtnSuccessTexture = g_rendererAPI->LoadTexture("puremirror/btn_success.png");
@@ -753,6 +769,10 @@ void Render(const RenderContext* renderContext)
 
     for (auto& message : g_ClientListener.TakeMessages())
         g_CustomerQueue.Process(std::move(message));
+
+    g_MainMenuBar->Render();
+    if (!g_IsOverlayActive.load(std::memory_order_acquire))
+        return;
 
     RenderCustomers();
     RenderWaitingQueue();

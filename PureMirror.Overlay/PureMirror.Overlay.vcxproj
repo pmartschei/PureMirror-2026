@@ -232,6 +232,7 @@ xcopy /Y /E /I "$(ProjectDir)examples\plugins\hello-overlay" "D:\Spiele\Path of 
     <ClInclude Include="src\scripting\ScriptModuleLoadResult.h" />
     <ClInclude Include="src\scripting\ScriptSource.h" />
     <ClInclude Include="src\scripting\angelscript\AngelScriptEngine.h" />
+    <ClInclude Include="src\ui\MainMenuBar.h" />
     <ClInclude Include="src\ui\console\ConsoleWindow.h" />
     <ClInclude Include="src\ui\logging\LogMessageDesignerWindow.h" />
     <ClInclude Include="WindowInput.h" />
@@ -259,6 +260,7 @@ xcopy /Y /E /I "$(ProjectDir)examples\plugins\hello-overlay" "D:\Spiele\Path of 
     <ClCompile Include="src\scripting\PluginScriptInstance.cpp" />
     <ClCompile Include="src\scripting\OverlayScriptHost.cpp" />
     <ClCompile Include="src\scripting\angelscript\AngelScriptEngine.cpp" />
+    <ClCompile Include="src\ui\MainMenuBar.cpp" />
     <ClCompile Include="src\ui\console\ConsoleWindow.cpp" />
     <ClCompile Include="src\ui\logging\LogMessageDesignerWindow.cpp" />
     <ClCompile Include="WindowInput.cpp" />
