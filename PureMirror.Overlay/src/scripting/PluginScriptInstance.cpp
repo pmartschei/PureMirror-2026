@@ -67,4 +67,9 @@ namespace PureMirror::Overlay
     {
         return m_IsLoaded;
     }
+
+    const PluginManifest& PluginScriptInstance::Manifest() const noexcept
+    {
+        return m_Manifest;
+    }
 }  // namespace PureMirror::Overlay

@@ -14,6 +14,14 @@ namespace PureMirror::Overlay
     {
         const LogOrigin MainMenuOrigin{
             .Type = LogOriginType::Host, .Identifier = "puremirror.main-menu", .DisplayName = "PureMirror"};
+
+        std::string PluginMenuLabel(const PluginInfo& plugin, const std::string_view action)
+        {
+            auto label = plugin.Name + " (" + plugin.Version + ')';
+            if (!plugin.IsExplicit && action != "load")
+                label += " [dependency]";
+            return label + "###" + std::string(action) + '-' + plugin.Id;
+        }
     }  // namespace
 
     MainMenuBar::MainMenuBar(PluginManager& pluginManager,
@@ -65,25 +73,50 @@ namespace PureMirror::Overlay
         if (!ImGui::BeginMenu("Plugins"))
             return;
 
-        const auto loadedPluginCount = m_PluginManager.LoadedPluginCount();
+        if (ImGui::BeginMenu("Load"))
+        {
+            const auto availablePlugins = m_PluginManager.AvailablePlugins();
+            if (availablePlugins.empty())
+                ImGui::MenuItem("No unloaded plugins found", nullptr, false, false);
+            for (const auto& plugin : availablePlugins)
+            {
+                const auto label = PluginMenuLabel(plugin, "load");
+                if (ImGui::MenuItem(label.c_str()))
+                    static_cast<void>(m_PluginManager.LoadPlugin(plugin.Id));
+            }
+            ImGui::EndMenu();
+        }
 
-        if (loadedPluginCount != 0)
-            ImGui::BeginDisabled();
-        if (ImGui::MenuItem("Load all plugins"))
-            static_cast<void>(m_PluginManager.LoadStartupPlugins(m_PluginsRoot));
-        if (loadedPluginCount != 0)
-            ImGui::EndDisabled();
+        if (ImGui::BeginMenu("Unload"))
+        {
+            const auto loadedPlugins = m_PluginManager.LoadedPlugins();
+            if (loadedPlugins.empty())
+                ImGui::MenuItem("No plugins loaded", nullptr, false, false);
+            for (const auto& plugin : loadedPlugins)
+            {
+                const auto label = PluginMenuLabel(plugin, "unload");
+                if (ImGui::MenuItem(label.c_str()))
+                    static_cast<void>(m_PluginManager.UnloadPlugin(plugin.Id));
+            }
+            ImGui::EndMenu();
+        }
 
-        if (loadedPluginCount == 0)
-            ImGui::BeginDisabled();
-        if (ImGui::MenuItem("Reload all plugins"))
-            static_cast<void>(m_PluginManager.LoadStartupPlugins(m_PluginsRoot));
-        if (ImGui::MenuItem("Unload all plugins"))
-            m_PluginManager.UnloadAll();
-        if (loadedPluginCount == 0)
-            ImGui::EndDisabled();
+        if (ImGui::BeginMenu("Reload"))
+        {
+            const auto loadedPlugins = m_PluginManager.LoadedPlugins();
+            if (loadedPlugins.empty())
+                ImGui::MenuItem("No plugins loaded", nullptr, false, false);
+            for (const auto& plugin : loadedPlugins)
+            {
+                const auto label = PluginMenuLabel(plugin, "reload");
+                if (ImGui::MenuItem(label.c_str()))
+                    static_cast<void>(m_PluginManager.ReloadPlugin(plugin.Id));
+            }
+            ImGui::EndMenu();
+        }
 
         ImGui::Separator();
+        const auto loadedPluginCount = m_PluginManager.LoadedPluginCount();
         ImGui::TextDisabled("%zu plugin%s loaded", loadedPluginCount, loadedPluginCount == 1 ? "" : "s");
         ImGui::EndMenu();
     }

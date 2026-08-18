@@ -21,6 +21,7 @@ namespace PureMirror::Overlay
         [[nodiscard]] ScriptCallResult Render();
         [[nodiscard]] ScriptCallResult Unload();
         [[nodiscard]] bool IsLoaded() const noexcept;
+        [[nodiscard]] const PluginManifest& Manifest() const noexcept;
 
       private:
         IScriptEngine& m_ScriptEngine;

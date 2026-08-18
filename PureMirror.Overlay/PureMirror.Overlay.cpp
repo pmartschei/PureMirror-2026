@@ -687,7 +687,7 @@ void Initialize(const RendererAPI* rendererAPI)
         g_Logger,
         OverlayModuleDirectory() / "puremirror",
         [] { g_IsOverlayActive.store(false, std::memory_order_release); });
-    static_cast<void>(g_PluginManager->LoadStartupPlugins(g_MainMenuBar->PluginsRoot()));
+    static_cast<void>(g_PluginManager->ScanPlugins(g_MainMenuBar->PluginsRoot()));
 }
 
 const char* GetImguiVersion()

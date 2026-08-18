@@ -1,0 +1,14 @@
+{
+    "schemaVersion": 1,
+    "id": "com.puremirror.example.cyclic-b",
+    "name": "Cyclic Dependency Example - B",
+    "version": "1.0.0",
+    "apiVersion": "1.0",
+    "entry": "scripts/main.as",
+    "exports": [],
+    "dependencies": {
+        "com.puremirror.example.cyclic-a": ">=1.0.0 <2.0.0"
+    },
+    "optionalDependencies": {},
+    "capabilities": [ "ui", "logging" ]
+}

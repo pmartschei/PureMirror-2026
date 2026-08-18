@@ -136,7 +136,7 @@
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(OutDir)$(TargetFileName)" "D:\Spiele\Path of Exile\$(TargetFileName)"
-xcopy /Y /E /I "$(ProjectDir)examples\plugins\hello-overlay" "D:\Spiele\Path of Exile\puremirror\plugins\hello-overlay"</Command>
+xcopy /Y /E /I "$(ProjectDir)examples\plugins" "D:\Spiele\Path of Exile\puremirror\plugins"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -163,7 +163,7 @@ xcopy /Y /E /I "$(ProjectDir)examples\plugins\hello-overlay" "D:\Spiele\Path of 
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(OutDir)$(TargetFileName)" "D:\Spiele\Path of Exile\$(TargetFileName)"
-xcopy /Y /E /I "$(ProjectDir)examples\plugins\hello-overlay" "D:\Spiele\Path of Exile\puremirror\plugins\hello-overlay"</Command>
+xcopy /Y /E /I "$(ProjectDir)examples\plugins" "D:\Spiele\Path of Exile\puremirror\plugins"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup>
@@ -212,6 +212,7 @@ xcopy /Y /E /I "$(ProjectDir)examples\plugins\hello-overlay" "D:\Spiele\Path of 
     <ClInclude Include="src\plugins\PluginManifestParseResult.h" />
     <ClInclude Include="src\plugins\PluginManifestParser.h" />
     <ClInclude Include="src\plugins\PluginInstallation.h" />
+    <ClInclude Include="src\plugins\PluginInfo.h" />
     <ClInclude Include="src\plugins\PluginPackage.h" />
     <ClInclude Include="src\plugins\PluginPackagePlanner.h" />
     <ClInclude Include="src\plugins\PluginPackageOrigin.h" />
@@ -284,12 +285,12 @@ xcopy /Y /E /I "$(ProjectDir)examples\plugins\hello-overlay" "D:\Spiele\Path of 
       <Project>{E7575634-B411-49F6-A23D-E925685682A8}</Project>
     </ProjectReference>
   </ItemGroup>
-  <Target Name="CopyExamplePlugin" AfterTargets="Build">
+  <Target Name="CopyExamplePlugins" AfterTargets="Build">
     <ItemGroup>
-      <_ExamplePluginFile Include="$(ProjectDir)examples\plugins\hello-overlay\**\*" />
+      <_ExamplePluginFile Include="$(ProjectDir)examples\plugins\**\*" />
     </ItemGroup>
     <Copy SourceFiles="@(_ExamplePluginFile)"
-          DestinationFiles="@(_ExamplePluginFile-&gt;'$(OutDir)puremirror\plugins\hello-overlay\%(RecursiveDir)%(Filename)%(Extension)')"
+          DestinationFiles="@(_ExamplePluginFile-&gt;'$(OutDir)puremirror\plugins\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true" />
   </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
