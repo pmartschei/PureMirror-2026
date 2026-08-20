@@ -2,10 +2,14 @@
 
 #include "AngelScriptEngine.h"
 
+#include "IScriptSuspensionRuntime.h"
+#include "IScriptTaskRuntime.h"
 #include "ScriptContextWait.h"
 #include "ScriptCoroutine.h"
 #include "ScriptCoroutineArgument.h"
+#include "ScriptSuspensionBindings.h"
 #include "ScriptTask.h"
+#include "ScriptTaskBindings.h"
 #include "angelscript.h"
 #include "scriptarray.h"
 #include "scriptstdstring.h"
@@ -27,7 +31,7 @@ namespace PureMirror::Overlay
         };
     }  // namespace
 
-    class AngelScriptEngine::Implementation
+    class AngelScriptEngine::Implementation final : public IScriptTaskRuntime, public IScriptSuspensionRuntime
     {
       public:
         explicit Implementation(IScriptHost* scriptHost) : m_ScriptHost(scriptHost)
@@ -466,9 +470,9 @@ namespace PureMirror::Overlay
             }
         }
 
-        void HostAsync(asIScriptGeneric& generic)
+        void HostAsync(asIScriptGeneric& generic) override
         {
-            if (!RequireActiveTag(ScriptCallbackTag::Coroutine, "async() is not available in this callback."))
+            if (!RequireActiveTag(ScriptCallbackTag::Coroutine, "Async() is not available in this callback."))
                 return;
 
             auto* activeContext = asGetActiveContext();
@@ -479,7 +483,7 @@ namespace PureMirror::Overlay
             {
                 if (activeContext != nullptr)
                     static_cast<void>(
-                        activeContext->SetException("async() requires a function and its exact arguments."));
+                        activeContext->SetException("Async() requires a function and its exact arguments."));
                 return;
             }
 
@@ -488,7 +492,7 @@ namespace PureMirror::Overlay
             {
                 if (context != nullptr)
                     context->Release();
-                static_cast<void>(activeContext->SetException("async() could not prepare the coroutine."));
+                static_cast<void>(activeContext->SetException("Async() could not prepare the coroutine."));
                 return;
             }
             auto* task = new ScriptTask(*m_Engine, function->GetReturnTypeId());
@@ -502,7 +506,7 @@ namespace PureMirror::Overlay
                                          generic.GetArgAddress(index + 1),
                                          generic.GetArgTypeId(index + 1)))
                     continue;
-                static_cast<void>(activeContext->SetException("async() argument types do not match the function."));
+                static_cast<void>(activeContext->SetException("Async() argument types do not match the function."));
                 return;
             }
 
@@ -512,7 +516,7 @@ namespace PureMirror::Overlay
                 m_Coroutines.push_back(std::move(coroutine));
         }
 
-        void HostWait(ScriptTask* task)
+        void HostWait(ScriptTask* task) override
         {
             if (!RequireActiveTag(ScriptCallbackTag::Suspendable, "Wait() is not available in this callback."))
                 return;
@@ -531,7 +535,7 @@ namespace PureMirror::Overlay
             static_cast<void>(context->Suspend());
         }
 
-        void HostWaitAll(CScriptArray* tasks)
+        void HostWaitAll(CScriptArray* tasks) override
         {
             if (!RequireActiveTag(ScriptCallbackTag::Suspendable, "WaitAll() is not available in this callback."))
                 return;
@@ -550,7 +554,7 @@ namespace PureMirror::Overlay
             static_cast<void>(context->Suspend());
         }
 
-        void HostWaitAny(asIScriptGeneric& generic)
+        void HostWaitAny(asIScriptGeneric& generic) override
         {
             if (!RequireActiveTag(ScriptCallbackTag::Suspendable, "WaitAny() is not available in this callback."))
                 return;
@@ -626,140 +630,37 @@ namespace PureMirror::Overlay
                 return false;
             };
 
-            auto successful =
-                require(m_Engine->SetDefaultNamespace("Core"), "namespace Core") &&
-                require(m_Engine->RegisterObjectType("Task", 0, asOBJ_REF), "Core::Task type") &&
-                require(m_Engine->RegisterObjectBehaviour(
-                            "Task", asBEHAVE_ADDREF, "void f()", asMETHOD(ScriptTask, AddRef), asCALL_THISCALL),
-                        "Core::Task addref") &&
-                require(m_Engine->RegisterObjectBehaviour(
-                            "Task", asBEHAVE_RELEASE, "void f()", asMETHOD(ScriptTask, Release), asCALL_THISCALL),
-                        "Core::Task release") &&
-                require(m_Engine->RegisterObjectMethod("Task",
-                                                       "bool get_IsCompleted() const property",
-                                                       asMETHOD(ScriptTask, IsCompleted),
-                                                       asCALL_THISCALL),
-                        "Core::Task IsCompleted") &&
-                require(
-                    m_Engine->RegisterObjectMethod(
-                        "Task", "bool get_IsFailed() const property", asMETHOD(ScriptTask, IsFailed), asCALL_THISCALL),
-                    "Core::Task IsFailed") &&
-                require(m_Engine->RegisterObjectMethod(
-                            "Task", "void Retrieve(?&out) const", asFUNCTION(TaskRetrieveGeneric), asCALL_GENERIC),
-                        "Core::Task Retrieve") &&
-                require(m_Engine->RegisterObjectMethod(
-                            "Task", "void opCast(?&out)", asFUNCTION(TaskCastGeneric), asCALL_GENERIC),
-                        "Core::Task opCast") &&
-                require(m_Engine->RegisterObjectMethod(
-                            "Task", "void opImplCast(?&out)", asFUNCTION(TaskCastGeneric), asCALL_GENERIC),
-                        "Core::Task opImplCast") &&
-                require(m_Engine->RegisterObjectMethod(
-                            "Task", "void opCast(?&out) const", asFUNCTION(TaskCastGeneric), asCALL_GENERIC),
-                        "Core::Task const opCast") &&
-                require(m_Engine->RegisterObjectMethod(
-                            "Task", "void opImplCast(?&out) const", asFUNCTION(TaskCastGeneric), asCALL_GENERIC),
-                        "Core::Task const opImplCast") &&
-                require(m_Engine->RegisterObjectType("TypedTask<class T>", 0, asOBJ_REF | asOBJ_TEMPLATE),
-                        "Core::TypedTask type") &&
-                require(m_Engine->RegisterObjectBehaviour("TypedTask<T>",
-                                                          asBEHAVE_TEMPLATE_CALLBACK,
-                                                          "bool f(int&in, bool&out)",
-                                                          asFUNCTION(TypedTaskTemplateCallback),
-                                                          asCALL_CDECL),
-                        "Core::TypedTask template callback") &&
-                require(m_Engine->RegisterObjectBehaviour(
-                            "TypedTask<T>", asBEHAVE_ADDREF, "void f()", asMETHOD(ScriptTask, AddRef), asCALL_THISCALL),
-                        "Core::TypedTask addref") &&
-                require(
-                    m_Engine->RegisterObjectBehaviour(
-                        "TypedTask<T>", asBEHAVE_RELEASE, "void f()", asMETHOD(ScriptTask, Release), asCALL_THISCALL),
-                    "Core::TypedTask release") &&
-                require(m_Engine->RegisterObjectMethod("TypedTask<T>",
-                                                       "void Retrieve(T&out) const",
-                                                       asFUNCTION(TypedTaskRetrieveGeneric),
-                                                       asCALL_GENERIC),
-                        "Core::TypedTask Retrieve") &&
-                require(m_Engine->RegisterObjectMethod(
-                            "TypedTask<T>", "Task@ opCast()", asFUNCTION(TypedTaskToTaskGeneric), asCALL_GENERIC),
-                        "Core::TypedTask opCast") &&
-                require(m_Engine->RegisterObjectMethod(
-                            "TypedTask<T>", "Task@ opImplCast()", asFUNCTION(TypedTaskToTaskGeneric), asCALL_GENERIC),
-                        "Core::TypedTask opImplCast") &&
-                require(m_Engine->RegisterObjectMethod("TypedTask<T>",
-                                                       "const Task@ opCast() const",
-                                                       asFUNCTION(TypedTaskToTaskGeneric),
-                                                       asCALL_GENERIC),
-                        "Core::TypedTask const opCast") &&
-                require(m_Engine->RegisterObjectMethod("TypedTask<T>",
-                                                       "const Task@ opImplCast() const",
-                                                       asFUNCTION(TypedTaskToTaskGeneric),
-                                                       asCALL_GENERIC),
-                        "Core::TypedTask const opImplCast") &&
-                require(m_Engine->SetDefaultNamespace(""), "default namespace for task functions");
-            for (std::size_t parameterCount{1}; successful && parameterCount <= 10; ++parameterCount)
-            {
-                std::string declaration{"Core::Task@ async("};
-                for (std::size_t parameter{}; parameter < parameterCount; ++parameter)
-                {
-                    if (parameter != 0)
-                        declaration += ", ";
-                    declaration += "?&in";
-                }
-                declaration += ')';
-                successful = require(m_Engine->RegisterGlobalFunction(
-                                         declaration.c_str(), asFUNCTION(AsyncGeneric), asCALL_GENERIC, this),
-                                     declaration);
-            }
-            successful =
-                successful &&
-                require(m_Engine->RegisterGlobalFunction(
-                            "void Wait(Core::Task@+ task)", asFUNCTION(WaitGeneric), asCALL_GENERIC, this),
-                        "Wait") &&
-                require(m_Engine->RegisterGlobalFunction(
-                            "void WaitAll(Core::Task@[] &in tasks)", asFUNCTION(WaitAllGeneric), asCALL_GENERIC, this),
-                        "WaitAll") &&
-                require(m_Engine->RegisterGlobalFunction("Core::Task@ WaitAny(Core::Task@[] &in tasks)",
-                                                         asFUNCTION(WaitAnyGeneric),
-                                                         asCALL_GENERIC,
-                                                         this),
-                        "WaitAny");
+            auto successful = RegisterScriptTaskBindings(*m_Engine, *this, m_InitializationError);
+            if (successful)
+                successful = RegisterScriptSuspensionBindings(*m_Engine, *this, m_InitializationError);
 
-            successful =
-                successful && require(m_Engine->SetDefaultNamespace("Utils"), "namespace Utils") &&
-                require(m_Engine->RegisterGlobalFunction(
-                            "void Yield()", asMETHOD(Implementation, HostYield), asCALL_THISCALL_ASGLOBAL, this),
-                        "Utils::Yield") &&
-                require(m_Engine->RegisterGlobalFunction("void Sleep(uint64 timeInMs)",
-                                                         asMETHOD(Implementation, HostSleep),
-                                                         asCALL_THISCALL_ASGLOBAL,
-                                                         this),
-                        "Utils::Sleep") &&
-                require(m_Engine->SetDefaultNamespace("log"), "namespace log") &&
-                require(m_Engine->RegisterGlobalFunction("void info(const string &in)",
-                                                         asMETHOD(Implementation, HostLogInfo),
-                                                         asCALL_THISCALL_ASGLOBAL,
-                                                         this),
-                        "log::info") &&
-                require(m_Engine->SetDefaultNamespace("ui"), "namespace ui") &&
-                require(m_Engine->RegisterGlobalFunction("bool begin_window(const string &in)",
-                                                         asMETHOD(Implementation, HostBeginWindow),
-                                                         asCALL_THISCALL_ASGLOBAL,
-                                                         this),
-                        "ui::begin_window") &&
-                require(
-                    m_Engine->RegisterGlobalFunction(
-                        "void end_window()", asMETHOD(Implementation, HostEndWindow), asCALL_THISCALL_ASGLOBAL, this),
-                    "ui::end_window") &&
-                require(m_Engine->RegisterGlobalFunction("void text(const string &in)",
-                                                         asMETHOD(Implementation, HostText),
-                                                         asCALL_THISCALL_ASGLOBAL,
-                                                         this),
-                        "ui::text") &&
-                require(m_Engine->RegisterGlobalFunction("bool button(const string &in)",
-                                                         asMETHOD(Implementation, HostButton),
-                                                         asCALL_THISCALL_ASGLOBAL,
-                                                         this),
-                        "ui::button");
+            successful = successful && require(m_Engine->SetDefaultNamespace("log"), "namespace log") &&
+                         require(m_Engine->RegisterGlobalFunction("void info(const string &in)",
+                                                                  asMETHOD(Implementation, HostLogInfo),
+                                                                  asCALL_THISCALL_ASGLOBAL,
+                                                                  this),
+                                 "log::info") &&
+                         require(m_Engine->SetDefaultNamespace("ui"), "namespace ui") &&
+                         require(m_Engine->RegisterGlobalFunction("bool begin_window(const string &in)",
+                                                                  asMETHOD(Implementation, HostBeginWindow),
+                                                                  asCALL_THISCALL_ASGLOBAL,
+                                                                  this),
+                                 "ui::begin_window") &&
+                         require(m_Engine->RegisterGlobalFunction("void end_window()",
+                                                                  asMETHOD(Implementation, HostEndWindow),
+                                                                  asCALL_THISCALL_ASGLOBAL,
+                                                                  this),
+                                 "ui::end_window") &&
+                         require(m_Engine->RegisterGlobalFunction("void text(const string &in)",
+                                                                  asMETHOD(Implementation, HostText),
+                                                                  asCALL_THISCALL_ASGLOBAL,
+                                                                  this),
+                                 "ui::text") &&
+                         require(m_Engine->RegisterGlobalFunction("bool button(const string &in)",
+                                                                  asMETHOD(Implementation, HostButton),
+                                                                  asCALL_THISCALL_ASGLOBAL,
+                                                                  this),
+                                 "ui::button");
             const auto reset = require(m_Engine->SetDefaultNamespace(""), "default namespace");
             return successful && reset;
         }
@@ -808,7 +709,7 @@ namespace PureMirror::Overlay
             return m_ScriptHost != nullptr && m_ScriptHost->Button(ActivePluginId(), label);
         }
 
-        void HostYield()
+        void HostYield() override
         {
             if (!RequireActiveTag(ScriptCallbackTag::Suspendable, "Utils::Yield() is not available in this callback."))
                 return;
@@ -817,7 +718,7 @@ namespace PureMirror::Overlay
                 static_cast<void>(context->Suspend());
         }
 
-        void HostSleep(const asQWORD timeInMs)
+        void HostSleep(const std::uint64_t timeInMs) override
         {
             if (!RequireActiveTag(ScriptCallbackTag::Suspendable, "Utils::Sleep() is not available in this callback."))
                 return;
@@ -825,7 +726,8 @@ namespace PureMirror::Overlay
             const auto now = std::chrono::steady_clock::now();
             const auto maximumDelay = std::chrono::duration_cast<std::chrono::milliseconds>(
                 (std::chrono::steady_clock::time_point::max)() - now);
-            const auto requestedDelay = std::min<asQWORD>(timeInMs, static_cast<asQWORD>(maximumDelay.count()));
+            const auto requestedDelay =
+                std::min<std::uint64_t>(timeInMs, static_cast<std::uint64_t>(maximumDelay.count()));
             m_RequestedResumeTime =
                 now + std::chrono::milliseconds(static_cast<std::chrono::milliseconds::rep>(requestedDelay));
             auto* context = asGetActiveContext();
@@ -841,79 +743,6 @@ namespace PureMirror::Overlay
             if (context != nullptr)
                 static_cast<void>(context->SetException(message));
             return false;
-        }
-
-        static void TaskRetrieveGeneric(asIScriptGeneric* generic)
-        {
-            auto* task = static_cast<ScriptTask*>(generic->GetObject());
-            if (task != nullptr && task->Retrieve(generic->GetArgAddress(0), generic->GetArgTypeId(0)))
-                return;
-            auto* context = asGetActiveContext();
-            if (context != nullptr)
-            {
-                const auto message = task != nullptr && task->IsFailed()
-                                         ? std::string(task->Error())
-                                         : "Task result is not available or has a different type.";
-                static_cast<void>(context->SetException(message.c_str()));
-            }
-        }
-
-        static void TypedTaskRetrieveGeneric(asIScriptGeneric* generic)
-        {
-            auto* task = static_cast<ScriptTask*>(generic->GetObject());
-            if (task != nullptr && task->Retrieve(generic->GetArgAddress(0), generic->GetArgTypeId(0)))
-                return;
-            auto* context = asGetActiveContext();
-            if (context != nullptr)
-            {
-                const auto message = task != nullptr && task->IsFailed() ? std::string(task->Error())
-                                                                         : "Typed task result is not available.";
-                static_cast<void>(context->SetException(message.c_str()));
-            }
-        }
-
-        static void TaskCastGeneric(asIScriptGeneric* generic)
-        {
-            auto* task = static_cast<ScriptTask*>(generic->GetObject());
-            if (task != nullptr)
-                static_cast<void>(task->Cast(generic->GetArgAddress(0), generic->GetArgTypeId(0)));
-        }
-
-        static void TypedTaskToTaskGeneric(asIScriptGeneric* generic)
-        {
-            static_cast<void>(generic->SetReturnObject(generic->GetObject()));
-        }
-
-        static bool TypedTaskTemplateCallback(asITypeInfo* type, bool& dontGarbageCollect)
-        {
-            dontGarbageCollect = true;
-            return type != nullptr && type->GetSubTypeId() != asTYPEID_VOID;
-        }
-
-        static void AsyncGeneric(asIScriptGeneric* generic)
-        {
-            if (generic != nullptr)
-                static_cast<Implementation*>(generic->GetAuxiliary())->HostAsync(*generic);
-        }
-
-        static void WaitGeneric(asIScriptGeneric* generic)
-        {
-            if (generic != nullptr)
-                static_cast<Implementation*>(generic->GetAuxiliary())
-                    ->HostWait(static_cast<ScriptTask*>(generic->GetArgObject(0)));
-        }
-
-        static void WaitAllGeneric(asIScriptGeneric* generic)
-        {
-            if (generic != nullptr)
-                static_cast<Implementation*>(generic->GetAuxiliary())
-                    ->HostWaitAll(static_cast<CScriptArray*>(generic->GetArgObject(0)));
-        }
-
-        static void WaitAnyGeneric(asIScriptGeneric* generic)
-        {
-            if (generic != nullptr)
-                static_cast<Implementation*>(generic->GetAuxiliary())->HostWaitAny(*generic);
         }
 
         static void MessageCallback(const asSMessageInfo* message, void* parameter)

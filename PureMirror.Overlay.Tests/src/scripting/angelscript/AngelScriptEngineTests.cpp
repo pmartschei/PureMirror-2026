@@ -255,7 +255,7 @@ namespace PureMirror::Overlay::Tests
                 void start_async()
                 {
                     Work@ work = @worker;
-                    async(work);
+                    Async(work);
                 }
             )"}};
             Assert::IsTrue(engine.LoadModule("com.example.capabilities", sources).IsSuccessful());
@@ -264,16 +264,16 @@ namespace PureMirror::Overlay::Tests
                 engine.CallFunction("com.example.capabilities", {"void render()", ScriptCallbackTag::Ui});
             const auto load =
                 engine.CallFunction("com.example.capabilities", {"void load()", ScriptCallbackTag::Suspendable});
-            const auto async =
+            const auto asyncResult =
                 engine.CallFunction("com.example.capabilities", {"void start_async()", ScriptCallbackTag::Ui});
 
             Assert::IsFalse(render.IsSuccessful());
             Assert::IsFalse(load.IsSuccessful());
-            Assert::IsFalse(async.IsSuccessful());
+            Assert::IsFalse(asyncResult.IsSuccessful());
             Assert::AreEqual(std::size_t{0}, host.TextCallCount);
             Assert::IsTrue(render.Diagnostics.front().Message.find("Yield") != std::string::npos);
             Assert::IsTrue(load.Diagnostics.front().Message.find("UI functions") != std::string::npos);
-            Assert::IsTrue(async.Diagnostics.front().Message.find("async") != std::string::npos);
+            Assert::IsTrue(asyncResult.Diagnostics.front().Message.find("Async") != std::string::npos);
         }
 
         TEST_METHOD(Coroutine_InheritsAllTagsFromItsCallingContext)
@@ -290,7 +290,7 @@ namespace PureMirror::Overlay::Tests
                 void run()
                 {
                     Work@ work = @worker;
-                    Core::Task@ task = async(work);
+                    Core::Task@ task = Async(work);
                     if (task.IsFailed)
                         log::info("inherited-without-suspendable");
                 }
@@ -320,7 +320,7 @@ namespace PureMirror::Overlay::Tests
                 void on_load()
                 {
                     Work@ work = @worker;
-                    Core::Task@ task = async(work);
+                    Core::Task@ task = Async(work);
                     Wait(task);
                     Core::TypedTask<int>@ typed = task;
                     Core::Task@ roundTrip = typed;
@@ -356,7 +356,7 @@ namespace PureMirror::Overlay::Tests
                 void on_load()
                 {
                     Work@ work = @worker;
-                    Core::Task@ task = async(work, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+                    Core::Task@ task = Async(work, 1, 2, 3, 4, 5, 6, 7, 8, 9);
                     Wait(task);
                     int result;
                     task.Retrieve(result);
@@ -388,7 +388,7 @@ namespace PureMirror::Overlay::Tests
                 void on_load()
                 {
                     Work@ work = @worker;
-                    Core::Task@ task = async(work, string("kept-alive"), 7);
+                    Core::Task@ task = Async(work, string("kept-alive"), 7);
                     Wait(task);
                     string result;
                     task.Retrieve(result);
@@ -422,9 +422,9 @@ namespace PureMirror::Overlay::Tests
                 void on_load()
                 {
                     Work@ work = @worker;
-                    Core::Task@ one = async(work, 1);
-                    Core::Task@ two = async(work, 2);
-                    Core::Task@ three = async(work, 3);
+                    Core::Task@ one = Async(work, 1);
+                    Core::Task@ two = Async(work, 2);
+                    Core::Task@ three = Async(work, 3);
                     WaitAll({one, two, three});
                     log::info("all-complete");
                 }
@@ -460,8 +460,8 @@ namespace PureMirror::Overlay::Tests
                 void on_load()
                 {
                     Work@ work = @worker;
-                    Core::Task@ slow = async(work, 2, 2);
-                    Core::Task@ fast = async(work, 1, 1);
+                    Core::Task@ slow = Async(work, 2, 2);
+                    Core::Task@ fast = Async(work, 1, 1);
                     Core::Task@ winner = WaitAny({slow, fast});
                     int result;
                     winner.Retrieve(result);
@@ -496,7 +496,7 @@ namespace PureMirror::Overlay::Tests
                 int parent()
                 {
                     Work@ childWork = @child;
-                    Core::Task@ childTask = async(childWork);
+                    Core::Task@ childTask = Async(childWork);
                     Wait(childTask);
                     int value;
                     childTask.Retrieve(value);
@@ -505,7 +505,7 @@ namespace PureMirror::Overlay::Tests
                 void on_load()
                 {
                     Work@ parentWork = @parent;
-                    Core::Task@ parentTask = async(parentWork);
+                    Core::Task@ parentTask = Async(parentWork);
                     Wait(parentTask);
                     int result;
                     parentTask.Retrieve(result);
@@ -536,7 +536,7 @@ namespace PureMirror::Overlay::Tests
                 void on_load()
                 {
                     Work@ work = @worker;
-                    Core::Task@ task = async(work);
+                    Core::Task@ task = Async(work);
                     Wait(task);
                     log::info("complete");
                 }
@@ -570,7 +570,7 @@ namespace PureMirror::Overlay::Tests
                 void on_load()
                 {
                     Work@ work = @fail;
-                    Core::Task@ task = async(work);
+                    Core::Task@ task = Async(work);
                     Wait(task);
                     if (task.IsCompleted && task.IsFailed)
                         log::info("failed-task");

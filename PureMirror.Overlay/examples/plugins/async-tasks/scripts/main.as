@@ -25,11 +25,11 @@ void on_load()
     TaskWork@ sleeping_work = @sleep_then_double;
     TaskWork@ yielding_work = @yield_then_increment;
 
-    // async starts every function immediately in its own coroutine context.
+    // Async starts every function immediately in its own coroutine context.
     // Both timers therefore overlap instead of adding up to 1000 ms.
-    Core::Task@ slow = async(sleeping_work, 21, 750);
-    Core::Task@ fast = async(sleeping_work, 10, 250);
-    Core::Task@ next_frame = async(yielding_work, 6, 0);
+    Core::Task@ slow = Async(sleeping_work, 21, 750);
+    Core::Task@ fast = Async(sleeping_work, 10, 250);
+    Core::Task@ next_frame = Async(yielding_work, 6, 0);
 
     // The Yield coroutine completes first, on the next frame.
     Core::Task@ first = WaitAny({slow, fast, next_frame});

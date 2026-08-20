@@ -168,10 +168,15 @@
     <ClInclude Include="src\scripting\ScriptModuleLoadResult.h"><Filter>Header Files\Scripting</Filter></ClInclude>
     <ClInclude Include="src\scripting\ScriptSource.h"><Filter>Header Files\Scripting</Filter></ClInclude>
     <ClInclude Include="src\scripting\angelscript\AngelScriptEngine.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
+    <ClInclude Include="src\scripting\angelscript\ScriptBindingUtils.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
+    <ClInclude Include="src\scripting\angelscript\IScriptSuspensionRuntime.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
+    <ClInclude Include="src\scripting\angelscript\IScriptTaskRuntime.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
     <ClInclude Include="src\scripting\angelscript\ScriptContextWait.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
     <ClInclude Include="src\scripting\angelscript\ScriptCoroutine.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
     <ClInclude Include="src\scripting\angelscript\ScriptCoroutineArgument.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
     <ClInclude Include="src\scripting\angelscript\ScriptTask.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
+    <ClInclude Include="src\scripting\angelscript\ScriptTaskBindings.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
+    <ClInclude Include="src\scripting\angelscript\ScriptSuspensionBindings.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
     <ClCompile Include="src\ui\console\ConsoleWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -222,10 +227,13 @@
     <ClCompile Include="src\scripting\PluginScriptInstance.cpp"><Filter>Source Files\Scripting</Filter></ClCompile>
     <ClCompile Include="src\scripting\OverlayScriptHost.cpp"><Filter>Source Files\Scripting</Filter></ClCompile>
     <ClCompile Include="src\scripting\angelscript\AngelScriptEngine.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
+    <ClCompile Include="src\scripting\angelscript\ScriptBindingUtils.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
     <ClCompile Include="src\scripting\angelscript\ScriptContextWait.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
     <ClCompile Include="src\scripting\angelscript\ScriptCoroutine.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
     <ClCompile Include="src\scripting\angelscript\ScriptCoroutineArgument.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
     <ClCompile Include="src\scripting\angelscript\ScriptTask.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
+    <ClCompile Include="src\scripting\angelscript\ScriptTaskBindings.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
+    <ClCompile Include="src\scripting\angelscript\ScriptSuspensionBindings.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VersionInfo.rc">

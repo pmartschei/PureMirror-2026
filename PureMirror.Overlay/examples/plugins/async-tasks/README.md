@@ -2,7 +2,7 @@
 
 Dieses Beispiel zeigt die Task- und Coroutine-API in einem vollständigen Plugin-Lifecycle:
 
-- Zwei Aufrufe von `sleep_then_double` starten mit `async` in getrennten Coroutine-Contexts und schlafen 750 ms
+- Zwei Aufrufe von `sleep_then_double` starten mit `Async` in getrennten Coroutine-Contexts und schlafen 750 ms
   beziehungsweise 250 ms. Die Wartezeiten überlappen sich.
 - `yield_then_increment` wird ebenfalls parallel gestartet und läuft nach `Utils::Yield()` im nächsten Frame weiter.
 - `WaitAny` pausiert `on_load`, bis der erste Task fertig ist, und gibt dessen Resultat-Task zurück.

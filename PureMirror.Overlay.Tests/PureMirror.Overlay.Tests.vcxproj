@@ -77,6 +77,7 @@
     <ClCompile Include="src\scripting\ScriptUiScopeStackTests.cpp" />
     <ClCompile Include="src\scripting\ExamplePluginIntegrationTests.cpp" />
     <ClCompile Include="src\scripting\angelscript\AngelScriptEngineTests.cpp" />
+    <ClCompile Include="src\scripting\angelscript\ScriptBindingUtilsTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dummy.h" />
@@ -89,10 +90,13 @@
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\PluginScriptInstance.cpp" />
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\ScriptUiScopeStack.cpp" />
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\AngelScriptEngine.cpp" />
+    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptBindingUtils.cpp" />
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptContextWait.cpp" />
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptCoroutine.cpp" />
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptCoroutineArgument.cpp" />
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptTask.cpp" />
+    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptTaskBindings.cpp" />
+    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptSuspensionBindings.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectCapability Include="TestContainer" />
