@@ -6,4 +6,6 @@ AngelScript-Header und -Typen bleiben durch ein Pimpl vollständig in diesem Ord
 
 Implementiert sind außerdem die optionalen Lifecycle-Callbacks `on_load`, `on_render` und `on_unload` sowie die minimale Host-API `log::info`, `ui::begin_window`, `ui::end_window`, `ui::text` und `ui::button`. `PluginScriptInstance` verbindet Manifest, Paketpfad, Kompilierung, Callback-Ausführung und Entladen zu einem Plugin-Lifecycle.
 
-Noch nicht implementiert sind Context-Pool, Include-Auflösung, das Binden von Imports zwischen Dependency-Ladegruppen, Capability-Prüfungen und eine Zeitbegrenzung für Scripts. Details stehen in `docs/PLUGIN_SYSTEM_PLAN.md`.
+Callbacks tragen engine-unabhängige Capability-Tags. `on_load` ist pausierbar, `on_render` darf UI verwenden und `on_unload` besitzt keine dieser Capabilities. Ein Script kann in pausierbaren Callbacks mit `Utils::Yield()` bis zum nächsten Frame oder mit `Utils::Sleep(uint64 timeInMs)` mindestens bis zum Ablauf der angegebenen Zeit aussetzen. Ein nicht erlaubter UI- oder Suspend-Aufruf beendet den Callback mit einer Script-Diagnose. Jeder Ausführungsabschnitt besitzt weiterhin ein Zeitlimit von 100 ms.
+
+Noch nicht implementiert sind Context-Pooling, Include-Auflösung und allgemeine Script-Coroutinen. Details stehen in `docs/PLUGIN_SYSTEM_PLAN.md`.

@@ -34,5 +34,6 @@ namespace PureMirror::Overlay
         std::filesystem::path m_PackageRoot;
         bool m_IsCompiled{};
         bool m_IsLoaded{};
+        bool m_IsActivating{};
     };
 }  // namespace PureMirror::Overlay

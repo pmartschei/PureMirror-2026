@@ -83,7 +83,7 @@ namespace PureMirror::Overlay::Tests
             const auto consumerResult =
                 PluginScriptCompiler(engine).Compile(consumerManifest, consumer.Path(), {providerPackage});
             const auto consumerBindings = engine.BindModuleImports(consumerManifest.Id);
-            const auto callback = engine.CallFunction(consumerManifest.Id, "void on_load()");
+            const auto callback = engine.CallFunction(consumerManifest.Id, {"void on_load()"});
 
             Assert::IsTrue(providerResult.IsSuccessful());
             Assert::IsTrue(providerBindings.IsSuccessful());

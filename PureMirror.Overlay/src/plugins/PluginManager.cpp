@@ -279,6 +279,7 @@ namespace PureMirror::Overlay
 
     void PluginManager::Render()
     {
+        m_ScriptEngine.AdvanceFrame();
         std::vector<std::string> failedPluginIds;
         for (auto plugin = m_LoadedPlugins.begin(); plugin != m_LoadedPlugins.end();)
         {

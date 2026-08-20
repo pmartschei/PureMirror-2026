@@ -22,8 +22,8 @@ namespace PureMirror::Overlay
         [[nodiscard]] ScriptModuleLoadResult LoadModule(std::string_view moduleId,
                                                         const std::vector<ScriptSource>& sources) override;
         [[nodiscard]] ScriptModuleLoadResult BindModuleImports(std::string_view moduleId) override;
-        [[nodiscard]] ScriptCallResult CallFunction(std::string_view moduleId,
-                                                    std::string_view functionDeclaration) override;
+        void AdvanceFrame() override;
+        [[nodiscard]] ScriptCallResult CallFunction(std::string_view moduleId, const ScriptCallback& callback) override;
         void UnloadModule(std::string_view moduleId) override;
 
       private:
