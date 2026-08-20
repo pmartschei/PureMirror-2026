@@ -356,7 +356,7 @@ namespace PureMirror::Overlay
             const auto previousResumeTime = m_RequestedResumeTime;
             const auto previousTimeout = m_DidExecutionTimeOut;
 
-            m_ActiveCallbackTags = ScriptCallbackTag::Suspendable;
+            m_ActiveCallbackTags = coroutine.CallbackTags;
             m_RequestedResumeFrame = m_CurrentFrame + 1;
             m_RequestedResumeTime = std::chrono::steady_clock::now();
             m_DidExecutionTimeOut = false;
@@ -468,6 +468,9 @@ namespace PureMirror::Overlay
 
         void HostAsync(asIScriptGeneric& generic)
         {
+            if (!RequireActiveTag(ScriptCallbackTag::Coroutine, "async() is not available in this callback."))
+                return;
+
             auto* activeContext = asGetActiveContext();
             auto* functionReference = static_cast<asIScriptFunction**>(generic.GetArgAddress(0));
             auto* function = functionReference != nullptr ? *functionReference : nullptr;
@@ -490,7 +493,7 @@ namespace PureMirror::Overlay
             }
             auto* task = new ScriptTask(*m_Engine, function->GetReturnTypeId());
             const auto moduleId = std::string(ActivePluginId());
-            auto coroutine = std::make_unique<ScriptCoroutine>(moduleId, *context, *task);
+            auto coroutine = std::make_unique<ScriptCoroutine>(moduleId, *context, *task, m_ActiveCallbackTags);
             for (asUINT index{}; index < function->GetParamCount(); ++index)
             {
                 if (SetCoroutineArgument(*coroutine,
@@ -511,6 +514,9 @@ namespace PureMirror::Overlay
 
         void HostWait(ScriptTask* task)
         {
+            if (!RequireActiveTag(ScriptCallbackTag::Suspendable, "Wait() is not available in this callback."))
+                return;
+
             auto* context = asGetActiveContext();
             if (context == nullptr || task == nullptr)
             {
@@ -527,6 +533,9 @@ namespace PureMirror::Overlay
 
         void HostWaitAll(CScriptArray* tasks)
         {
+            if (!RequireActiveTag(ScriptCallbackTag::Suspendable, "WaitAll() is not available in this callback."))
+                return;
+
             auto* context = asGetActiveContext();
             auto taskList = TasksFromArray(tasks);
             if (context == nullptr || tasks == nullptr || taskList.size() != tasks->GetSize())
@@ -543,6 +552,9 @@ namespace PureMirror::Overlay
 
         void HostWaitAny(asIScriptGeneric& generic)
         {
+            if (!RequireActiveTag(ScriptCallbackTag::Suspendable, "WaitAny() is not available in this callback."))
+                return;
+
             auto* context = asGetActiveContext();
             auto* tasks = static_cast<CScriptArray*>(generic.GetArgObject(0));
             auto taskList = TasksFromArray(tasks);

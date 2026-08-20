@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ScriptTask.h"
+#include "src/scripting/ScriptCallbackTag.h"
 
 #include <chrono>
 #include <cstdint>
@@ -15,7 +16,10 @@ namespace PureMirror::Overlay
     class ScriptCoroutine
     {
       public:
-        ScriptCoroutine(std::string moduleId, asIScriptContext& context, ScriptTask& task);
+        ScriptCoroutine(std::string moduleId,
+                        asIScriptContext& context,
+                        ScriptTask& task,
+                        ScriptCallbackTag callbackTags);
         ~ScriptCoroutine();
 
         ScriptCoroutine(const ScriptCoroutine&) = delete;
@@ -26,6 +30,7 @@ namespace PureMirror::Overlay
         std::string ModuleId;
         asIScriptContext& Context;
         ScriptTask& Task;
+        ScriptCallbackTag CallbackTags{ScriptCallbackTag::None};
         std::uint64_t ResumeFrame{};
         std::chrono::steady_clock::time_point ResumeTime;
         bool IsFinished{};

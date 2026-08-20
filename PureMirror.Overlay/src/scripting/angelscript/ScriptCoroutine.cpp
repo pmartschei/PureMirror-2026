@@ -6,8 +6,11 @@
 
 namespace PureMirror::Overlay
 {
-    ScriptCoroutine::ScriptCoroutine(std::string moduleId, asIScriptContext& context, ScriptTask& task)
-        : ModuleId(std::move(moduleId)), Context(context), Task(task)
+    ScriptCoroutine::ScriptCoroutine(std::string moduleId,
+                                     asIScriptContext& context,
+                                     ScriptTask& task,
+                                     const ScriptCallbackTag callbackTags)
+        : ModuleId(std::move(moduleId)), Context(context), Task(task), CallbackTags(callbackTags)
     {
     }
 

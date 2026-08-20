@@ -6,7 +6,8 @@ namespace PureMirror::Overlay
 {
     namespace
     {
-        constexpr ScriptCallback LoadCallback{"void on_load()", ScriptCallbackTag::Suspendable};
+        constexpr ScriptCallback LoadCallback{"void on_load()",
+                                              ScriptCallbackTag::Suspendable | ScriptCallbackTag::Coroutine};
         constexpr ScriptCallback RenderCallback{"void on_render()", ScriptCallbackTag::Ui};
         constexpr ScriptCallback UnloadCallback{"void on_unload()", ScriptCallbackTag::None};
     }  // namespace
