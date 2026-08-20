@@ -52,9 +52,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="vendor\source\*.cpp" />
+    <ClCompile Include="vendor\add_on\scriptarray\scriptarray.cpp" />
     <ClCompile Include="vendor\add_on\scriptstdstring\scriptstdstring.cpp" />
     <ClInclude Include="vendor\include\angelscript.h" />
     <ClInclude Include="vendor\source\*.h" />
+    <ClInclude Include="vendor\add_on\scriptarray\scriptarray.h" />
     <ClInclude Include="vendor\add_on\scriptstdstring\scriptstdstring.h" />
   </ItemGroup>
   <ItemGroup>

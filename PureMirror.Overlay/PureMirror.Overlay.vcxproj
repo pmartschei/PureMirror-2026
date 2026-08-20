@@ -168,7 +168,7 @@ xcopy /Y /E /I "$(ProjectDir)examples\plugins" "D:\Spiele\Path of Exile\puremirr
   </ItemDefinitionGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)PureMirror.AngelScript\vendor\include;$(SolutionDir)PureMirror.AngelScript\vendor\add_on\scriptstdstring;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)PureMirror.AngelScript\vendor\include;$(SolutionDir)PureMirror.AngelScript\vendor\add_on\scriptstdstring;$(SolutionDir)PureMirror.AngelScript\vendor\add_on\scriptarray;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -237,6 +237,10 @@ xcopy /Y /E /I "$(ProjectDir)examples\plugins" "D:\Spiele\Path of Exile\puremirr
     <ClInclude Include="src\scripting\ScriptUiScope.h" />
     <ClInclude Include="src\scripting\ScriptUiScopeStack.h" />
     <ClInclude Include="src\scripting\angelscript\AngelScriptEngine.h" />
+    <ClInclude Include="src\scripting\angelscript\ScriptContextWait.h" />
+    <ClInclude Include="src\scripting\angelscript\ScriptCoroutine.h" />
+    <ClInclude Include="src\scripting\angelscript\ScriptCoroutineArgument.h" />
+    <ClInclude Include="src\scripting\angelscript\ScriptTask.h" />
     <ClInclude Include="src\ui\MainMenuBar.h" />
     <ClInclude Include="src\ui\console\ConsoleWindow.h" />
     <ClInclude Include="src\ui\logging\LogMessageDesignerWindow.h" />
@@ -266,6 +270,10 @@ xcopy /Y /E /I "$(ProjectDir)examples\plugins" "D:\Spiele\Path of Exile\puremirr
     <ClCompile Include="src\scripting\ScriptUiScopeStack.cpp" />
     <ClCompile Include="src\scripting\OverlayScriptHost.cpp" />
     <ClCompile Include="src\scripting\angelscript\AngelScriptEngine.cpp" />
+    <ClCompile Include="src\scripting\angelscript\ScriptContextWait.cpp" />
+    <ClCompile Include="src\scripting\angelscript\ScriptCoroutine.cpp" />
+    <ClCompile Include="src\scripting\angelscript\ScriptCoroutineArgument.cpp" />
+    <ClCompile Include="src\scripting\angelscript\ScriptTask.cpp" />
     <ClCompile Include="src\ui\MainMenuBar.cpp" />
     <ClCompile Include="src\ui\console\ConsoleWindow.cpp" />
     <ClCompile Include="src\ui\logging\LogMessageDesignerWindow.cpp" />

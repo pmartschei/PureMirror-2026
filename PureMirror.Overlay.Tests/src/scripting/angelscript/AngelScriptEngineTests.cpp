@@ -260,5 +260,285 @@ namespace PureMirror::Overlay::Tests
             Assert::IsTrue(render.Diagnostics.front().Message.find("Yield") != std::string::npos);
             Assert::IsTrue(load.Diagnostics.front().Message.find("UI functions") != std::string::npos);
         }
+
+        TEST_METHOD(Async_WaitAndTypedTaskResumeTheCallingContextWithTheResult)
+        {
+            ExecutionTrackingScriptHost host;
+            AngelScriptEngine engine(&host);
+            const std::vector sources{ScriptSource{"main.as", R"(
+                funcdef int Work();
+                int worker()
+                {
+                    Utils::Yield();
+                    return 42;
+                }
+                void on_load()
+                {
+                    Work@ work = @worker;
+                    Core::Task@ task = async(work);
+                    Wait(task);
+                    Core::TypedTask<int>@ typed = task;
+                    Core::Task@ roundTrip = typed;
+                    int result;
+                    roundTrip.Retrieve(result);
+                    if (result == 42)
+                        log::info("typed-result");
+                }
+            )"}};
+            Assert::IsTrue(engine.LoadModule("com.example.async.typed", sources).IsSuccessful());
+            constexpr ScriptCallback callback{"void on_load()", ScriptCallbackTag::Suspendable};
+
+            const auto suspended = engine.CallFunction("com.example.async.typed", callback);
+            engine.AdvanceFrame();
+            const auto resumed = engine.CallFunction("com.example.async.typed", callback);
+
+            Assert::IsTrue(suspended.Status == ScriptCallStatus::Suspended);
+            Assert::IsTrue(resumed.Status == ScriptCallStatus::Executed);
+            Assert::AreEqual(std::size_t{1}, host.LogMessages.size());
+            Assert::AreEqual(std::string{"typed-result"}, host.LogMessages.front());
+        }
+
+        TEST_METHOD(Async_ForwardsNineArgumentsToTheCoroutine)
+        {
+            ExecutionTrackingScriptHost host;
+            AngelScriptEngine engine(&host);
+            const std::vector sources{ScriptSource{"main.as", R"(
+                funcdef int Work(int, int, int, int, int, int, int, int, int);
+                int worker(int a, int b, int c, int d, int e, int f, int g, int h, int i)
+                {
+                    return a + b + c + d + e + f + g + h + i;
+                }
+                void on_load()
+                {
+                    Work@ work = @worker;
+                    Core::Task@ task = async(work, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+                    Wait(task);
+                    int result;
+                    task.Retrieve(result);
+                    if (result == 45)
+                        log::info("nine-arguments");
+                }
+            )"}};
+            Assert::IsTrue(engine.LoadModule("com.example.async.arguments", sources).IsSuccessful());
+
+            const auto result =
+                engine.CallFunction("com.example.async.arguments", {"void on_load()", ScriptCallbackTag::Suspendable});
+
+            Assert::IsTrue(result.Status == ScriptCallStatus::Executed);
+            Assert::AreEqual(std::size_t{1}, host.LogMessages.size());
+            Assert::AreEqual(std::string{"nine-arguments"}, host.LogMessages.front());
+        }
+
+        TEST_METHOD(Async_KeepsReferencedArgumentsAliveWhileTheCoroutineIsSuspended)
+        {
+            ExecutionTrackingScriptHost host;
+            AngelScriptEngine engine(&host);
+            const std::vector sources{ScriptSource{"main.as", R"(
+                funcdef string Work(const string&in, const int&in);
+                string worker(const string&in text, const int&in number)
+                {
+                    Utils::Yield();
+                    return number == 7 ? text : "wrong";
+                }
+                void on_load()
+                {
+                    Work@ work = @worker;
+                    Core::Task@ task = async(work, string("kept-alive"), 7);
+                    Wait(task);
+                    string result;
+                    task.Retrieve(result);
+                    log::info(result);
+                }
+            )"}};
+            Assert::IsTrue(engine.LoadModule("com.example.async.references", sources).IsSuccessful());
+            constexpr ScriptCallback callback{"void on_load()", ScriptCallbackTag::Suspendable};
+
+            Assert::IsTrue(engine.CallFunction("com.example.async.references", callback).Status ==
+                           ScriptCallStatus::Suspended);
+            engine.AdvanceFrame();
+            const auto resumed = engine.CallFunction("com.example.async.references", callback);
+
+            Assert::IsTrue(resumed.Status == ScriptCallStatus::Executed);
+            Assert::AreEqual(std::size_t{1}, host.LogMessages.size());
+            Assert::AreEqual(std::string{"kept-alive"}, host.LogMessages.front());
+        }
+
+        TEST_METHOD(WaitAll_ResumesOnlyAfterEveryTaskHasCompleted)
+        {
+            ExecutionTrackingScriptHost host;
+            AngelScriptEngine engine(&host);
+            const std::vector sources{ScriptSource{"main.as", R"(
+                funcdef void Work(int);
+                void worker(int yields)
+                {
+                    for (int i = 0; i < yields; ++i)
+                        Utils::Yield();
+                }
+                void on_load()
+                {
+                    Work@ work = @worker;
+                    Core::Task@ one = async(work, 1);
+                    Core::Task@ two = async(work, 2);
+                    Core::Task@ three = async(work, 3);
+                    WaitAll({one, two, three});
+                    log::info("all-complete");
+                }
+            )"}};
+            Assert::IsTrue(engine.LoadModule("com.example.async.all", sources).IsSuccessful());
+            constexpr ScriptCallback callback{"void on_load()", ScriptCallbackTag::Suspendable};
+
+            auto result = engine.CallFunction("com.example.async.all", callback);
+            for (int frame{}; frame < 3; ++frame)
+            {
+                Assert::IsTrue(result.Status == ScriptCallStatus::Suspended);
+                engine.AdvanceFrame();
+                result = engine.CallFunction("com.example.async.all", callback);
+            }
+
+            Assert::IsTrue(result.Status == ScriptCallStatus::Executed);
+            Assert::AreEqual(std::size_t{1}, host.LogMessages.size());
+            Assert::AreEqual(std::string{"all-complete"}, host.LogMessages.front());
+        }
+
+        TEST_METHOD(WaitAny_ReturnsTheFirstTaskThatCompletes)
+        {
+            ExecutionTrackingScriptHost host;
+            AngelScriptEngine engine(&host);
+            const std::vector sources{ScriptSource{"main.as", R"(
+                funcdef int Work(int, int);
+                int worker(int value, int yields)
+                {
+                    for (int i = 0; i < yields; ++i)
+                        Utils::Yield();
+                    return value;
+                }
+                void on_load()
+                {
+                    Work@ work = @worker;
+                    Core::Task@ slow = async(work, 2, 2);
+                    Core::Task@ fast = async(work, 1, 1);
+                    Core::Task@ winner = WaitAny({slow, fast});
+                    int result;
+                    winner.Retrieve(result);
+                    if (result == 1)
+                        log::info("first-complete");
+                }
+            )"}};
+            Assert::IsTrue(engine.LoadModule("com.example.async.any", sources).IsSuccessful());
+            constexpr ScriptCallback callback{"void on_load()", ScriptCallbackTag::Suspendable};
+
+            const auto suspended = engine.CallFunction("com.example.async.any", callback);
+            engine.AdvanceFrame();
+            const auto resumed = engine.CallFunction("com.example.async.any", callback);
+
+            Assert::IsTrue(suspended.Status == ScriptCallStatus::Suspended);
+            Assert::IsTrue(resumed.Status == ScriptCallStatus::Executed);
+            Assert::AreEqual(std::size_t{1}, host.LogMessages.size());
+            Assert::AreEqual(std::string{"first-complete"}, host.LogMessages.front());
+        }
+
+        TEST_METHOD(Coroutine_CanWaitForAnotherCoroutine)
+        {
+            ExecutionTrackingScriptHost host;
+            AngelScriptEngine engine(&host);
+            const std::vector sources{ScriptSource{"main.as", R"(
+                funcdef int Work();
+                int child()
+                {
+                    Utils::Yield();
+                    return 20;
+                }
+                int parent()
+                {
+                    Work@ childWork = @child;
+                    Core::Task@ childTask = async(childWork);
+                    Wait(childTask);
+                    int value;
+                    childTask.Retrieve(value);
+                    return value + 22;
+                }
+                void on_load()
+                {
+                    Work@ parentWork = @parent;
+                    Core::Task@ parentTask = async(parentWork);
+                    Wait(parentTask);
+                    int result;
+                    parentTask.Retrieve(result);
+                    if (result == 42)
+                        log::info("nested-wait");
+                }
+            )"}};
+            Assert::IsTrue(engine.LoadModule("com.example.async.nested", sources).IsSuccessful());
+            constexpr ScriptCallback callback{"void on_load()", ScriptCallbackTag::Suspendable};
+
+            Assert::IsTrue(engine.CallFunction("com.example.async.nested", callback).Status ==
+                           ScriptCallStatus::Suspended);
+            engine.AdvanceFrame();
+            const auto resumed = engine.CallFunction("com.example.async.nested", callback);
+
+            Assert::IsTrue(resumed.Status == ScriptCallStatus::Executed);
+            Assert::AreEqual(std::size_t{1}, host.LogMessages.size());
+            Assert::AreEqual(std::string{"nested-wait"}, host.LogMessages.front());
+        }
+
+        TEST_METHOD(Async_SchedulesCoroutinesFromMultiplePluginModulesIndependently)
+        {
+            ExecutionTrackingScriptHost host;
+            AngelScriptEngine engine(&host);
+            const std::vector sources{ScriptSource{"main.as", R"(
+                funcdef void Work();
+                void worker() { Utils::Yield(); }
+                void on_load()
+                {
+                    Work@ work = @worker;
+                    Core::Task@ task = async(work);
+                    Wait(task);
+                    log::info("complete");
+                }
+            )"}};
+            constexpr std::array<std::string_view, 4> moduleIds{"com.example.async.plugin.one",
+                                                                "com.example.async.plugin.two",
+                                                                "com.example.async.plugin.three",
+                                                                "com.example.async.plugin.four"};
+            constexpr ScriptCallback callback{"void on_load()", ScriptCallbackTag::Suspendable};
+            for (const auto moduleId : moduleIds)
+            {
+                Assert::IsTrue(engine.LoadModule(moduleId, sources).IsSuccessful());
+                Assert::IsTrue(engine.CallFunction(moduleId, callback).Status == ScriptCallStatus::Suspended);
+            }
+
+            engine.AdvanceFrame();
+            for (const auto moduleId : moduleIds)
+                Assert::IsTrue(engine.CallFunction(moduleId, callback).Status == ScriptCallStatus::Executed);
+
+            Assert::AreEqual(moduleIds.size(), host.LogMessages.size());
+        }
+
+        TEST_METHOD(Async_RecordsCoroutineExceptionsOnTheTask)
+        {
+            ExecutionTrackingScriptHost host;
+            AngelScriptEngine engine(&host);
+            const std::vector sources{ScriptSource{"main.as", R"(
+                funcdef int Work();
+                int divide(int value) { return 1 / value; }
+                int fail() { return divide(0); }
+                void on_load()
+                {
+                    Work@ work = @fail;
+                    Core::Task@ task = async(work);
+                    Wait(task);
+                    if (task.IsCompleted && task.IsFailed)
+                        log::info("failed-task");
+                }
+            )"}};
+            Assert::IsTrue(engine.LoadModule("com.example.async.failure", sources).IsSuccessful());
+
+            const auto result =
+                engine.CallFunction("com.example.async.failure", {"void on_load()", ScriptCallbackTag::Suspendable});
+
+            Assert::IsTrue(result.Status == ScriptCallStatus::Executed);
+            Assert::AreEqual(std::size_t{1}, host.LogMessages.size());
+            Assert::AreEqual(std::string{"failed-task"}, host.LogMessages.front());
+        }
     };
 }  // namespace PureMirror::Overlay::Tests

@@ -161,9 +161,9 @@ namespace PureMirror::Overlay::Tests
 
             const auto discoveredCount = manager.ScanPlugins(ExamplePluginsRoot());
 
-            Assert::AreEqual(std::size_t{6}, discoveredCount);
+            Assert::AreEqual(std::size_t{7}, discoveredCount);
             Assert::AreEqual(std::size_t{0}, manager.LoadedPluginCount());
-            Assert::AreEqual(std::size_t{6}, manager.AvailablePlugins().size());
+            Assert::AreEqual(std::size_t{7}, manager.AvailablePlugins().size());
 
             Assert::IsTrue(manager.LoadPlugin("com.puremirror.example.hello-overlay"));
             Assert::AreEqual(std::size_t{1}, manager.LoadedPluginCount());
@@ -181,7 +181,7 @@ namespace PureMirror::Overlay::Tests
             AngelScriptEngine scriptEngine(&scriptHost);
             PluginManager manager(scriptEngine, logger);
 
-            Assert::AreEqual(std::size_t{6}, manager.ScanPlugins(ExamplePluginsRoot()));
+            Assert::AreEqual(std::size_t{7}, manager.ScanPlugins(ExamplePluginsRoot()));
 
             Assert::IsTrue(manager.LoadPlugin("com.puremirror.example.dependency-consumer"));
             Assert::AreEqual(std::size_t{2}, manager.LoadedPluginCount());

@@ -107,6 +107,24 @@ namespace PureMirror::Overlay::Tests
             Assert::AreEqual(std::size_t{2}, host.TextValues.size());
         }
 
+        TEST_METHOD(Compile_AcceptsAsyncTasksExample)
+        {
+            const auto pluginRoot = ExamplePluginRoot("async-tasks");
+            std::ifstream manifestStream(pluginRoot / "plugin.json", std::ios::binary);
+            const std::string json{std::istreambuf_iterator<char>{manifestStream}, std::istreambuf_iterator<char>{}};
+            const auto parsedManifest = PluginManifestParser{}.Parse(json);
+            Assert::IsTrue(parsedManifest.IsSuccessful());
+
+            RecordingScriptHost host;
+            AngelScriptEngine engine(&host);
+            PluginScriptInstance plugin(engine, parsedManifest.Manifest, pluginRoot);
+
+            const auto compiled = plugin.Compile();
+
+            Assert::IsTrue(compiled.IsSuccessful());
+            Assert::IsTrue(plugin.Unload().IsSuccessful());
+        }
+
         TEST_METHOD(Render_IntentionalTimeoutExampleExceedsDeadlineBeforeClosingWindow)
         {
             const auto pluginRoot = ExamplePluginRoot("render-timeout");

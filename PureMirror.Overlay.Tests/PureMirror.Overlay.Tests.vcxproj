@@ -54,7 +54,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(VCInstallDir)Auxiliary\VS\UnitTest\include;$(ProjectDir)..\PureMirror.Overlay;$(ProjectDir)..\PureMirror.Overlay\src;$(SolutionDir)PureMirror.AngelScript\vendor\include;$(SolutionDir)PureMirror.AngelScript\vendor\add_on\scriptstdstring;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VCInstallDir)Auxiliary\VS\UnitTest\include;$(ProjectDir)..\PureMirror.Overlay;$(ProjectDir)..\PureMirror.Overlay\src;$(SolutionDir)PureMirror.AngelScript\vendor\include;$(SolutionDir)PureMirror.AngelScript\vendor\add_on\scriptstdstring;$(SolutionDir)PureMirror.AngelScript\vendor\add_on\scriptarray;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -89,6 +89,10 @@
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\PluginScriptInstance.cpp" />
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\ScriptUiScopeStack.cpp" />
     <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\AngelScriptEngine.cpp" />
+    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptContextWait.cpp" />
+    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptCoroutine.cpp" />
+    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptCoroutineArgument.cpp" />
+    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptTask.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectCapability Include="TestContainer" />

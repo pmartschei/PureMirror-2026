@@ -2,7 +2,12 @@
 
 #include "AngelScriptEngine.h"
 
+#include "ScriptContextWait.h"
+#include "ScriptCoroutine.h"
+#include "ScriptCoroutineArgument.h"
+#include "ScriptTask.h"
 #include "angelscript.h"
+#include "scriptarray.h"
 #include "scriptstdstring.h"
 
 namespace PureMirror::Overlay
@@ -37,6 +42,7 @@ namespace PureMirror::Overlay
                 return;
             }
             RegisterStdString(m_Engine);
+            RegisterScriptArray(m_Engine, true);
             if (!RegisterHostBindings())
             {
                 m_Engine->ShutDownAndRelease();
@@ -48,6 +54,8 @@ namespace PureMirror::Overlay
         {
             if (m_Engine != nullptr)
             {
+                m_ContextWaits.clear();
+                m_Coroutines.clear();
                 for (const auto& call : m_SuspendedCalls)
                     call.Context->Release();
                 m_Engine->ShutDownAndRelease();
@@ -110,6 +118,10 @@ namespace PureMirror::Overlay
         {
             std::scoped_lock lock(m_Mutex);
             ++m_CurrentFrame;
+            const auto coroutineCount = m_Coroutines.size();
+            for (std::size_t index{}; index < coroutineCount; ++index)
+                RunCoroutine(*m_Coroutines[index]);
+            std::erase_if(m_Coroutines, [](const auto& coroutine) { return coroutine->IsFinished; });
         }
 
         ScriptCallResult CallFunction(const std::string_view moduleId, const ScriptCallback& callback)
@@ -134,8 +146,7 @@ namespace PureMirror::Overlay
                                      });
             if (suspendedCall != m_SuspendedCalls.end())
             {
-                if (m_CurrentFrame < suspendedCall->ResumeFrame ||
-                    std::chrono::steady_clock::now() < suspendedCall->ResumeTime)
+                if (!CanResumeContext(*suspendedCall->Context, suspendedCall->ResumeFrame, suspendedCall->ResumeTime))
                 {
                     result.Status = ScriptCallStatus::Suspended;
                     return result;
@@ -159,6 +170,7 @@ namespace PureMirror::Overlay
                 }
 
                 suspendedCall->Context->Release();
+                m_ContextWaits.erase(suspendedCall->Context);
                 m_SuspendedCalls.erase(suspendedCall);
                 return result;
             }
@@ -238,7 +250,18 @@ namespace PureMirror::Overlay
                           {
                               if (call.ModuleId != moduleName)
                                   return false;
+                              m_ContextWaits.erase(call.Context);
                               call.Context->Release();
+                              return true;
+                          });
+            std::erase_if(m_Coroutines,
+                          [&](const auto& coroutine)
+                          {
+                              if (coroutine->ModuleId != moduleName)
+                                  return false;
+                              if (!coroutine->Task.IsCompleted())
+                                  coroutine->Task.Fail("The owning plugin was unloaded.", ++m_CompletionOrder);
+                              m_ContextWaits.erase(&coroutine->Context);
                               return true;
                           });
             m_Engine->DiscardModule(moduleName.c_str());
@@ -305,6 +328,273 @@ namespace PureMirror::Overlay
             return result;
         }
 
+        bool CanResumeContext(asIScriptContext& context,
+                              const std::uint64_t resumeFrame,
+                              const std::chrono::steady_clock::time_point resumeTime)
+        {
+            if (m_CurrentFrame < resumeFrame || std::chrono::steady_clock::now() < resumeTime)
+                return false;
+            const auto wait = m_ContextWaits.find(&context);
+            if (wait == m_ContextWaits.end())
+                return true;
+            if (!wait->second->IsReady())
+                return false;
+            wait->second->PrepareResume();
+            m_ContextWaits.erase(wait);
+            return true;
+        }
+
+        void RunCoroutine(ScriptCoroutine& coroutine)
+        {
+            if (coroutine.IsFinished ||
+                !CanResumeContext(coroutine.Context, coroutine.ResumeFrame, coroutine.ResumeTime))
+                return;
+
+            const auto previousTags = m_ActiveCallbackTags;
+            const auto previousDeadline = m_ExecutionDeadline;
+            const auto previousResumeFrame = m_RequestedResumeFrame;
+            const auto previousResumeTime = m_RequestedResumeTime;
+            const auto previousTimeout = m_DidExecutionTimeOut;
+
+            m_ActiveCallbackTags = ScriptCallbackTag::Suspendable;
+            m_RequestedResumeFrame = m_CurrentFrame + 1;
+            m_RequestedResumeTime = std::chrono::steady_clock::now();
+            m_DidExecutionTimeOut = false;
+            m_ExecutionDeadline = std::chrono::steady_clock::now() + ScriptExecutionTimeLimit;
+
+            int execution{asEXECUTION_ERROR};
+            if (coroutine.Context.SetLineCallback(
+                    asMETHOD(Implementation, EnforceExecutionDeadline), this, asCALL_THISCALL) >= 0)
+            {
+                if (m_ScriptHost != nullptr)
+                    m_ScriptHost->BeginScriptCall(coroutine.ModuleId);
+                const auto executionStartedAt = std::chrono::steady_clock::now();
+                execution = coroutine.Context.Execute();
+                const auto executionDuration = std::chrono::steady_clock::now() - executionStartedAt;
+                if (m_ScriptHost != nullptr)
+                    m_ScriptHost->EndScriptCall(coroutine.ModuleId);
+                coroutine.Context.ClearLineCallback();
+                if (executionDuration > ScriptExecutionTimeLimit)
+                    m_DidExecutionTimeOut = true;
+            }
+
+            if (m_DidExecutionTimeOut)
+            {
+                coroutine.Task.Fail("Coroutine execution exceeded the 100 ms time limit.", ++m_CompletionOrder);
+                coroutine.IsFinished = true;
+            }
+            else if (execution == asEXECUTION_FINISHED)
+            {
+                coroutine.Task.Complete(coroutine.Context, ++m_CompletionOrder);
+                coroutine.IsFinished = true;
+            }
+            else if (execution == asEXECUTION_SUSPENDED)
+            {
+                coroutine.ResumeFrame = m_RequestedResumeFrame;
+                coroutine.ResumeTime = m_RequestedResumeTime;
+            }
+            else
+            {
+                const auto* exception = coroutine.Context.GetExceptionString();
+                coroutine.Task.Fail(exception != nullptr ? exception : "Coroutine execution failed.",
+                                    ++m_CompletionOrder);
+                coroutine.IsFinished = true;
+            }
+
+            if (coroutine.IsFinished)
+                m_ContextWaits.erase(&coroutine.Context);
+            m_ActiveCallbackTags = previousTags;
+            m_ExecutionDeadline = previousDeadline;
+            m_RequestedResumeFrame = previousResumeFrame;
+            m_RequestedResumeTime = previousResumeTime;
+            m_DidExecutionTimeOut = previousTimeout;
+        }
+
+        bool SetCoroutineArgument(ScriptCoroutine& coroutine,
+                                  asIScriptFunction& function,
+                                  const asUINT parameterIndex,
+                                  void* argument,
+                                  const int argumentTypeId)
+        {
+            int parameterTypeId{};
+            asDWORD parameterFlags{};
+            if (function.GetParam(parameterIndex, &parameterTypeId, &parameterFlags) < 0)
+                return false;
+            const auto comparableParameterTypeId = parameterTypeId & ~asTYPEID_HANDLETOCONST;
+            const auto comparableArgumentTypeId = argumentTypeId & ~asTYPEID_HANDLETOCONST;
+            if (comparableParameterTypeId != comparableArgumentTypeId)
+                return false;
+
+            const auto referenceMode = parameterFlags & asTM_INOUTREF;
+            if (referenceMode == asTM_OUTREF || referenceMode == asTM_INOUTREF)
+                return false;
+            auto& context = coroutine.Context;
+            if (referenceMode == asTM_INREF)
+            {
+                auto ownedArgument = std::make_unique<ScriptCoroutineArgument>(*m_Engine, argument, argumentTypeId);
+                const auto result = (parameterTypeId & asTYPEID_MASK_OBJECT) != 0
+                                        ? context.SetArgObject(parameterIndex, ownedArgument->Value())
+                                        : context.SetArgAddress(parameterIndex, ownedArgument->Value());
+                if (result < 0)
+                    return false;
+                coroutine.KeepArgument(std::move(ownedArgument));
+                return true;
+            }
+            if ((parameterTypeId & asTYPEID_MASK_OBJECT) != 0)
+            {
+                auto* object = (argumentTypeId & asTYPEID_OBJHANDLE) != 0 ? *static_cast<void**>(argument) : argument;
+                return context.SetArgObject(parameterIndex, object) >= 0;
+            }
+            switch (parameterTypeId)
+            {
+            case asTYPEID_BOOL:
+            case asTYPEID_INT8:
+            case asTYPEID_UINT8:
+                return context.SetArgByte(parameterIndex, *static_cast<asBYTE*>(argument)) >= 0;
+            case asTYPEID_INT16:
+            case asTYPEID_UINT16:
+                return context.SetArgWord(parameterIndex, *static_cast<asWORD*>(argument)) >= 0;
+            case asTYPEID_INT32:
+            case asTYPEID_UINT32:
+                return context.SetArgDWord(parameterIndex, *static_cast<asDWORD*>(argument)) >= 0;
+            case asTYPEID_FLOAT:
+                return context.SetArgFloat(parameterIndex, *static_cast<float*>(argument)) >= 0;
+            case asTYPEID_DOUBLE:
+                return context.SetArgDouble(parameterIndex, *static_cast<double*>(argument)) >= 0;
+            default:
+                return context.SetArgQWord(parameterIndex, *static_cast<asQWORD*>(argument)) >= 0;
+            }
+        }
+
+        void HostAsync(asIScriptGeneric& generic)
+        {
+            auto* activeContext = asGetActiveContext();
+            auto* functionReference = static_cast<asIScriptFunction**>(generic.GetArgAddress(0));
+            auto* function = functionReference != nullptr ? *functionReference : nullptr;
+            if (activeContext == nullptr || function == nullptr ||
+                function->GetParamCount() + 1 != static_cast<asUINT>(generic.GetArgCount()))
+            {
+                if (activeContext != nullptr)
+                    static_cast<void>(
+                        activeContext->SetException("async() requires a function and its exact arguments."));
+                return;
+            }
+
+            auto* context = m_Engine->CreateContext();
+            if (context == nullptr || context->Prepare(function) < 0)
+            {
+                if (context != nullptr)
+                    context->Release();
+                static_cast<void>(activeContext->SetException("async() could not prepare the coroutine."));
+                return;
+            }
+            auto* task = new ScriptTask(*m_Engine, function->GetReturnTypeId());
+            const auto moduleId = std::string(ActivePluginId());
+            auto coroutine = std::make_unique<ScriptCoroutine>(moduleId, *context, *task);
+            for (asUINT index{}; index < function->GetParamCount(); ++index)
+            {
+                if (SetCoroutineArgument(*coroutine,
+                                         *function,
+                                         index,
+                                         generic.GetArgAddress(index + 1),
+                                         generic.GetArgTypeId(index + 1)))
+                    continue;
+                static_cast<void>(activeContext->SetException("async() argument types do not match the function."));
+                return;
+            }
+
+            RunCoroutine(*coroutine);
+            static_cast<void>(generic.SetReturnObject(task));
+            if (!coroutine->IsFinished)
+                m_Coroutines.push_back(std::move(coroutine));
+        }
+
+        void HostWait(ScriptTask* task)
+        {
+            auto* context = asGetActiveContext();
+            if (context == nullptr || task == nullptr)
+            {
+                if (context != nullptr)
+                    static_cast<void>(context->SetException("Wait() requires a task."));
+                return;
+            }
+            if (task->IsCompleted())
+                return;
+            m_ContextWaits[context] =
+                std::make_unique<ScriptContextWait>(ScriptWaitMode::One, std::vector<ScriptTask*>{task});
+            static_cast<void>(context->Suspend());
+        }
+
+        void HostWaitAll(CScriptArray* tasks)
+        {
+            auto* context = asGetActiveContext();
+            auto taskList = TasksFromArray(tasks);
+            if (context == nullptr || tasks == nullptr || taskList.size() != tasks->GetSize())
+            {
+                if (context != nullptr)
+                    static_cast<void>(context->SetException("WaitAll() does not accept null tasks."));
+                return;
+            }
+            if (std::ranges::all_of(taskList, &ScriptTask::IsCompleted))
+                return;
+            m_ContextWaits[context] = std::make_unique<ScriptContextWait>(ScriptWaitMode::All, std::move(taskList));
+            static_cast<void>(context->Suspend());
+        }
+
+        void HostWaitAny(asIScriptGeneric& generic)
+        {
+            auto* context = asGetActiveContext();
+            auto* tasks = static_cast<CScriptArray*>(generic.GetArgObject(0));
+            auto taskList = TasksFromArray(tasks);
+            if (context == nullptr || tasks == nullptr || taskList.empty() || taskList.size() != tasks->GetSize())
+            {
+                if (context != nullptr)
+                    static_cast<void>(context->SetException("WaitAny() requires at least one non-null task."));
+                return;
+            }
+
+            auto* firstCompleted = FirstCompletedTask(taskList);
+            if (firstCompleted != nullptr)
+            {
+                static_cast<void>(generic.SetReturnObject(firstCompleted));
+                return;
+            }
+
+            auto* resultTask = new ScriptTask(*m_Engine, asTYPEID_VOID);
+            static_cast<void>(generic.SetReturnObject(resultTask));
+            m_ContextWaits[context] =
+                std::make_unique<ScriptContextWait>(ScriptWaitMode::Any, std::move(taskList), resultTask);
+            resultTask->Release();
+            static_cast<void>(context->Suspend());
+        }
+
+        static std::vector<ScriptTask*> TasksFromArray(CScriptArray* tasks)
+        {
+            std::vector<ScriptTask*> result;
+            if (tasks == nullptr)
+                return result;
+            result.reserve(tasks->GetSize());
+            for (asUINT index{}; index < tasks->GetSize(); ++index)
+            {
+                auto* task = *static_cast<ScriptTask**>(tasks->At(index));
+                if (task != nullptr)
+                    result.push_back(task);
+            }
+            return result;
+        }
+
+        static ScriptTask* FirstCompletedTask(const std::vector<ScriptTask*>& tasks)
+        {
+            ScriptTask* result{};
+            for (const auto task : tasks)
+            {
+                if (!task->IsCompleted() || (result != nullptr && result->CompletionOrder() <= task->CompletionOrder()))
+                    continue;
+                result = task;
+            }
+            return result;
+        }
+
         void EnforceExecutionDeadline(asIScriptContext* context)
         {
             if (context == nullptr || std::chrono::steady_clock::now() <= m_ExecutionDeadline)
@@ -324,8 +614,106 @@ namespace PureMirror::Overlay
                 return false;
             };
 
-            const auto successful =
-                require(m_Engine->SetDefaultNamespace("Utils"), "namespace Utils") &&
+            auto successful =
+                require(m_Engine->SetDefaultNamespace("Core"), "namespace Core") &&
+                require(m_Engine->RegisterObjectType("Task", 0, asOBJ_REF), "Core::Task type") &&
+                require(m_Engine->RegisterObjectBehaviour(
+                            "Task", asBEHAVE_ADDREF, "void f()", asMETHOD(ScriptTask, AddRef), asCALL_THISCALL),
+                        "Core::Task addref") &&
+                require(m_Engine->RegisterObjectBehaviour(
+                            "Task", asBEHAVE_RELEASE, "void f()", asMETHOD(ScriptTask, Release), asCALL_THISCALL),
+                        "Core::Task release") &&
+                require(m_Engine->RegisterObjectMethod("Task",
+                                                       "bool get_IsCompleted() const property",
+                                                       asMETHOD(ScriptTask, IsCompleted),
+                                                       asCALL_THISCALL),
+                        "Core::Task IsCompleted") &&
+                require(
+                    m_Engine->RegisterObjectMethod(
+                        "Task", "bool get_IsFailed() const property", asMETHOD(ScriptTask, IsFailed), asCALL_THISCALL),
+                    "Core::Task IsFailed") &&
+                require(m_Engine->RegisterObjectMethod(
+                            "Task", "void Retrieve(?&out) const", asFUNCTION(TaskRetrieveGeneric), asCALL_GENERIC),
+                        "Core::Task Retrieve") &&
+                require(m_Engine->RegisterObjectMethod(
+                            "Task", "void opCast(?&out)", asFUNCTION(TaskCastGeneric), asCALL_GENERIC),
+                        "Core::Task opCast") &&
+                require(m_Engine->RegisterObjectMethod(
+                            "Task", "void opImplCast(?&out)", asFUNCTION(TaskCastGeneric), asCALL_GENERIC),
+                        "Core::Task opImplCast") &&
+                require(m_Engine->RegisterObjectMethod(
+                            "Task", "void opCast(?&out) const", asFUNCTION(TaskCastGeneric), asCALL_GENERIC),
+                        "Core::Task const opCast") &&
+                require(m_Engine->RegisterObjectMethod(
+                            "Task", "void opImplCast(?&out) const", asFUNCTION(TaskCastGeneric), asCALL_GENERIC),
+                        "Core::Task const opImplCast") &&
+                require(m_Engine->RegisterObjectType("TypedTask<class T>", 0, asOBJ_REF | asOBJ_TEMPLATE),
+                        "Core::TypedTask type") &&
+                require(m_Engine->RegisterObjectBehaviour("TypedTask<T>",
+                                                          asBEHAVE_TEMPLATE_CALLBACK,
+                                                          "bool f(int&in, bool&out)",
+                                                          asFUNCTION(TypedTaskTemplateCallback),
+                                                          asCALL_CDECL),
+                        "Core::TypedTask template callback") &&
+                require(m_Engine->RegisterObjectBehaviour(
+                            "TypedTask<T>", asBEHAVE_ADDREF, "void f()", asMETHOD(ScriptTask, AddRef), asCALL_THISCALL),
+                        "Core::TypedTask addref") &&
+                require(
+                    m_Engine->RegisterObjectBehaviour(
+                        "TypedTask<T>", asBEHAVE_RELEASE, "void f()", asMETHOD(ScriptTask, Release), asCALL_THISCALL),
+                    "Core::TypedTask release") &&
+                require(m_Engine->RegisterObjectMethod("TypedTask<T>",
+                                                       "void Retrieve(T&out) const",
+                                                       asFUNCTION(TypedTaskRetrieveGeneric),
+                                                       asCALL_GENERIC),
+                        "Core::TypedTask Retrieve") &&
+                require(m_Engine->RegisterObjectMethod(
+                            "TypedTask<T>", "Task@ opCast()", asFUNCTION(TypedTaskToTaskGeneric), asCALL_GENERIC),
+                        "Core::TypedTask opCast") &&
+                require(m_Engine->RegisterObjectMethod(
+                            "TypedTask<T>", "Task@ opImplCast()", asFUNCTION(TypedTaskToTaskGeneric), asCALL_GENERIC),
+                        "Core::TypedTask opImplCast") &&
+                require(m_Engine->RegisterObjectMethod("TypedTask<T>",
+                                                       "const Task@ opCast() const",
+                                                       asFUNCTION(TypedTaskToTaskGeneric),
+                                                       asCALL_GENERIC),
+                        "Core::TypedTask const opCast") &&
+                require(m_Engine->RegisterObjectMethod("TypedTask<T>",
+                                                       "const Task@ opImplCast() const",
+                                                       asFUNCTION(TypedTaskToTaskGeneric),
+                                                       asCALL_GENERIC),
+                        "Core::TypedTask const opImplCast") &&
+                require(m_Engine->SetDefaultNamespace(""), "default namespace for task functions");
+            for (std::size_t parameterCount{1}; successful && parameterCount <= 10; ++parameterCount)
+            {
+                std::string declaration{"Core::Task@ async("};
+                for (std::size_t parameter{}; parameter < parameterCount; ++parameter)
+                {
+                    if (parameter != 0)
+                        declaration += ", ";
+                    declaration += "?&in";
+                }
+                declaration += ')';
+                successful = require(m_Engine->RegisterGlobalFunction(
+                                         declaration.c_str(), asFUNCTION(AsyncGeneric), asCALL_GENERIC, this),
+                                     declaration);
+            }
+            successful =
+                successful &&
+                require(m_Engine->RegisterGlobalFunction(
+                            "void Wait(Core::Task@+ task)", asFUNCTION(WaitGeneric), asCALL_GENERIC, this),
+                        "Wait") &&
+                require(m_Engine->RegisterGlobalFunction(
+                            "void WaitAll(Core::Task@[] &in tasks)", asFUNCTION(WaitAllGeneric), asCALL_GENERIC, this),
+                        "WaitAll") &&
+                require(m_Engine->RegisterGlobalFunction("Core::Task@ WaitAny(Core::Task@[] &in tasks)",
+                                                         asFUNCTION(WaitAnyGeneric),
+                                                         asCALL_GENERIC,
+                                                         this),
+                        "WaitAny");
+
+            successful =
+                successful && require(m_Engine->SetDefaultNamespace("Utils"), "namespace Utils") &&
                 require(m_Engine->RegisterGlobalFunction(
                             "void Yield()", asMETHOD(Implementation, HostYield), asCALL_THISCALL_ASGLOBAL, this),
                         "Utils::Yield") &&
@@ -443,6 +831,79 @@ namespace PureMirror::Overlay
             return false;
         }
 
+        static void TaskRetrieveGeneric(asIScriptGeneric* generic)
+        {
+            auto* task = static_cast<ScriptTask*>(generic->GetObject());
+            if (task != nullptr && task->Retrieve(generic->GetArgAddress(0), generic->GetArgTypeId(0)))
+                return;
+            auto* context = asGetActiveContext();
+            if (context != nullptr)
+            {
+                const auto message = task != nullptr && task->IsFailed()
+                                         ? std::string(task->Error())
+                                         : "Task result is not available or has a different type.";
+                static_cast<void>(context->SetException(message.c_str()));
+            }
+        }
+
+        static void TypedTaskRetrieveGeneric(asIScriptGeneric* generic)
+        {
+            auto* task = static_cast<ScriptTask*>(generic->GetObject());
+            if (task != nullptr && task->Retrieve(generic->GetArgAddress(0), generic->GetArgTypeId(0)))
+                return;
+            auto* context = asGetActiveContext();
+            if (context != nullptr)
+            {
+                const auto message = task != nullptr && task->IsFailed() ? std::string(task->Error())
+                                                                         : "Typed task result is not available.";
+                static_cast<void>(context->SetException(message.c_str()));
+            }
+        }
+
+        static void TaskCastGeneric(asIScriptGeneric* generic)
+        {
+            auto* task = static_cast<ScriptTask*>(generic->GetObject());
+            if (task != nullptr)
+                static_cast<void>(task->Cast(generic->GetArgAddress(0), generic->GetArgTypeId(0)));
+        }
+
+        static void TypedTaskToTaskGeneric(asIScriptGeneric* generic)
+        {
+            static_cast<void>(generic->SetReturnObject(generic->GetObject()));
+        }
+
+        static bool TypedTaskTemplateCallback(asITypeInfo* type, bool& dontGarbageCollect)
+        {
+            dontGarbageCollect = true;
+            return type != nullptr && type->GetSubTypeId() != asTYPEID_VOID;
+        }
+
+        static void AsyncGeneric(asIScriptGeneric* generic)
+        {
+            if (generic != nullptr)
+                static_cast<Implementation*>(generic->GetAuxiliary())->HostAsync(*generic);
+        }
+
+        static void WaitGeneric(asIScriptGeneric* generic)
+        {
+            if (generic != nullptr)
+                static_cast<Implementation*>(generic->GetAuxiliary())
+                    ->HostWait(static_cast<ScriptTask*>(generic->GetArgObject(0)));
+        }
+
+        static void WaitAllGeneric(asIScriptGeneric* generic)
+        {
+            if (generic != nullptr)
+                static_cast<Implementation*>(generic->GetAuxiliary())
+                    ->HostWaitAll(static_cast<CScriptArray*>(generic->GetArgObject(0)));
+        }
+
+        static void WaitAnyGeneric(asIScriptGeneric* generic)
+        {
+            if (generic != nullptr)
+                static_cast<Implementation*>(generic->GetAuxiliary())->HostWaitAny(*generic);
+        }
+
         static void MessageCallback(const asSMessageInfo* message, void* parameter)
         {
             if (message == nullptr || parameter == nullptr)
@@ -466,11 +927,14 @@ namespace PureMirror::Overlay
         std::string m_InitializationError;
         std::vector<ScriptDiagnostic> m_Diagnostics;
         std::vector<SuspendedScriptCall> m_SuspendedCalls;
+        std::vector<std::unique_ptr<ScriptCoroutine>> m_Coroutines;
+        std::unordered_map<asIScriptContext*, std::unique_ptr<ScriptContextWait>> m_ContextWaits;
         std::mutex m_Mutex;
         std::chrono::steady_clock::time_point m_ExecutionDeadline;
         std::chrono::steady_clock::time_point m_RequestedResumeTime;
         std::uint64_t m_CurrentFrame{};
         std::uint64_t m_RequestedResumeFrame{};
+        std::uint64_t m_CompletionOrder{};
         ScriptCallbackTag m_ActiveCallbackTags{ScriptCallbackTag::None};
         bool m_DidExecutionTimeOut{};
     };
