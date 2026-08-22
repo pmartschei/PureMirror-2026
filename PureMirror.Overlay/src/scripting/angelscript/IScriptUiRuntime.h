@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ScriptImVec2.h"
+#include "bindings/math/ScriptImVec2.h"
 
 #include <cstdint>
 #include <string>

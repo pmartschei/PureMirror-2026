@@ -5,16 +5,17 @@
 #include "IScriptSuspensionRuntime.h"
 #include "IScriptTaskRuntime.h"
 #include "IScriptUiRuntime.h"
-#include "bindings/primitives/ScriptBoolBindings.h"
 #include "ScriptContextWait.h"
 #include "ScriptCoroutine.h"
 #include "ScriptCoroutineArgument.h"
-#include "bindings/primitives/ScriptNumberBindings.h"
-#include "ScriptSuspensionBindings.h"
-#include "ScriptTask.h"
-#include "ScriptTaskBindings.h"
-#include "ScriptUiBindings.h"
 #include "angelscript.h"
+#include "bindings/async/ScriptSuspensionBindings.h"
+#include "bindings/async/ScriptTask.h"
+#include "bindings/async/ScriptTaskBindings.h"
+#include "bindings/math/ScriptImVec2Bindings.h"
+#include "bindings/primitives/ScriptBoolBindings.h"
+#include "bindings/primitives/ScriptNumberBindings.h"
+#include "bindings/ui/ScriptUiBindings.h"
 #include "scriptarray.h"
 #include "scriptstdstring.h"
 
@@ -684,6 +685,8 @@ namespace PureMirror::Overlay
             auto successful = RegisterScriptBoolBindings(*m_Engine, m_InitializationError);
             if (successful)
                 successful = RegisterScriptNumberBindings(*m_Engine, m_InitializationError);
+            if (successful)
+                successful = RegisterScriptImVec2Bindings(*m_Engine, m_InitializationError);
             if (successful)
                 successful = RegisterScriptTaskBindings(*m_Engine, *this, m_InitializationError);
             if (successful)

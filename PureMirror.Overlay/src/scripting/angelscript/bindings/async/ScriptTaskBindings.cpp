@@ -1,12 +1,12 @@
 #include "pch.h"
 
-#include "ScriptTaskBindings.h"
+#include "scripting/angelscript/bindings/async/ScriptTaskBindings.h"
 
-#include "IScriptTaskRuntime.h"
-#include "ScriptBindingUtils.h"
-#include "ScriptTask.h"
 #include "angelscript.h"
 #include "scriptarray.h"
+#include "scripting/angelscript/IScriptTaskRuntime.h"
+#include "scripting/angelscript/bindings/ScriptBindingUtils.h"
+#include "scripting/angelscript/bindings/async/ScriptTask.h"
 
 #include <format>
 

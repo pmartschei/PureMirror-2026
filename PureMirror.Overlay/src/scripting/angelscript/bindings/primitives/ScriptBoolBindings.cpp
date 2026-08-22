@@ -3,8 +3,8 @@
 #include "ScriptBoolBindings.h"
 
 #include "ScriptBool.h"
-#include "scripting/angelscript/ScriptBindingUtils.h"
 #include "angelscript.h"
+#include "scripting/angelscript/bindings/ScriptBindingUtils.h"
 
 #include <format>
 

@@ -25,8 +25,8 @@ Menu-Plugins verwenden in `OnRenderMenu` die Bindings `UI::BeginMenu`, `UI::EndM
 
 Callbacks tragen engine-unabhängige Capability-Tags. Ein nicht erlaubter UI-, Coroutine- oder Suspend-Aufruf beendet den aktuellen Context mit einer Script-Diagnose. `Async` benötigt das `Coroutine`-Tag. Jede erzeugte Coroutine übernimmt die UI-Capabilities ihres auslösenden Callbacks und erhält zusätzlich immer das `Suspendable`-Tag. Sie darf daher selbst `Utils::Yield`, `Utils::Sleep` und die Wait-Funktionen verwenden, auch wenn der auslösende Callback nicht suspendieren darf. Jeder Ausführungsabschnitt besitzt weiterhin ein Zeitlimit von 100 ms.
 
-Die Deklarationen von `Utils::Yield` und `Utils::Sleep` liegen in `ScriptSuspensionBindings.cpp`. `IScriptSuspensionRuntime` verbindet sie mit der Suspend-/Timer-Logik der Engine.
-Gemeinsame Prüfungen von AngelScript-Registrierungsergebnissen und einheitliche Fehlerdiagnosen stellt `ScriptBindingUtils` für alle Binding-Module bereit.
+Die Deklarationen von `Utils::Yield` und `Utils::Sleep` liegen in `bindings/async/ScriptSuspensionBindings.cpp`. `IScriptSuspensionRuntime` verbindet sie mit der Suspend-/Timer-Logik der Engine.
+Gemeinsame Prüfungen von AngelScript-Registrierungsergebnissen und einheitliche Fehlerdiagnosen stellt `bindings/ScriptBindingUtils` für alle Binding-Module bereit.
 
 ## Tasks und Coroutinen
 
@@ -44,7 +44,7 @@ Core::Task@ WaitAny(Core::Task@[] &in tasks);
 
 Die Coroutine darf selbst `Utils::Yield`, `Utils::Sleep` und die Wait-Funktionen verwenden. Der aufrufende Context läuft nach `Async` weiter und wird nur durch einen expliziten Wait-Aufruf suspendiert. `WaitAll` wartet auf alle Tasks; `WaitAny` löst sein zurückgegebenes Task-Handle auf den nach Completion-Reihenfolge zuerst abgeschlossenen Task auf. Das zurückgegebene Handle repräsentiert dessen Status und Resultat, besitzt aber bewusst keine `is`-Identität mit einem Eingabe-Handle.
 
-Die vollständige AngelScript-Deklaration dieser API liegt getrennt von der Engine in `ScriptTaskBindings.cpp`; `IScriptTaskRuntime` verbindet die Bindings nur mit dem Scheduler. Dieses Binding-Modul dient als Muster für weitere getrennte Script-API-Bereiche.
+Die vollständige AngelScript-Deklaration dieser API liegt getrennt von der Engine in `bindings/async/ScriptTaskBindings.cpp`; `IScriptTaskRuntime` verbindet die Bindings nur mit dem Scheduler. Dieses Binding-Modul dient als Muster für weitere getrennte Script-API-Bereiche.
 
 `Core::Task` stellt `IsCompleted`, `IsFailed` und `void Retrieve(?&out)` bereit. Der automatische Cast zu `Core::TypedTask<T>` prüft den Ergebnistyp; der Rückweg zu `Core::Task` ist ebenfalls implizit. Wegen der Regeln für native AngelScript-Templates verwendet der typisierte Task eine Out-Referenz:
 

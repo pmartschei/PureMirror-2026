@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "ScriptBindingUtils.h"
+#include "scripting/angelscript/bindings/ScriptBindingUtils.h"
 
 #include <format>
 

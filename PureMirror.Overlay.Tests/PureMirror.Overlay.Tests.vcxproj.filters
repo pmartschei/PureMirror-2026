@@ -29,6 +29,9 @@
     <Filter Include="Source Files\Scripting\AngelScript\Bindings">
       <UniqueIdentifier>{A08E1E6F-6E7D-4137-9867-F941957A5249}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Scripting\AngelScript\Bindings\Math">
+      <UniqueIdentifier>{A675C659-8DF5-45AE-8976-5ED9A0841AA6}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\Scripting\AngelScript\Bindings\Primitives">
       <UniqueIdentifier>{F8604B71-E201-4D62-B7A5-A2BC9558533F}</UniqueIdentifier>
     </Filter>
@@ -86,6 +89,9 @@
     <ClCompile Include="src\scripting\angelscript\bindings\primitives\ScriptBoolTests.cpp">
       <Filter>Source Files\Scripting\AngelScript\Bindings\Primitives</Filter>
     </ClCompile>
+    <ClCompile Include="src\scripting\angelscript\bindings\math\ScriptImVec2Tests.cpp">
+      <Filter>Source Files\Scripting\AngelScript\Bindings\Math</Filter>
+    </ClCompile>
     <ClCompile Include="src\scripting\angelscript\bindings\primitives\ScriptNumberTests.cpp">
       <Filter>Source Files\Scripting\AngelScript\Bindings\Primitives</Filter>
     </ClCompile>
@@ -95,8 +101,8 @@
     <ClCompile Include="src\scripting\ScriptUiScopeStackTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\scripting\angelscript\ScriptBindingUtilsTests.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\scripting\angelscript\bindings\ScriptBindingUtilsTests.cpp">
+      <Filter>Source Files\Scripting\AngelScript\Bindings</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

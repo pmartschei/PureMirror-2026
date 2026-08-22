@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "ScriptTask.h"
+#include "scripting/angelscript/bindings/async/ScriptTask.h"
 
 namespace PureMirror::Overlay
 {

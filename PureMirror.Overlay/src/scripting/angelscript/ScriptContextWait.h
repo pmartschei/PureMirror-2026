@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ScriptTask.h"
+#include "bindings/async/ScriptTask.h"
 
 #include <vector>
 

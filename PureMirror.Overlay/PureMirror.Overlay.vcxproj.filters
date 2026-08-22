@@ -42,11 +42,17 @@
     <Filter Include="Header Files\Scripting"><UniqueIdentifier>{570ED7B3-E905-46D4-8B7C-76BD26C42C3F}</UniqueIdentifier></Filter>
     <Filter Include="Header Files\Scripting\AngelScript"><UniqueIdentifier>{0582D12F-77B0-4309-AE7D-23FA84AA4DA7}</UniqueIdentifier></Filter>
     <Filter Include="Header Files\Scripting\AngelScript\Bindings"><UniqueIdentifier>{43D5060A-E225-456A-97B6-A894AF5DA9F6}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\Scripting\AngelScript\Bindings\Async"><UniqueIdentifier>{765D71D4-47CC-4B65-B35B-BAD94FCF5C83}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\Scripting\AngelScript\Bindings\Math"><UniqueIdentifier>{5375C154-D5FC-496C-B16F-6CB5D8283221}</UniqueIdentifier></Filter>
     <Filter Include="Header Files\Scripting\AngelScript\Bindings\Primitives"><UniqueIdentifier>{02FF0F61-3B6F-42DD-B09F-4DAF530597CD}</UniqueIdentifier></Filter>
+    <Filter Include="Header Files\Scripting\AngelScript\Bindings\UI"><UniqueIdentifier>{415BB9AE-93C8-418A-BF7D-F5103EA73547}</UniqueIdentifier></Filter>
     <Filter Include="Source Files\Scripting"><UniqueIdentifier>{3608E473-FF2C-45EF-B5B8-D15B431D4642}</UniqueIdentifier></Filter>
     <Filter Include="Source Files\Scripting\AngelScript"><UniqueIdentifier>{1292EFB2-E4D7-468A-8869-4A0A572F1453}</UniqueIdentifier></Filter>
     <Filter Include="Source Files\Scripting\AngelScript\Bindings"><UniqueIdentifier>{34C7B8E2-23BB-45F1-AFBF-25E0D443BE24}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Scripting\AngelScript\Bindings\Async"><UniqueIdentifier>{78EBE7B5-C1DC-4B29-9D34-84D458454C8F}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Scripting\AngelScript\Bindings\Math"><UniqueIdentifier>{388CF063-3C3D-4E7F-B39D-A9ED48E4C7D3}</UniqueIdentifier></Filter>
     <Filter Include="Source Files\Scripting\AngelScript\Bindings\Primitives"><UniqueIdentifier>{5B7AFA49-1D82-4A41-8BA4-E35E8D776484}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Scripting\AngelScript\Bindings\UI"><UniqueIdentifier>{1EEAD2F9-D832-4EA5-9149-BB84C4DB9B94}</UniqueIdentifier></Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CustomerQueue.cpp">
@@ -173,7 +179,7 @@
     <ClInclude Include="src\scripting\ScriptModuleLoadResult.h"><Filter>Header Files\Scripting</Filter></ClInclude>
     <ClInclude Include="src\scripting\ScriptSource.h"><Filter>Header Files\Scripting</Filter></ClInclude>
     <ClInclude Include="src\scripting\angelscript\AngelScriptEngine.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
-    <ClInclude Include="src\scripting\angelscript\ScriptBindingUtils.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
+    <ClInclude Include="src\scripting\angelscript\bindings\ScriptBindingUtils.h"><Filter>Header Files\Scripting\AngelScript\Bindings</Filter></ClInclude>
     <ClInclude Include="src\scripting\angelscript\bindings\primitives\ScriptBool.h"><Filter>Header Files\Scripting\AngelScript\Bindings\Primitives</Filter></ClInclude>
     <ClInclude Include="src\scripting\angelscript\bindings\primitives\ScriptBoolBindings.h"><Filter>Header Files\Scripting\AngelScript\Bindings\Primitives</Filter></ClInclude>
     <ClInclude Include="src\scripting\angelscript\bindings\primitives\ScriptNumber.h"><Filter>Header Files\Scripting\AngelScript\Bindings\Primitives</Filter></ClInclude>
@@ -181,14 +187,15 @@
     <ClInclude Include="src\scripting\angelscript\IScriptSuspensionRuntime.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
     <ClInclude Include="src\scripting\angelscript\IScriptTaskRuntime.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
     <ClInclude Include="src\scripting\angelscript\IScriptUiRuntime.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
-    <ClInclude Include="src\scripting\angelscript\ScriptImVec2.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
-    <ClInclude Include="src\scripting\angelscript\ScriptUiBindings.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
+    <ClInclude Include="src\scripting\angelscript\bindings\math\ScriptImVec2.h"><Filter>Header Files\Scripting\AngelScript\Bindings\Math</Filter></ClInclude>
+    <ClInclude Include="src\scripting\angelscript\bindings\math\ScriptImVec2Bindings.h"><Filter>Header Files\Scripting\AngelScript\Bindings\Math</Filter></ClInclude>
+    <ClInclude Include="src\scripting\angelscript\bindings\ui\ScriptUiBindings.h"><Filter>Header Files\Scripting\AngelScript\Bindings\UI</Filter></ClInclude>
     <ClInclude Include="src\scripting\angelscript\ScriptContextWait.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
     <ClInclude Include="src\scripting\angelscript\ScriptCoroutine.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
     <ClInclude Include="src\scripting\angelscript\ScriptCoroutineArgument.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
-    <ClInclude Include="src\scripting\angelscript\ScriptTask.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
-    <ClInclude Include="src\scripting\angelscript\ScriptTaskBindings.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
-    <ClInclude Include="src\scripting\angelscript\ScriptSuspensionBindings.h"><Filter>Header Files\Scripting\AngelScript</Filter></ClInclude>
+    <ClInclude Include="src\scripting\angelscript\bindings\async\ScriptTask.h"><Filter>Header Files\Scripting\AngelScript\Bindings\Async</Filter></ClInclude>
+    <ClInclude Include="src\scripting\angelscript\bindings\async\ScriptTaskBindings.h"><Filter>Header Files\Scripting\AngelScript\Bindings\Async</Filter></ClInclude>
+    <ClInclude Include="src\scripting\angelscript\bindings\async\ScriptSuspensionBindings.h"><Filter>Header Files\Scripting\AngelScript\Bindings\Async</Filter></ClInclude>
     <ClCompile Include="src\ui\console\ConsoleWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -239,7 +246,7 @@
     <ClCompile Include="src\scripting\PluginScriptInstance.cpp"><Filter>Source Files\Scripting</Filter></ClCompile>
     <ClCompile Include="src\scripting\OverlayScriptHost.cpp"><Filter>Source Files\Scripting</Filter></ClCompile>
     <ClCompile Include="src\scripting\angelscript\AngelScriptEngine.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
-    <ClCompile Include="src\scripting\angelscript\ScriptBindingUtils.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
+    <ClCompile Include="src\scripting\angelscript\bindings\ScriptBindingUtils.cpp"><Filter>Source Files\Scripting\AngelScript\Bindings</Filter></ClCompile>
     <ClCompile Include="src\scripting\angelscript\bindings\primitives\ScriptBool.cpp"><Filter>Source Files\Scripting\AngelScript\Bindings\Primitives</Filter></ClCompile>
     <ClCompile Include="src\scripting\angelscript\bindings\primitives\ScriptBoolBindings.cpp"><Filter>Source Files\Scripting\AngelScript\Bindings\Primitives</Filter></ClCompile>
     <ClCompile Include="src\scripting\angelscript\bindings\primitives\ScriptNumber.cpp"><Filter>Source Files\Scripting\AngelScript\Bindings\Primitives</Filter></ClCompile>
@@ -247,10 +254,11 @@
     <ClCompile Include="src\scripting\angelscript\ScriptContextWait.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
     <ClCompile Include="src\scripting\angelscript\ScriptCoroutine.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
     <ClCompile Include="src\scripting\angelscript\ScriptCoroutineArgument.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
-    <ClCompile Include="src\scripting\angelscript\ScriptTask.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
-    <ClCompile Include="src\scripting\angelscript\ScriptTaskBindings.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
-    <ClCompile Include="src\scripting\angelscript\ScriptSuspensionBindings.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
-    <ClCompile Include="src\scripting\angelscript\ScriptUiBindings.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
+    <ClCompile Include="src\scripting\angelscript\bindings\async\ScriptTask.cpp"><Filter>Source Files\Scripting\AngelScript\Bindings\Async</Filter></ClCompile>
+    <ClCompile Include="src\scripting\angelscript\bindings\async\ScriptTaskBindings.cpp"><Filter>Source Files\Scripting\AngelScript\Bindings\Async</Filter></ClCompile>
+    <ClCompile Include="src\scripting\angelscript\bindings\async\ScriptSuspensionBindings.cpp"><Filter>Source Files\Scripting\AngelScript\Bindings\Async</Filter></ClCompile>
+    <ClCompile Include="src\scripting\angelscript\bindings\math\ScriptImVec2Bindings.cpp"><Filter>Source Files\Scripting\AngelScript\Bindings\Math</Filter></ClCompile>
+    <ClCompile Include="src\scripting\angelscript\bindings\ui\ScriptUiBindings.cpp"><Filter>Source Files\Scripting\AngelScript\Bindings\UI</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VersionInfo.rc">

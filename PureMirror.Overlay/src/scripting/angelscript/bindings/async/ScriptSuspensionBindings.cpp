@@ -1,10 +1,10 @@
 #include "pch.h"
 
-#include "ScriptSuspensionBindings.h"
+#include "scripting/angelscript/bindings/async/ScriptSuspensionBindings.h"
 
-#include "IScriptSuspensionRuntime.h"
-#include "ScriptBindingUtils.h"
 #include "angelscript.h"
+#include "scripting/angelscript/IScriptSuspensionRuntime.h"
+#include "scripting/angelscript/bindings/ScriptBindingUtils.h"
 
 #include <format>
 

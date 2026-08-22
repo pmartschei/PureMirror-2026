@@ -77,7 +77,8 @@
     <ClCompile Include="src\scripting\ScriptUiScopeStackTests.cpp" />
     <ClCompile Include="src\scripting\ExamplePluginIntegrationTests.cpp" />
     <ClCompile Include="src\scripting\angelscript\AngelScriptEngineTests.cpp" />
-    <ClCompile Include="src\scripting\angelscript\ScriptBindingUtilsTests.cpp" />
+    <ClCompile Include="src\scripting\angelscript\bindings\ScriptBindingUtilsTests.cpp" />
+    <ClCompile Include="src\scripting\angelscript\bindings\math\ScriptImVec2Tests.cpp" />
     <ClCompile Include="src\scripting\angelscript\bindings\primitives\ScriptBoolTests.cpp" />
     <ClCompile Include="src\scripting\angelscript\bindings\primitives\ScriptNumberTests.cpp" />
   </ItemGroup>

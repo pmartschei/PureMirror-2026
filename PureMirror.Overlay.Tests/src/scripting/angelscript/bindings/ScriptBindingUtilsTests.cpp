@@ -1,5 +1,5 @@
 #include "CppUnitTest.h"
-#include "src/scripting/angelscript/ScriptBindingUtils.h"
+#include "src/scripting/angelscript/bindings/ScriptBindingUtils.h"
 
 #include <string>
 

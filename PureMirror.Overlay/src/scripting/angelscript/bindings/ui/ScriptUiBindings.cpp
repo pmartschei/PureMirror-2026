@@ -1,22 +1,19 @@
 #include "pch.h"
 
-#include "ScriptUiBindings.h"
+#include "scripting/angelscript/bindings/ui/ScriptUiBindings.h"
 
-#include "IScriptUiRuntime.h"
-#include "ScriptBindingUtils.h"
-#include "ScriptImVec2.h"
 #include "angelscript.h"
+#include "scripting/angelscript/IScriptUiRuntime.h"
+#include "scripting/angelscript/bindings/ScriptBindingUtils.h"
+#include "scripting/angelscript/bindings/math/ScriptImVec2.h"
 
-#include <cstddef>
 #include <format>
-#include <new>
 
 namespace PureMirror::Overlay
 {
     namespace
     {
         constexpr std::string_view UiNamespace = "UI";
-        constexpr std::string_view ImVec2Type = "ImVec2";
 
         IScriptUiRuntime* UiRuntime(asIScriptGeneric* generic)
         {
@@ -26,18 +23,6 @@ namespace PureMirror::Overlay
         const std::string& StringArgument(asIScriptGeneric& generic, const asUINT index)
         {
             return *static_cast<const std::string*>(generic.GetArgObject(index));
-        }
-
-        void ConstructImVec2(asIScriptGeneric* generic)
-        {
-            if (generic != nullptr)
-                new (generic->GetObject()) ScriptImVec2{};
-        }
-
-        void ConstructImVec2Values(asIScriptGeneric* generic)
-        {
-            if (generic != nullptr)
-                new (generic->GetObject()) ScriptImVec2{generic->GetArgFloat(0), generic->GetArgFloat(1)};
         }
 
         void BeginGeneric(asIScriptGeneric* generic)
@@ -106,33 +91,11 @@ namespace PureMirror::Overlay
     bool RegisterScriptUiBindings(asIScriptEngine& engine, IScriptUiRuntime& runtime, std::string& error)
     {
         error.clear();
-        const ScriptBindingUtils require{"UI"};
+        const ScriptBindingUtils require{UiNamespace.data()};
         const auto operation = [](const std::string_view name) { return std::format("{}::{}", UiNamespace, name); };
 
         auto successful =
             require(engine.SetEngineProperty(asEP_ALLOW_UNSAFE_REFERENCES, true), "allow inout references", error) &&
-            require(engine.RegisterObjectType(ImVec2Type.data(),
-                                              sizeof(ScriptImVec2),
-                                              asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<ScriptImVec2>()),
-                    "ImVec2 type",
-                    error) &&
-            require(engine.RegisterObjectBehaviour(
-                        ImVec2Type.data(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(ConstructImVec2), asCALL_GENERIC),
-                    "ImVec2 default constructor",
-                    error) &&
-            require(engine.RegisterObjectBehaviour(ImVec2Type.data(),
-                                                   asBEHAVE_CONSTRUCT,
-                                                   "void f(float x, float y)",
-                                                   asFUNCTION(ConstructImVec2Values),
-                                                   asCALL_GENERIC),
-                    "ImVec2 value constructor",
-                    error) &&
-            require(engine.RegisterObjectProperty(ImVec2Type.data(), "float x", offsetof(ScriptImVec2, X)),
-                    "ImVec2::x",
-                    error) &&
-            require(engine.RegisterObjectProperty(ImVec2Type.data(), "float y", offsetof(ScriptImVec2, Y)),
-                    "ImVec2::y",
-                    error) &&
             require(engine.SetDefaultNamespace(UiNamespace.data()), std::format("namespace {}", UiNamespace), error) &&
             require(engine.RegisterGlobalFunction("bool Begin(const string &in name, uint flags = 0)",
                                                   asFUNCTION(BeginGeneric),
