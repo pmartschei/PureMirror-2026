@@ -5,11 +5,11 @@ void OnLoad()
 
 void OnRenderInterface()
 {
-    if (ui::begin_window("Cyclic Dependency Example - B"))
+    if (UI::Begin("Cyclic Dependency Example - B"))
     {
-        ui::text("Plugin B requires A, while A requires B.");
+        UI::Text("Plugin B requires A, while A requires B.");
     }
-    ui::end_window();
+    UI::End();
 }
 
 void OnUnload()

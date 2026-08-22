@@ -6,7 +6,7 @@ Dieses Plugin ist absichtlich fehlerhaft und dient ausschließlich zum Testen de
 Callback nach 100 ms abbrechen. Anschließend sollte der Host:
 
 1. das noch offene `ImGui::Begin()` automatisch mit `ImGui::End()` schließen,
-2. eine Warnung über das fehlende `ui::end_window()` ausgeben,
+2. eine Warnung über das fehlende `UI::End()` ausgeben,
 3. den Deadline-Fehler protokollieren und
 4. das Plugin entladen.
 

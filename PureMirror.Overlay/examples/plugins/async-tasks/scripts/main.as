@@ -49,14 +49,14 @@ void OnLoad()
 
 void OnRenderInterface()
 {
-    if (ui::begin_window("Async Tasks"))
+    if (UI::Begin("Async Tasks"))
     {
-        ui::text(status);
-        ui::text("WaitAny result: " + first_result);
-        ui::text("Typed slow result: " + slow_result);
-        ui::text(tasks_completed ? "Ready" : "Still working");
+        UI::Text(status);
+        UI::Text("WaitAny result: " + first_result);
+        UI::Text("Typed slow result: " + slow_result);
+        UI::Text(tasks_completed ? "Ready" : "Still working");
     }
-    ui::end_window();
+    UI::End();
 }
 
 void OnUnload()

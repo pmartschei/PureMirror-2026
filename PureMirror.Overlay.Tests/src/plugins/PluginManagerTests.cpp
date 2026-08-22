@@ -36,7 +36,10 @@ namespace PureMirror::Overlay::Tests
                 LogMessages.emplace_back(message);
             }
 
-            bool BeginWindow(std::string_view pluginId, std::string_view title) override
+            bool BeginWindow(std::string_view pluginId,
+                             std::string_view title,
+                             bool* open,
+                             std::uint32_t flags) override
             {
                 static_cast<void>(pluginId);
                 static_cast<void>(title);
@@ -54,14 +57,14 @@ namespace PureMirror::Overlay::Tests
                 static_cast<void>(value);
             }
 
-            bool Button(std::string_view pluginId, std::string_view label) override
+            bool Button(std::string_view pluginId, std::string_view label, float width, float height) override
             {
                 static_cast<void>(pluginId);
                 static_cast<void>(label);
                 return false;
             }
 
-            bool BeginMenu(std::string_view pluginId, std::string_view label) override
+            bool BeginMenu(std::string_view pluginId, std::string_view label, bool enabled) override
             {
                 static_cast<void>(pluginId);
                 static_cast<void>(label);
@@ -73,7 +76,11 @@ namespace PureMirror::Overlay::Tests
                 static_cast<void>(pluginId);
             }
 
-            bool MenuItem(std::string_view pluginId, std::string_view label) override
+            bool MenuItem(std::string_view pluginId,
+                          std::string_view label,
+                          std::string_view shortcut,
+                          bool selected,
+                          bool enabled) override
             {
                 static_cast<void>(pluginId);
                 static_cast<void>(label);
@@ -210,8 +217,8 @@ namespace PureMirror::Overlay::Tests
 void OnLoad() { log::info("load"); }
 void OnBeginFrame() { log::info("begin"); }
 void OnUpdate(float deltaTime) { if (deltaTime > 0.24f && deltaTime < 0.26f) log::info("update"); }
-void OnRenderMenu() { ui::menu_item("Callback entry"); log::info("menu"); }
-void OnRenderInterface() { ui::text("interface"); log::info("interface"); }
+void OnRenderMenu() { UI::MenuItem("Callback entry"); log::info("menu"); }
+void OnRenderInterface() { UI::Text("interface"); log::info("interface"); }
 void OnEndFrame() { log::info("end"); }
 void OnUnload() { log::info("unload"); }
 )";

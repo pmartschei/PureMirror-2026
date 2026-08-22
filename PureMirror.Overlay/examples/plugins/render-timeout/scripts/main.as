@@ -5,11 +5,11 @@ void OnLoad()
 
 void OnRenderInterface()
 {
-    const bool is_visible = ui::begin_window("Intentional Render Timeout");
+    const bool is_visible = UI::Begin("Intentional Render Timeout");
     if (is_visible)
     {
-        ui::text("This plugin intentionally exceeds the 100 ms render deadline.");
-        ui::text("The host should abort it, close this window scope and unload the plugin.");
+        UI::Text("This plugin intentionally exceeds the 100 ms render deadline.");
+        UI::Text("The host should abort it, close this window scope and unload the plugin.");
     }
 
     while (true)
@@ -17,7 +17,7 @@ void OnRenderInterface()
     }
 
     // Intentionally unreachable. The host must recover the open window scope.
-    ui::end_window();
+    UI::End();
 }
 
 void OnUnload()

@@ -13,11 +13,11 @@ namespace DependencyExample
 
 void OnRenderInterface()
 {
-    if (ui::begin_window("Dependency Example - Shared"))
+    if (UI::Begin("Dependency Example - Shared"))
     {
-        ui::text("This plugin implements DependencyExample::message().");
+        UI::Text("This plugin implements DependencyExample::message().");
     }
-    ui::end_window();
+    UI::End();
 }
 
 void OnUnload()

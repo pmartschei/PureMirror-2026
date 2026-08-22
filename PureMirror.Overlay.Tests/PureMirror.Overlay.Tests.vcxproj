@@ -59,7 +59,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(VCInstallDir)Auxiliary\VS\UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(VCInstallDir)Auxiliary\VS\UnitTest\lib;$(OUTDIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -78,25 +78,15 @@
     <ClCompile Include="src\scripting\ExamplePluginIntegrationTests.cpp" />
     <ClCompile Include="src\scripting\angelscript\AngelScriptEngineTests.cpp" />
     <ClCompile Include="src\scripting\angelscript\ScriptBindingUtilsTests.cpp" />
+    <ClCompile Include="src\scripting\angelscript\bindings\primitives\ScriptBoolTests.cpp" />
+    <ClCompile Include="src\scripting\angelscript\bindings\primitives\ScriptNumberTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dummy.h" />
   </ItemGroup>
   <ItemGroup>
     <_OverlayTestSource Include="..\PureMirror.Overlay\CustomerQueue.cpp" />
-    <_OverlayTestSource Include="..\PureMirror.Overlay\src\core\**\*.cpp" />
-    <_OverlayTestSource Include="..\PureMirror.Overlay\src\plugins\**\*.cpp" />
-    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\PluginScriptCompiler.cpp" />
-    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\PluginScriptInstance.cpp" />
-    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\ScriptUiScopeStack.cpp" />
-    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\AngelScriptEngine.cpp" />
-    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptBindingUtils.cpp" />
-    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptContextWait.cpp" />
-    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptCoroutine.cpp" />
-    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptCoroutineArgument.cpp" />
-    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptTask.cpp" />
-    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptTaskBindings.cpp" />
-    <_OverlayTestSource Include="..\PureMirror.Overlay\src\scripting\angelscript\ScriptSuspensionBindings.cpp" />
+    <_OverlayTestSource Include="..\PureMirror.Overlay\src\**\*.cpp" Exclude="..\PureMirror.Overlay\src\ui\**\*.cpp;..\PureMirror.Overlay\src\external\**\*.cpp;..\PureMirror.Overlay\src\scripting\OverlayScriptHost.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectCapability Include="TestContainer" />

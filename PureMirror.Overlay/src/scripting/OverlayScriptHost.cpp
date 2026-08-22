@@ -35,11 +35,14 @@ namespace PureMirror::Overlay
         m_Logger.Info(PluginOrigin(pluginId), message);
     }
 
-    bool OverlayScriptHost::BeginWindow(const std::string_view pluginId, const std::string_view title)
+    bool OverlayScriptHost::BeginWindow(const std::string_view pluginId,
+                                        const std::string_view title,
+                                        bool* const open,
+                                        const std::uint32_t flags)
     {
         static_cast<void>(pluginId);
         const std::string ownedTitle(title);
-        const auto isVisible = ImGui::Begin(ownedTitle.c_str());
+        const auto isVisible = ImGui::Begin(ownedTitle.c_str(), open, static_cast<ImGuiWindowFlags>(flags));
         m_UiScopes.Open(std::string(pluginId), "ImGui::Begin()", "ImGui::End()", [] { ImGui::End(); });
         return isVisible;
     }
@@ -59,17 +62,20 @@ namespace PureMirror::Overlay
         ImGui::TextUnformatted(ownedValue.c_str());
     }
 
-    bool OverlayScriptHost::Button(const std::string_view pluginId, const std::string_view label)
+    bool OverlayScriptHost::Button(const std::string_view pluginId,
+                                   const std::string_view label,
+                                   const float width,
+                                   const float height)
     {
         static_cast<void>(pluginId);
         const std::string ownedLabel(label);
-        return ImGui::Button(ownedLabel.c_str());
+        return ImGui::Button(ownedLabel.c_str(), ImVec2(width, height));
     }
 
-    bool OverlayScriptHost::BeginMenu(const std::string_view pluginId, const std::string_view label)
+    bool OverlayScriptHost::BeginMenu(const std::string_view pluginId, const std::string_view label, const bool enabled)
     {
         const auto ownedLabel = std::string(label) + "###menu-" + std::string(pluginId) + '-' + std::string(label);
-        if (!ImGui::BeginMenu(ownedLabel.c_str()))
+        if (!ImGui::BeginMenu(ownedLabel.c_str(), enabled))
             return false;
         m_UiScopes.Open(std::string(pluginId), "ImGui::BeginMenu()", "ImGui::EndMenu()", [] { ImGui::EndMenu(); });
         return true;
@@ -83,10 +89,16 @@ namespace PureMirror::Overlay
             LogUnexpectedClose(pluginId, "ImGui::EndMenu()");
     }
 
-    bool OverlayScriptHost::MenuItem(const std::string_view pluginId, const std::string_view label)
+    bool OverlayScriptHost::MenuItem(const std::string_view pluginId,
+                                     const std::string_view label,
+                                     const std::string_view shortcut,
+                                     const bool selected,
+                                     const bool enabled)
     {
         const auto ownedLabel = std::string(label) + "###item-" + std::string(pluginId) + '-' + std::string(label);
-        return ImGui::MenuItem(ownedLabel.c_str());
+        const std::string ownedShortcut(shortcut);
+        return ImGui::MenuItem(
+            ownedLabel.c_str(), ownedShortcut.empty() ? nullptr : ownedShortcut.c_str(), selected, enabled);
     }
 
     void OverlayScriptHost::MenuSeparator(const std::string_view pluginId)

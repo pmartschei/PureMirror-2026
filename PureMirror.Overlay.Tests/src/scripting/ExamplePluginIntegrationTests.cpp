@@ -35,7 +35,10 @@ namespace PureMirror::Overlay::Tests
                 LogMessages.emplace_back(message);
             }
 
-            bool BeginWindow(std::string_view pluginId, std::string_view title) override
+            bool BeginWindow(std::string_view pluginId,
+                             std::string_view title,
+                             bool* open,
+                             std::uint32_t flags) override
             {
                 static_cast<void>(pluginId);
                 static_cast<void>(title);
@@ -55,14 +58,14 @@ namespace PureMirror::Overlay::Tests
                 TextValues.emplace_back(value);
             }
 
-            bool Button(std::string_view pluginId, std::string_view label) override
+            bool Button(std::string_view pluginId, std::string_view label, float width, float height) override
             {
                 static_cast<void>(pluginId);
                 static_cast<void>(label);
                 return false;
             }
 
-            bool BeginMenu(std::string_view pluginId, std::string_view label) override
+            bool BeginMenu(std::string_view pluginId, std::string_view label, bool enabled) override
             {
                 static_cast<void>(pluginId);
                 static_cast<void>(label);
@@ -74,7 +77,11 @@ namespace PureMirror::Overlay::Tests
                 static_cast<void>(pluginId);
             }
 
-            bool MenuItem(std::string_view pluginId, std::string_view label) override
+            bool MenuItem(std::string_view pluginId,
+                          std::string_view label,
+                          std::string_view shortcut,
+                          bool selected,
+                          bool enabled) override
             {
                 static_cast<void>(pluginId);
                 static_cast<void>(label);

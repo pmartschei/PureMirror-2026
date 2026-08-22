@@ -17,9 +17,21 @@
     <Filter Include="Source Files\Plugins">
       <UniqueIdentifier>{82160E59-D147-4C82-93AE-8911733607C5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Core\Versions"><UniqueIdentifier>{75E219E6-C7DE-4D48-B642-9E7465584214}</UniqueIdentifier></Filter>
-    <Filter Include="Source Files\Scripting"><UniqueIdentifier>{D6F9E511-7395-4748-B3C7-CBB7C0D0B379}</UniqueIdentifier></Filter>
-    <Filter Include="Source Files\Scripting\AngelScript"><UniqueIdentifier>{93DC80C6-6F5B-49CC-9922-24823F4CC59B}</UniqueIdentifier></Filter>
+    <Filter Include="Source Files\Core\Versions">
+      <UniqueIdentifier>{75E219E6-C7DE-4D48-B642-9E7465584214}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Scripting">
+      <UniqueIdentifier>{D6F9E511-7395-4748-B3C7-CBB7C0D0B379}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Scripting\AngelScript">
+      <UniqueIdentifier>{93DC80C6-6F5B-49CC-9922-24823F4CC59B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Scripting\AngelScript\Bindings">
+      <UniqueIdentifier>{A08E1E6F-6E7D-4137-9867-F941957A5249}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Scripting\AngelScript\Bindings\Primitives">
+      <UniqueIdentifier>{F8604B71-E201-4D62-B7A5-A2BC9558533F}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4B04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
@@ -44,15 +56,48 @@
     <ClCompile Include="src\core\logger\LoggerTests.cpp">
       <Filter>Source Files\Core\Logger</Filter>
     </ClCompile>
-    <ClCompile Include="src\plugins\PluginDependencyResolverTests.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
-    <ClCompile Include="src\plugins\PluginManifestParserTests.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
-    <ClCompile Include="src\plugins\PluginPackagePlannerTests.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
-    <ClCompile Include="src\plugins\PluginReloadPlannerTests.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
-    <ClCompile Include="src\plugins\PluginVersionSolverTests.cpp"><Filter>Source Files\Plugins</Filter></ClCompile>
-    <ClCompile Include="src\core\versions\SemanticVersionRangeTests.cpp"><Filter>Source Files\Core\Versions</Filter></ClCompile>
-    <ClCompile Include="src\scripting\PluginScriptCompilerTests.cpp"><Filter>Source Files\Scripting</Filter></ClCompile>
-    <ClCompile Include="src\scripting\ExamplePluginIntegrationTests.cpp"><Filter>Source Files\Scripting</Filter></ClCompile>
-    <ClCompile Include="src\scripting\angelscript\AngelScriptEngineTests.cpp"><Filter>Source Files\Scripting\AngelScript</Filter></ClCompile>
+    <ClCompile Include="src\plugins\PluginDependencyResolverTests.cpp">
+      <Filter>Source Files\Plugins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\plugins\PluginManifestParserTests.cpp">
+      <Filter>Source Files\Plugins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\plugins\PluginPackagePlannerTests.cpp">
+      <Filter>Source Files\Plugins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\plugins\PluginReloadPlannerTests.cpp">
+      <Filter>Source Files\Plugins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\plugins\PluginVersionSolverTests.cpp">
+      <Filter>Source Files\Plugins</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\versions\SemanticVersionRangeTests.cpp">
+      <Filter>Source Files\Core\Versions</Filter>
+    </ClCompile>
+    <ClCompile Include="src\scripting\PluginScriptCompilerTests.cpp">
+      <Filter>Source Files\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="src\scripting\ExamplePluginIntegrationTests.cpp">
+      <Filter>Source Files\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="src\scripting\angelscript\AngelScriptEngineTests.cpp">
+      <Filter>Source Files\Scripting\AngelScript</Filter>
+    </ClCompile>
+    <ClCompile Include="src\scripting\angelscript\bindings\primitives\ScriptBoolTests.cpp">
+      <Filter>Source Files\Scripting\AngelScript\Bindings\Primitives</Filter>
+    </ClCompile>
+    <ClCompile Include="src\scripting\angelscript\bindings\primitives\ScriptNumberTests.cpp">
+      <Filter>Source Files\Scripting\AngelScript\Bindings\Primitives</Filter>
+    </ClCompile>
+    <ClCompile Include="src\plugins\PluginManagerTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\scripting\ScriptUiScopeStackTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\scripting\angelscript\ScriptBindingUtilsTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VersionInfo.rc">

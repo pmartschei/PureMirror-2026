@@ -37,10 +37,17 @@ namespace PureMirror::Overlay::Tests
                 LogMessages.emplace_back(message);
             }
 
-            bool BeginWindow(std::string_view pluginId, std::string_view title) override
+            bool BeginWindow(std::string_view pluginId,
+                             std::string_view title,
+                             bool* open,
+                             std::uint32_t flags) override
             {
                 static_cast<void>(pluginId);
-                static_cast<void>(title);
+                LastWindowTitle = title;
+                LastWindowFlags = flags;
+                ReceivedWindowOpen = open != nullptr;
+                if (open != nullptr)
+                    *open = false;
                 return true;
             }
 
@@ -56,17 +63,20 @@ namespace PureMirror::Overlay::Tests
                 ++TextCallCount;
             }
 
-            bool Button(std::string_view pluginId, std::string_view label) override
+            bool Button(std::string_view pluginId, std::string_view label, float width, float height) override
             {
                 static_cast<void>(pluginId);
-                static_cast<void>(label);
+                LastButtonLabel = label;
+                LastButtonWidth = width;
+                LastButtonHeight = height;
                 return false;
             }
 
-            bool BeginMenu(std::string_view pluginId, std::string_view label) override
+            bool BeginMenu(std::string_view pluginId, std::string_view label, bool enabled) override
             {
                 static_cast<void>(pluginId);
-                static_cast<void>(label);
+                LastMenuLabel = label;
+                LastMenuEnabled = enabled;
                 return true;
             }
 
@@ -75,10 +85,17 @@ namespace PureMirror::Overlay::Tests
                 static_cast<void>(pluginId);
             }
 
-            bool MenuItem(std::string_view pluginId, std::string_view label) override
+            bool MenuItem(std::string_view pluginId,
+                          std::string_view label,
+                          std::string_view shortcut,
+                          bool selected,
+                          bool enabled) override
             {
                 static_cast<void>(pluginId);
-                static_cast<void>(label);
+                LastMenuItemLabel = label;
+                LastMenuItemShortcut = shortcut;
+                LastMenuItemSelected = selected;
+                LastMenuItemEnabled = enabled;
                 ++MenuItemCallCount;
                 return false;
             }
@@ -86,8 +103,22 @@ namespace PureMirror::Overlay::Tests
             void MenuSeparator(std::string_view pluginId) override
             {
                 static_cast<void>(pluginId);
+                ++SeparatorCallCount;
             }
 
+            std::string LastWindowTitle;
+            std::string LastButtonLabel;
+            std::string LastMenuLabel;
+            std::string LastMenuItemLabel;
+            std::string LastMenuItemShortcut;
+            std::uint32_t LastWindowFlags{};
+            float LastButtonWidth{};
+            float LastButtonHeight{};
+            bool ReceivedWindowOpen{};
+            bool LastMenuEnabled{};
+            bool LastMenuItemSelected{};
+            bool LastMenuItemEnabled{};
+            std::size_t SeparatorCallCount{};
             std::size_t BeginCallCount{};
             std::size_t EndCallCount{};
             std::size_t TextCallCount{};
@@ -325,7 +356,7 @@ namespace PureMirror::Overlay::Tests
                 funcdef void Work();
                 void worker() {}
                 void render() { Utils::Yield(); }
-                void load() { ui::text("no"); }
+                void load() { UI::Text("no"); }
                 void start_async()
                 {
                     Work@ work = @worker;
@@ -350,14 +381,61 @@ namespace PureMirror::Overlay::Tests
             Assert::IsTrue(asyncResult.Diagnostics.front().Message.find("Async") != std::string::npos);
         }
 
+        TEST_METHOD(UiBindings_ForwardImGuiParameters)
+        {
+            ExecutionTrackingScriptHost host;
+            AngelScriptEngine engine(&host);
+            const std::vector sources{ScriptSource{"main.as", R"(
+                void render()
+                {
+                    bool open = true;
+                    UI::Begin("Window", open, 17);
+                    UI::Button("Sized", ImVec2(12.5f, 24.0f));
+                    UI::End();
+                    if (!open)
+                        log::info("closed");
+                }
+                void menu()
+                {
+                    UI::BeginMenu("Tools", false);
+                    UI::MenuItem("Entry", "Ctrl+E", true, false);
+                    UI::Separator();
+                    UI::EndMenu();
+                }
+            )"}};
+            Assert::IsTrue(engine.LoadModule("com.example.ui-parameters", sources).IsSuccessful());
+
+            const auto rendered =
+                engine.CallFunction("com.example.ui-parameters", {"void render()", ScriptCallbackTag::Ui});
+            const auto menu =
+                engine.CallFunction("com.example.ui-parameters", {"void menu()", ScriptCallbackTag::MenuUi});
+
+            Assert::IsTrue(rendered.IsSuccessful());
+            Assert::IsTrue(menu.IsSuccessful());
+            Assert::AreEqual(std::string{"Window"}, host.LastWindowTitle);
+            Assert::AreEqual(std::uint32_t{17}, host.LastWindowFlags);
+            Assert::IsTrue(host.ReceivedWindowOpen);
+            Assert::AreEqual(std::string{"Sized"}, host.LastButtonLabel);
+            Assert::AreEqual(12.5f, host.LastButtonWidth);
+            Assert::AreEqual(24.0f, host.LastButtonHeight);
+            Assert::AreEqual(std::string{"Tools"}, host.LastMenuLabel);
+            Assert::IsFalse(host.LastMenuEnabled);
+            Assert::AreEqual(std::string{"Entry"}, host.LastMenuItemLabel);
+            Assert::AreEqual(std::string{"Ctrl+E"}, host.LastMenuItemShortcut);
+            Assert::IsTrue(host.LastMenuItemSelected);
+            Assert::IsFalse(host.LastMenuItemEnabled);
+            Assert::AreEqual(std::size_t{1}, host.SeparatorCallCount);
+            Assert::AreEqual(std::string{"closed"}, host.LogMessages.back());
+        }
+
         TEST_METHOD(MenuUiTag_AllowsOnlyMenuBindings)
         {
             ExecutionTrackingScriptHost host;
             AngelScriptEngine engine(&host);
             const std::vector sources{ScriptSource{"main.as", R"(
-                void menu_allowed() { ui::menu_item("Entry"); }
-                void menu_rejects_normal_ui() { ui::text("no"); }
-                void normal_ui_rejects_menu() { ui::menu_item("no"); }
+                void menu_allowed() { UI::MenuItem("Entry"); }
+                void menu_rejects_normal_ui() { UI::Text("no"); }
+                void normal_ui_rejects_menu() { UI::MenuItem("no"); }
             )"}};
             Assert::IsTrue(engine.LoadModule("com.example.menu-capability", sources).IsSuccessful());
 
@@ -381,7 +459,7 @@ namespace PureMirror::Overlay::Tests
                 funcdef void Work();
                 void worker()
                 {
-                    ui::text("allowed");
+                    UI::Text("allowed");
                     Utils::Yield();
                 }
                 void run()

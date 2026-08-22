@@ -5,12 +5,12 @@ void OnLoad()
 
 void OnRenderInterface()
 {
-    if (ui::begin_window("Dependency Example - Consumer"))
+    if (UI::Begin("Dependency Example - Consumer"))
     {
-        ui::text("Loading this plugin automatically loads the shared plugin.");
-        ui::text(DependencyExample::message());
+        UI::Text("Loading this plugin automatically loads the shared plugin.");
+        UI::Text(DependencyExample::message());
     }
-    ui::end_window();
+    UI::End();
 }
 
 void OnUnload()

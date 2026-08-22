@@ -21,7 +21,7 @@ Implementiert sind folgende optionale Lifecycle-Callbacks:
 
 `OnDisable`/`OnEnable` und `OnRenderSettings` sind als Callback-Verträge vorhanden, werden aber erst aufgerufen, sobald die zugehörigen Host-Funktionen implementiert sind.
 
-Menu-Plugins verwenden in `OnRenderMenu` die Bindings `ui::begin_menu`, `ui::end_menu`, `ui::menu_item` und `ui::menu_separator`. Normale UI-Bindings sind dort absichtlich gesperrt; die Menu-Bindings sind außerhalb dieses Callbacks gesperrt.
+Menu-Plugins verwenden in `OnRenderMenu` die Bindings `UI::BeginMenu`, `UI::EndMenu`, `UI::MenuItem` und `UI::Separator`. Normale UI-Bindings sind dort absichtlich gesperrt; die Menu-Bindings sind außerhalb dieses Callbacks gesperrt.
 
 Callbacks tragen engine-unabhängige Capability-Tags. Ein nicht erlaubter UI-, Coroutine- oder Suspend-Aufruf beendet den aktuellen Context mit einer Script-Diagnose. `Async` benötigt das `Coroutine`-Tag. Jede erzeugte Coroutine übernimmt die UI-Capabilities ihres auslösenden Callbacks und erhält zusätzlich immer das `Suspendable`-Tag. Sie darf daher selbst `Utils::Yield`, `Utils::Sleep` und die Wait-Funktionen verwenden, auch wenn der auslösende Callback nicht suspendieren darf. Jeder Ausführungsabschnitt besitzt weiterhin ein Zeitlimit von 100 ms.
 

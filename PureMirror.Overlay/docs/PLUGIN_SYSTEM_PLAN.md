@@ -158,21 +158,23 @@ public:
 
 Der AngelScript-Adapter besitzt Engine, Module, Context-Pool, Message-Callback, Include-Resolver und alle Bindings. AngelScript-Typen dürfen diesen Ordner nicht verlassen.
 
-Implementierter Stand: AngelScript wird als separates statisches Projekt gebaut. `IScriptEngine` und der Pimpl-Adapter kapseln Engine-Typen; Manifest-`entry` und alle `exports` werden als Script-Sections eines Moduls kompiliert. Compilerdiagnostik enthält Severity, Section, Zeile und Spalte. Die Lifecycle-Callbacks und die minimale `log`-/`ui`-Host-API sind angebunden. Context-Pool, Includes, Capability-Prüfungen, Zeitlimits und Import-Bindung folgen als nächste Schritte.
+Implementierter Stand: AngelScript wird als separates statisches Projekt gebaut. `IScriptEngine` und der Pimpl-Adapter kapseln Engine-Typen; Manifest-`entry` und alle `exports` werden als Script-Sections eines Moduls kompiliert. Compilerdiagnostik enthält Severity, Section, Zeile und Spalte. Die Lifecycle-Callbacks und die minimale `log`-/`UI`-Host-API sind angebunden. Context-Pool, Includes, Capability-Prüfungen, Zeitlimits und Import-Bindung folgen als nächste Schritte.
 
 ### UI
 
-Plugins erhalten eine bewusst kuratierte API im Namespace `ui`, zum Beispiel:
+Plugins erhalten eine bewusst kuratierte API im Namespace `UI`, zum Beispiel:
 
 ```angelscript
-namespace ui {
-    bool begin_window(const string &in title);
-    void end_window();
-    void text(const string &in value);
-    bool button(const string &in label);
-    bool checkbox(const string &in label, bool &inout value);
-    void separator();
-    void same_line();
+namespace UI {
+    bool Begin(const string &in name, uint flags = 0);
+    bool Begin(const string &in name, bool &inout open, uint flags = 0);
+    void End();
+    void Text(const string &in text);
+    bool Button(const string &in label, const ImVec2 &in size = ImVec2());
+    bool BeginMenu(const string &in label, bool enabled = true);
+    void EndMenu();
+    bool MenuItem(const string &in label, const string &in shortcut = "", bool selected = false, bool enabled = true);
+    void Separator();
 }
 ```
 
@@ -297,7 +299,7 @@ Nach Phase 1 und 2 nicht sofort die komplette ImGui-API binden. Der erste End-to
 - ein Manifest,
 - Dependency-freies Laden eines `.as`-Scripts,
 - `log.info`,
-- `ui.begin_window`, `ui.text`, `ui.button`, `ui.end_window`,
+- `UI::Begin`, `UI::Text`, `UI::Button`, `UI::End`,
 - `OnLoad`, `OnRenderInterface`, `OnUnload`,
 - sichtbarer Status in der Host-Konsole.
 

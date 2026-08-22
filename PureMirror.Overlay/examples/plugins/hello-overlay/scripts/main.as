@@ -7,14 +7,14 @@ void OnLoad()
 
 void OnRenderInterface()
 {
-    if (ui::begin_window("Hello Overlay"))
+    if (UI::Begin("Hello Overlay"))
     {
-        ui::text("This UI is rendered by a script plugin.");
-        if (ui::button("Count click"))
+        UI::Text("This UI is rendered by a script plugin.");
+        if (UI::Button("Count click"))
             click_count++;
-        ui::text("Clicks: " + click_count);
+        UI::Text("Clicks: " + click_count);
     }
-    ui::end_window();
+    UI::End();
 }
 
 void OnUnload()
