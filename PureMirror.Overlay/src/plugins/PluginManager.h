@@ -4,9 +4,11 @@
 #include "PluginInstallation.h"
 #include "PluginPackage.h"
 #include "src/core/logger/Logger.h"
+#include "src/scripting/ScriptCallResult.h"
 
 #include <cstddef>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <string_view>
 #include <vector>
@@ -31,6 +33,11 @@ namespace PureMirror::Overlay
         [[nodiscard]] bool LoadPlugin(std::string_view pluginId);
         [[nodiscard]] bool UnloadPlugin(std::string_view pluginId);
         [[nodiscard]] bool ReloadPlugin(std::string_view pluginId);
+        void BeginFrame();
+        void EndFrame();
+        void Update(float deltaTime);
+        void RenderMenu();
+        void RenderInterface();
         void Render();
         void UnloadAll();
         [[nodiscard]] std::size_t LoadedPluginCount() const noexcept;
@@ -42,6 +49,8 @@ namespace PureMirror::Overlay
                                       const std::vector<std::vector<std::string>>& loadGroups);
         void UnloadGroups(const std::vector<std::vector<std::string>>& unloadGroups);
         [[nodiscard]] bool IsPluginLoaded(std::string_view pluginId) const;
+        void InvokeCallbacks(std::string_view callbackName,
+                             const std::function<ScriptCallResult(PluginScriptInstance&)>& callback);
 
         IScriptEngine& m_ScriptEngine;
         Logger& m_Logger;

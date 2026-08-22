@@ -66,6 +66,35 @@ namespace PureMirror::Overlay
         return ImGui::Button(ownedLabel.c_str());
     }
 
+    bool OverlayScriptHost::BeginMenu(const std::string_view pluginId, const std::string_view label)
+    {
+        const auto ownedLabel = std::string(label) + "###menu-" + std::string(pluginId) + '-' + std::string(label);
+        if (!ImGui::BeginMenu(ownedLabel.c_str()))
+            return false;
+        m_UiScopes.Open(std::string(pluginId), "ImGui::BeginMenu()", "ImGui::EndMenu()", [] { ImGui::EndMenu(); });
+        return true;
+    }
+
+    void OverlayScriptHost::EndMenu(const std::string_view pluginId)
+    {
+        const auto closed =
+            m_UiScopes.Close("ImGui::EndMenu()", [this](const ScriptUiScope& scope) { LogRecoveredScope(scope); });
+        if (!closed)
+            LogUnexpectedClose(pluginId, "ImGui::EndMenu()");
+    }
+
+    bool OverlayScriptHost::MenuItem(const std::string_view pluginId, const std::string_view label)
+    {
+        const auto ownedLabel = std::string(label) + "###item-" + std::string(pluginId) + '-' + std::string(label);
+        return ImGui::MenuItem(ownedLabel.c_str());
+    }
+
+    void OverlayScriptHost::MenuSeparator(const std::string_view pluginId)
+    {
+        static_cast<void>(pluginId);
+        ImGui::Separator();
+    }
+
     void OverlayScriptHost::RecoverOpenScopes()
     {
         m_UiScopes.CloseAll([this](const ScriptUiScope& scope) { LogRecoveredScope(scope); });

@@ -8,8 +8,9 @@ namespace PureMirror::Overlay
     {
         None = 0,
         Suspendable = 1 << 0,
-        Ui = 1 << 1,
-        Coroutine = 1 << 2
+        Coroutine = 1 << 1,
+        Ui = 1 << 2,
+        MenuUi = 1 << 3
     };
 
     [[nodiscard]] constexpr ScriptCallbackTag operator|(const ScriptCallbackTag left,

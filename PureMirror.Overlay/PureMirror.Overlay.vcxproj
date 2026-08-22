@@ -227,6 +227,7 @@ xcopy /Y /E /I "$(ProjectDir)examples\plugins" "D:\Spiele\Path of Exile\puremirr
     <ClInclude Include="src\scripting\PluginScriptCompiler.h" />
     <ClInclude Include="src\scripting\PluginScriptInstance.h" />
     <ClInclude Include="src\scripting\ScriptCallback.h" />
+    <ClInclude Include="src\scripting\ScriptCallbackArgument.h" />
     <ClInclude Include="src\scripting\ScriptCallbackTag.h" />
     <ClInclude Include="src\scripting\ScriptCallResult.h" />
     <ClInclude Include="src\scripting\ScriptCallStatus.h" />

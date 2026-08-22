@@ -16,5 +16,9 @@ namespace PureMirror::Overlay
         virtual void EndWindow(std::string_view pluginId) = 0;
         virtual void Text(std::string_view pluginId, std::string_view value) = 0;
         [[nodiscard]] virtual bool Button(std::string_view pluginId, std::string_view label) = 0;
+        [[nodiscard]] virtual bool BeginMenu(std::string_view pluginId, std::string_view label) = 0;
+        virtual void EndMenu(std::string_view pluginId) = 0;
+        [[nodiscard]] virtual bool MenuItem(std::string_view pluginId, std::string_view label) = 0;
+        virtual void MenuSeparator(std::string_view pluginId) = 0;
     };
 }  // namespace PureMirror::Overlay

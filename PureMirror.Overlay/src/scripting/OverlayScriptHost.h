@@ -18,6 +18,10 @@ namespace PureMirror::Overlay
         void EndWindow(std::string_view pluginId) override;
         void Text(std::string_view pluginId, std::string_view value) override;
         [[nodiscard]] bool Button(std::string_view pluginId, std::string_view label) override;
+        [[nodiscard]] bool BeginMenu(std::string_view pluginId, std::string_view label) override;
+        void EndMenu(std::string_view pluginId) override;
+        [[nodiscard]] bool MenuItem(std::string_view pluginId, std::string_view label) override;
+        void MenuSeparator(std::string_view pluginId) override;
 
       private:
         void RecoverOpenScopes();

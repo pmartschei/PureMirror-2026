@@ -1,8 +1,10 @@
 #pragma once
 
+#include "ScriptCallbackArgument.h"
 #include "ScriptCallbackTag.h"
 
 #include <string_view>
+#include <vector>
 
 namespace PureMirror::Overlay
 {
@@ -10,5 +12,6 @@ namespace PureMirror::Overlay
     {
         std::string_view FunctionDeclaration;
         ScriptCallbackTag Tags{ScriptCallbackTag::None};
+        std::vector<ScriptCallbackArgument> Arguments;
     };
 }  // namespace PureMirror::Overlay

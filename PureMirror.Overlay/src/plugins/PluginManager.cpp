@@ -277,34 +277,38 @@ namespace PureMirror::Overlay
         return false;
     }
 
-    void PluginManager::Render()
+    void PluginManager::BeginFrame()
     {
         m_ScriptEngine.AdvanceFrame();
-        std::vector<std::string> failedPluginIds;
-        for (auto plugin = m_LoadedPlugins.begin(); plugin != m_LoadedPlugins.end();)
-        {
-            const auto result = (*plugin)->Render();
-            if (result.IsSuccessful())
-            {
-                ++plugin;
-                continue;
-            }
+        InvokeCallbacks("begin-frame", [](PluginScriptInstance& plugin) { return plugin.BeginFrame(); });
+    }
 
-            for (const auto& diagnostic : result.Diagnostics)
-                m_Logger.Error(PluginManagerOrigin,
-                               "Plugin '" + result.ModuleId + "': " + DiagnosticMessage(diagnostic),
-                               "plugins.script.render." + result.ModuleId);
-            const auto unloadResult = (*plugin)->Unload();
-            for (const auto& diagnostic : unloadResult.Diagnostics)
-                m_Logger.Error(PluginManagerOrigin,
-                               "Plugin '" + unloadResult.ModuleId + "': " + DiagnosticMessage(diagnostic),
-                               "plugins.script.unload." + unloadResult.ModuleId);
-            failedPluginIds.push_back(result.ModuleId);
-            plugin = m_LoadedPlugins.erase(plugin);
-        }
+    void PluginManager::EndFrame()
+    {
+        InvokeCallbacks("end-frame", [](PluginScriptInstance& plugin) { return plugin.EndFrame(); });
+    }
 
-        for (const auto& pluginId : failedPluginIds)
-            static_cast<void>(UnloadPlugin(pluginId));
+    void PluginManager::Update(const float deltaTime)
+    {
+        InvokeCallbacks("update", [deltaTime](PluginScriptInstance& plugin) { return plugin.Update(deltaTime); });
+    }
+
+    void PluginManager::RenderMenu()
+    {
+        InvokeCallbacks("render-menu", [](PluginScriptInstance& plugin) { return plugin.RenderMenu(); });
+    }
+
+    void PluginManager::RenderInterface()
+    {
+        InvokeCallbacks("render-interface", [](PluginScriptInstance& plugin) { return plugin.RenderInterface(); });
+    }
+
+    void PluginManager::Render()
+    {
+        BeginFrame();
+        Update(0.0F);
+        RenderInterface();
+        EndFrame();
     }
 
     void PluginManager::UnloadAll()
@@ -516,6 +520,37 @@ namespace PureMirror::Overlay
                 m_LoadedPlugins.erase(plugin);
             }
         }
+    }
+
+    void PluginManager::InvokeCallbacks(const std::string_view callbackName,
+                                        const std::function<ScriptCallResult(PluginScriptInstance&)>& callback)
+    {
+        std::vector<std::string> failedPluginIds;
+        for (auto plugin = m_LoadedPlugins.begin(); plugin != m_LoadedPlugins.end();)
+        {
+            const auto result = callback(**plugin);
+            if (result.IsSuccessful())
+            {
+                ++plugin;
+                continue;
+            }
+
+            for (const auto& diagnostic : result.Diagnostics)
+                m_Logger.Error(PluginManagerOrigin,
+                               "Plugin '" + result.ModuleId + "' in " + result.FunctionDeclaration + ": " +
+                                   DiagnosticMessage(diagnostic),
+                               "plugins.script." + std::string(callbackName) + '.' + result.ModuleId);
+            const auto unloadResult = (*plugin)->Unload();
+            for (const auto& diagnostic : unloadResult.Diagnostics)
+                m_Logger.Error(PluginManagerOrigin,
+                               "Plugin '" + unloadResult.ModuleId + "': " + DiagnosticMessage(diagnostic),
+                               "plugins.script.unload." + unloadResult.ModuleId);
+            failedPluginIds.push_back(result.ModuleId);
+            plugin = m_LoadedPlugins.erase(plugin);
+        }
+
+        for (const auto& pluginId : failedPluginIds)
+            static_cast<void>(UnloadPlugin(pluginId));
     }
 
     bool PluginManager::IsPluginLoaded(const std::string_view pluginId) const

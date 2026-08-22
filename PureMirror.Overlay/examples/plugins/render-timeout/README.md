@@ -2,7 +2,7 @@
 
 Dieses Plugin ist absichtlich fehlerhaft und dient ausschließlich zum Testen der Script-Deadline.
 
-`on_render()` öffnet ein ImGui-Fenster und läuft danach in einer Endlosschleife. Die AngelScript-Engine sollte den
+`OnRenderInterface()` öffnet ein ImGui-Fenster und läuft danach in einer Endlosschleife. Die AngelScript-Engine sollte den
 Callback nach 100 ms abbrechen. Anschließend sollte der Host:
 
 1. das noch offene `ImGui::Begin()` automatisch mit `ImGui::End()` schließen,

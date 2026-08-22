@@ -191,18 +191,21 @@ Begin/End-Paare werden zusätzlich vom Host verfolgt und nach einem Script-Fehle
 Reservierte, optionale Einstiegspunkte:
 
 ```angelscript
-void on_load();
-void on_unload();
-void on_update(float delta_seconds);
-void on_render();
+void OnLoad();
+void OnUnload();
+void OnBeginFrame();
+void OnEndFrame();
+void OnUpdate(float deltaTime);
+void OnDisable();
+void OnEnable();
+void OnRenderMenu();
+void OnRenderSettings();
+void OnRenderInterface();
 ```
 
-- `on_load` läuft genau einmal nach erfolgreich gebundenen Dependencies.
-- `on_update` und `on_render` laufen nur für aktive Plugins auf dem Render-Thread.
-- `on_unload` läuft bei geordnetem Shutdown oder Reload, aber nicht als Garantie nach einem schweren Prozessfehler.
-- Fehlt ein Callback, ist das gültig.
-- Exceptions werden mit Plugin-ID und Stack-Information protokolliert; das Plugin wird für den Rest des Frames deaktiviert und nach konfigurierter Fehlergrenze dauerhaft pausiert.
+Die Zeitpunkte und Capability-Tags sind im Scripting-Adapter dokumentiert. `OnDisable`, `OnEnable` und `OnRenderSettings` sind bereits Teil des Vertrags, werden aber erst mit den entsprechenden Host-Funktionen ausgelöst. Fehlt ein Callback, ist das gültig. Die früheren snake_case-Namen sind keine Aliase und werden nicht aufgerufen.
 
+Exceptions werden mit Plugin-ID und Callback protokolliert; das betroffene Plugin wird geordnet entladen.
 ## Abhängigkeiten und exportierte Hilfsfunktionen
 
 Das Manifest ist die einzige Quelle für Abhängigkeiten. Nur deklarierte Dependencies dürfen konsumiert werden.
@@ -221,7 +224,7 @@ Geteilte veränderliche globale Variablen werden nicht unterstützt. Daten werde
 - Eine AngelScript-Line-Callback kann ein Zeit- oder Instruktionsbudget durchsetzen.
 - Includes dürfen das Plugin-Verzeichnis und explizit freigegebene Dependency-Exports nicht verlassen.
 - Direkter Prozess-, Netzwerk-, Registry- und beliebiger Dateisystemzugriff wird nicht registriert.
-- ImGui-Aufrufe sind ausschließlich während `on_render` erlaubt.
+- Normale UI-Aufrufe sind ausschließlich während `OnRenderInterface` und künftig `OnRenderSettings` erlaubt; `OnRenderMenu` besitzt eine getrennte Menu-UI-Capability.
 - Plugin-Reload erfolgt zunächst manuell. Automatisches File-Watching kommt erst, wenn Unload und State-Verlust zuverlässig getestet sind.
 - Native DLL-Plugins wären vollständig vertrauenswürdig und könnten den Prozess kompromittieren; dafür wäre später eine separate, versionierte C-ABI nötig.
 - Paketänderungen werden zuerst vollständig aufgelöst und als Plan angezeigt. Downloads landen in einem temporären Bereich; erst nach erfolgreicher Validierung wird der neue Lock-Zustand atomar aktiviert.
@@ -276,7 +279,7 @@ Abnahme: Ein Plugin kann wiederholt geladen und entladen werden, ohne Callback-,
 - Resolver: lineare und diamantförmige Abhängigkeiten, fehlende Version, Self-Cycle und Multi-Cycle.
 - Lifecycle: Callback-Reihenfolge, partielles Scheitern, Shutdown in umgekehrter Reihenfolge.
 - Script-Adapter: Compilerfehler, Exception, Timeout, fehlender Callback und Reload.
-- UI-Fassade: Aufruf außerhalb `on_render`, unausgeglichenes Begin/End und ID-Kollisionen.
+- UI-Fassade: Aufruf außerhalb des jeweils erlaubten Render-Callbacks, unausgeglichenes Begin/End und ID-Kollisionen.
 - Logger: parallele Producer, Puffergrenze, Filter und lange Nachrichten.
 
 ## Vor Implementierungsbeginn zu entscheiden
@@ -295,7 +298,7 @@ Nach Phase 1 und 2 nicht sofort die komplette ImGui-API binden. Der erste End-to
 - Dependency-freies Laden eines `.as`-Scripts,
 - `log.info`,
 - `ui.begin_window`, `ui.text`, `ui.button`, `ui.end_window`,
-- `on_load`, `on_render`, `on_unload`,
+- `OnLoad`, `OnRenderInterface`, `OnUnload`,
 - sichtbarer Status in der Host-Konsole.
 
 Damit werden Pfade, Ownership, Callbacks, Fehlerbehandlung und Rendering einmal vollständig bewiesen, bevor die API-Fläche wächst.

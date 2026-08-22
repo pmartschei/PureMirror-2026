@@ -756,6 +756,12 @@ void Render(const RenderContext* renderContext)
     if (!g_IsOverlayActive.load(std::memory_order_acquire))
         return;
 
+    if (g_PluginManager)
+    {
+        g_PluginManager->BeginFrame();
+        g_PluginManager->Update(ImGui::GetIO().DeltaTime);
+    }
+
     g_BtnErrorTexture = g_rendererAPI->LoadTexture("puremirror/btn_error.png");
     g_BtnErrorPressedTexture = g_rendererAPI->LoadTexture("puremirror/btn_error_pressed.png");
     g_BtnSuccessTexture = g_rendererAPI->LoadTexture("puremirror/btn_success.png");
@@ -778,12 +784,14 @@ void Render(const RenderContext* renderContext)
     RenderWaitingQueue();
     RenderInvitedCustomers();
     if (g_PluginManager)
-        g_PluginManager->Render();
+        g_PluginManager->RenderInterface();
     g_ConsoleWindow.Render();
 
     PureMirror::ImGuiExtension::SetWindowsVoidInputPassthrough({ImGui::FindWindowByName("Customers"),
                                                                 ImGui::FindWindowByName("Waiting Queue"),
                                                                 ImGui::FindWindowByName("Invited Customers")});
+    if (g_PluginManager)
+        g_PluginManager->EndFrame();
 }
 
 static OverlayAPI g_OverlayAPI = MAKE_OVERLAY_API(.Initialize = Initialize,

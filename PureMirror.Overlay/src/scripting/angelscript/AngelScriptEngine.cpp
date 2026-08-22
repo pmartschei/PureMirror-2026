@@ -14,6 +14,9 @@
 #include "scriptarray.h"
 #include "scriptstdstring.h"
 
+#include <limits>
+#include <type_traits>
+
 namespace PureMirror::Overlay
 {
     namespace
@@ -29,6 +32,35 @@ namespace PureMirror::Overlay
             std::uint64_t ResumeFrame{};
             std::chrono::steady_clock::time_point ResumeTime;
         };
+
+        bool SetCallbackArgument(asIScriptContext& context, const ScriptCallbackArgument& argument)
+        {
+            if (argument.Index > (std::numeric_limits<asUINT>::max)())
+                return false;
+            const auto index = static_cast<asUINT>(argument.Index);
+            return std::visit(
+                [&](const auto value)
+                {
+                    using ValueType = std::remove_cvref_t<decltype(value)>;
+                    if constexpr (std::is_same_v<ValueType, bool> || std::is_same_v<ValueType, std::int8_t> ||
+                                  std::is_same_v<ValueType, std::uint8_t>)
+                        return context.SetArgByte(index, static_cast<asBYTE>(value)) >= 0;
+                    else if constexpr (std::is_same_v<ValueType, std::int16_t> ||
+                                       std::is_same_v<ValueType, std::uint16_t>)
+                        return context.SetArgWord(index, static_cast<asWORD>(value)) >= 0;
+                    else if constexpr (std::is_same_v<ValueType, std::int32_t> ||
+                                       std::is_same_v<ValueType, std::uint32_t>)
+                        return context.SetArgDWord(index, static_cast<asDWORD>(value)) >= 0;
+                    else if constexpr (std::is_same_v<ValueType, std::int64_t> ||
+                                       std::is_same_v<ValueType, std::uint64_t>)
+                        return context.SetArgQWord(index, static_cast<asQWORD>(value)) >= 0;
+                    else if constexpr (std::is_same_v<ValueType, float>)
+                        return context.SetArgFloat(index, value) >= 0;
+                    else
+                        return context.SetArgDouble(index, value) >= 0;
+                },
+                argument.Value);
+        }
     }  // namespace
 
     class AngelScriptEngine::Implementation final : public IScriptTaskRuntime, public IScriptSuspensionRuntime
@@ -192,6 +224,18 @@ namespace PureMirror::Overlay
                 result.Status = ScriptCallStatus::Failed;
                 result.Diagnostics.push_back({.Severity = ScriptDiagnosticSeverity::Error,
                                               .Message = "AngelScript context could not prepare the callback."});
+                return result;
+            }
+
+            for (const auto& argument : callback.Arguments)
+            {
+                if (SetCallbackArgument(*context, argument))
+                    continue;
+                context->Release();
+                result.Status = ScriptCallStatus::Failed;
+                result.Diagnostics.push_back({.Severity = ScriptDiagnosticSeverity::Error,
+                                              .Message = "AngelScript callback argument at index " +
+                                                         std::to_string(argument.Index) + " could not be set."});
                 return result;
             }
 
@@ -497,7 +541,8 @@ namespace PureMirror::Overlay
             }
             auto* task = new ScriptTask(*m_Engine, function->GetReturnTypeId());
             const auto moduleId = std::string(ActivePluginId());
-            auto coroutine = std::make_unique<ScriptCoroutine>(moduleId, *context, *task, m_ActiveCallbackTags);
+            auto coroutine = std::make_unique<ScriptCoroutine>(
+                moduleId, *context, *task, m_ActiveCallbackTags | ScriptCallbackTag::Suspendable);
             for (asUINT index{}; index < function->GetParamCount(); ++index)
             {
                 if (SetCoroutineArgument(*coroutine,
@@ -634,33 +679,51 @@ namespace PureMirror::Overlay
             if (successful)
                 successful = RegisterScriptSuspensionBindings(*m_Engine, *this, m_InitializationError);
 
-            successful = successful && require(m_Engine->SetDefaultNamespace("log"), "namespace log") &&
-                         require(m_Engine->RegisterGlobalFunction("void info(const string &in)",
-                                                                  asMETHOD(Implementation, HostLogInfo),
-                                                                  asCALL_THISCALL_ASGLOBAL,
-                                                                  this),
-                                 "log::info") &&
-                         require(m_Engine->SetDefaultNamespace("ui"), "namespace ui") &&
-                         require(m_Engine->RegisterGlobalFunction("bool begin_window(const string &in)",
-                                                                  asMETHOD(Implementation, HostBeginWindow),
-                                                                  asCALL_THISCALL_ASGLOBAL,
-                                                                  this),
-                                 "ui::begin_window") &&
-                         require(m_Engine->RegisterGlobalFunction("void end_window()",
-                                                                  asMETHOD(Implementation, HostEndWindow),
-                                                                  asCALL_THISCALL_ASGLOBAL,
-                                                                  this),
-                                 "ui::end_window") &&
-                         require(m_Engine->RegisterGlobalFunction("void text(const string &in)",
-                                                                  asMETHOD(Implementation, HostText),
-                                                                  asCALL_THISCALL_ASGLOBAL,
-                                                                  this),
-                                 "ui::text") &&
-                         require(m_Engine->RegisterGlobalFunction("bool button(const string &in)",
-                                                                  asMETHOD(Implementation, HostButton),
-                                                                  asCALL_THISCALL_ASGLOBAL,
-                                                                  this),
-                                 "ui::button");
+            successful =
+                successful && require(m_Engine->SetDefaultNamespace("log"), "namespace log") &&
+                require(m_Engine->RegisterGlobalFunction("void info(const string &in)",
+                                                         asMETHOD(Implementation, HostLogInfo),
+                                                         asCALL_THISCALL_ASGLOBAL,
+                                                         this),
+                        "log::info") &&
+                require(m_Engine->SetDefaultNamespace("ui"), "namespace ui") &&
+                require(m_Engine->RegisterGlobalFunction("bool begin_window(const string &in)",
+                                                         asMETHOD(Implementation, HostBeginWindow),
+                                                         asCALL_THISCALL_ASGLOBAL,
+                                                         this),
+                        "ui::begin_window") &&
+                require(
+                    m_Engine->RegisterGlobalFunction(
+                        "void end_window()", asMETHOD(Implementation, HostEndWindow), asCALL_THISCALL_ASGLOBAL, this),
+                    "ui::end_window") &&
+                require(m_Engine->RegisterGlobalFunction("void text(const string &in)",
+                                                         asMETHOD(Implementation, HostText),
+                                                         asCALL_THISCALL_ASGLOBAL,
+                                                         this),
+                        "ui::text") &&
+                require(m_Engine->RegisterGlobalFunction("bool button(const string &in)",
+                                                         asMETHOD(Implementation, HostButton),
+                                                         asCALL_THISCALL_ASGLOBAL,
+                                                         this),
+                        "ui::button") &&
+                require(m_Engine->RegisterGlobalFunction("bool begin_menu(const string &in)",
+                                                         asMETHOD(Implementation, HostBeginMenu),
+                                                         asCALL_THISCALL_ASGLOBAL,
+                                                         this),
+                        "ui::begin_menu") &&
+                require(m_Engine->RegisterGlobalFunction(
+                            "void end_menu()", asMETHOD(Implementation, HostEndMenu), asCALL_THISCALL_ASGLOBAL, this),
+                        "ui::end_menu") &&
+                require(m_Engine->RegisterGlobalFunction("bool menu_item(const string &in)",
+                                                         asMETHOD(Implementation, HostMenuItem),
+                                                         asCALL_THISCALL_ASGLOBAL,
+                                                         this),
+                        "ui::menu_item") &&
+                require(m_Engine->RegisterGlobalFunction("void menu_separator()",
+                                                         asMETHOD(Implementation, HostMenuSeparator),
+                                                         asCALL_THISCALL_ASGLOBAL,
+                                                         this),
+                        "ui::menu_separator");
             const auto reset = require(m_Engine->SetDefaultNamespace(""), "default namespace");
             return successful && reset;
         }
@@ -707,6 +770,36 @@ namespace PureMirror::Overlay
             if (!RequireActiveTag(ScriptCallbackTag::Ui, "UI functions are not available in this callback."))
                 return false;
             return m_ScriptHost != nullptr && m_ScriptHost->Button(ActivePluginId(), label);
+        }
+
+        bool HostBeginMenu(const std::string& label)
+        {
+            if (!RequireActiveTag(ScriptCallbackTag::MenuUi, "Menu UI functions are not available in this callback."))
+                return false;
+            return m_ScriptHost != nullptr && m_ScriptHost->BeginMenu(ActivePluginId(), label);
+        }
+
+        void HostEndMenu()
+        {
+            if (!RequireActiveTag(ScriptCallbackTag::MenuUi, "Menu UI functions are not available in this callback."))
+                return;
+            if (m_ScriptHost != nullptr)
+                m_ScriptHost->EndMenu(ActivePluginId());
+        }
+
+        bool HostMenuItem(const std::string& label)
+        {
+            if (!RequireActiveTag(ScriptCallbackTag::MenuUi, "Menu UI functions are not available in this callback."))
+                return false;
+            return m_ScriptHost != nullptr && m_ScriptHost->MenuItem(ActivePluginId(), label);
+        }
+
+        void HostMenuSeparator()
+        {
+            if (!RequireActiveTag(ScriptCallbackTag::MenuUi, "Menu UI functions are not available in this callback."))
+                return;
+            if (m_ScriptHost != nullptr)
+                m_ScriptHost->MenuSeparator(ActivePluginId());
         }
 
         void HostYield() override

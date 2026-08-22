@@ -62,6 +62,30 @@ namespace PureMirror::Overlay::Tests
                 return false;
             }
 
+            bool BeginMenu(std::string_view pluginId, std::string_view label) override
+            {
+                static_cast<void>(pluginId);
+                static_cast<void>(label);
+                return true;
+            }
+
+            void EndMenu(std::string_view pluginId) override
+            {
+                static_cast<void>(pluginId);
+            }
+
+            bool MenuItem(std::string_view pluginId, std::string_view label) override
+            {
+                static_cast<void>(pluginId);
+                static_cast<void>(label);
+                return false;
+            }
+
+            void MenuSeparator(std::string_view pluginId) override
+            {
+                static_cast<void>(pluginId);
+            }
+
             std::vector<std::string> PluginIds;
             std::vector<std::string> LogMessages;
             std::vector<std::string> TextValues;

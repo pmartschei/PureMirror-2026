@@ -1,11 +1,11 @@
 uint click_count = 0;
 
-void on_load()
+void OnLoad()
 {
     log::info("Hello Overlay loaded");
 }
 
-void on_render()
+void OnRenderInterface()
 {
     if (ui::begin_window("Hello Overlay"))
     {
@@ -17,7 +17,7 @@ void on_render()
     ui::end_window();
 }
 
-void on_unload()
+void OnUnload()
 {
     log::info("Hello Overlay unloaded");
 }

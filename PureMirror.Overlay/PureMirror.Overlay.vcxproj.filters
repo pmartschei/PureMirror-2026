@@ -160,6 +160,7 @@
     <ClInclude Include="src\scripting\PluginScriptCompiler.h"><Filter>Header Files\Scripting</Filter></ClInclude>
     <ClInclude Include="src\scripting\PluginScriptInstance.h"><Filter>Header Files\Scripting</Filter></ClInclude>
     <ClInclude Include="src\scripting\ScriptCallback.h"><Filter>Header Files\Scripting</Filter></ClInclude>
+    <ClInclude Include="src\scripting\ScriptCallbackArgument.h"><Filter>Header Files\Scripting</Filter></ClInclude>
     <ClInclude Include="src\scripting\ScriptCallbackTag.h"><Filter>Header Files\Scripting</Filter></ClInclude>
     <ClInclude Include="src\scripting\ScriptCallResult.h"><Filter>Header Files\Scripting</Filter></ClInclude>
     <ClInclude Include="src\scripting\ScriptCallStatus.h"><Filter>Header Files\Scripting</Filter></ClInclude>

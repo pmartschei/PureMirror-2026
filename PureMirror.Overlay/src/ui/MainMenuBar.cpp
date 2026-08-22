@@ -40,6 +40,7 @@ namespace PureMirror::Overlay
 
         RenderPureMirrorMenu();
         RenderPluginsMenu();
+        m_PluginManager.RenderMenu();
 
         ImGui::EndMainMenuBar();
     }

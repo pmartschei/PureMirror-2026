@@ -18,6 +18,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <ranges>
 #include <regex>
 #include <string>

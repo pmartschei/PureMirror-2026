@@ -1,6 +1,6 @@
 funcdef int TaskWork(int value, int delay_ms);
 
-string status = "Waiting for on_load";
+string status = "Waiting for OnLoad";
 int first_result = 0;
 int slow_result = 0;
 bool tasks_completed = false;
@@ -17,7 +17,7 @@ int yield_then_increment(int value, int unused_delay_ms)
     return value + 1;
 }
 
-void on_load()
+void OnLoad()
 {
     status = "Running three tasks in parallel...";
     log::info("Async Tasks started");
@@ -35,7 +35,7 @@ void on_load()
     Core::Task@ first = WaitAny({slow, fast, next_frame});
     first.Retrieve(first_result);
 
-    // on_load remains suspended until slow and fast have both completed.
+    // OnLoad remains suspended until slow and fast have both completed.
     WaitAll({slow, fast, next_frame});
 
     // Task automatically casts to TypedTask<int> after its result type is known.
@@ -47,7 +47,7 @@ void on_load()
     log::info("First result: " + first_result + ", slow result: " + slow_result);
 }
 
-void on_render()
+void OnRenderInterface()
 {
     if (ui::begin_window("Async Tasks"))
     {
@@ -59,7 +59,7 @@ void on_render()
     ui::end_window();
 }
 
-void on_unload()
+void OnUnload()
 {
     log::info("Async Tasks unloaded");
 }

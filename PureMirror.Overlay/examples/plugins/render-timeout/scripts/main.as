@@ -1,9 +1,9 @@
-void on_load()
+void OnLoad()
 {
     log::info("Intentional render-timeout example loaded");
 }
 
-void on_render()
+void OnRenderInterface()
 {
     const bool is_visible = ui::begin_window("Intentional Render Timeout");
     if (is_visible)
@@ -20,7 +20,7 @@ void on_render()
     ui::end_window();
 }
 
-void on_unload()
+void OnUnload()
 {
     log::info("Intentional render-timeout example unloaded");
 }

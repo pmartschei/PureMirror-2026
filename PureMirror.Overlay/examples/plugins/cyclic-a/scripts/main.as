@@ -1,9 +1,9 @@
-void on_load()
+void OnLoad()
 {
     log::info("Cyclic plugin A loaded together with cyclic plugin B");
 }
 
-void on_render()
+void OnRenderInterface()
 {
     if (ui::begin_window("Cyclic Dependency Example - A"))
     {
@@ -12,7 +12,7 @@ void on_render()
     ui::end_window();
 }
 
-void on_unload()
+void OnUnload()
 {
     log::info("Cyclic plugin A unloaded");
 }

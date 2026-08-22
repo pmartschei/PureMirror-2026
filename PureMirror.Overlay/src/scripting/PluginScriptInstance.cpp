@@ -6,10 +6,20 @@ namespace PureMirror::Overlay
 {
     namespace
     {
-        constexpr ScriptCallback LoadCallback{"void on_load()",
-                                              ScriptCallbackTag::Suspendable | ScriptCallbackTag::Coroutine};
-        constexpr ScriptCallback RenderCallback{"void on_render()", ScriptCallbackTag::Ui};
-        constexpr ScriptCallback UnloadCallback{"void on_unload()", ScriptCallbackTag::None};
+        constexpr auto CoroutineCallbackTags = ScriptCallbackTag::Coroutine;
+        constexpr auto UiCallbackTags = ScriptCallbackTag::Coroutine | ScriptCallbackTag::Ui;
+        constexpr auto MenuCallbackTags = ScriptCallbackTag::Coroutine | ScriptCallbackTag::MenuUi;
+
+        const ScriptCallback LoadCallback{"void OnLoad()",
+                                          ScriptCallbackTag::Suspendable | ScriptCallbackTag::Coroutine};
+        const ScriptCallback UnloadCallback{"void OnUnload()", ScriptCallbackTag::None};
+        const ScriptCallback BeginFrameCallback{"void OnBeginFrame()", CoroutineCallbackTags};
+        const ScriptCallback EndFrameCallback{"void OnEndFrame()", CoroutineCallbackTags};
+        const ScriptCallback DisableCallback{"void OnDisable()", CoroutineCallbackTags};
+        const ScriptCallback EnableCallback{"void OnEnable()", CoroutineCallbackTags};
+        const ScriptCallback RenderMenuCallback{"void OnRenderMenu()", MenuCallbackTags};
+        const ScriptCallback RenderSettingsCallback{"void OnRenderSettings()", UiCallbackTags};
+        const ScriptCallback RenderInterfaceCallback{"void OnRenderInterface()", UiCallbackTags};
     }  // namespace
 
     PluginScriptInstance::PluginScriptInstance(IScriptEngine& scriptEngine,
@@ -73,7 +83,7 @@ namespace PureMirror::Overlay
         if (!m_IsCompiled)
             return {.Status = ScriptCallStatus::Failed,
                     .ModuleId = m_Manifest.Id,
-                    .FunctionDeclaration = "void on_load()",
+                    .FunctionDeclaration = std::string(LoadCallback.FunctionDeclaration),
                     .Diagnostics = {
                         {.Severity = ScriptDiagnosticSeverity::Error, .Message = "Plugin script is not compiled."}}};
 
@@ -89,32 +99,59 @@ namespace PureMirror::Overlay
         return result;
     }
 
+    ScriptCallResult PluginScriptInstance::BeginFrame()
+    {
+        return Invoke(BeginFrameCallback);
+    }
+
+    ScriptCallResult PluginScriptInstance::EndFrame()
+    {
+        return Invoke(EndFrameCallback);
+    }
+
+    ScriptCallResult PluginScriptInstance::Update(const float deltaTime)
+    {
+        return Invoke({"void OnUpdate(float)", CoroutineCallbackTags, {{.Index = 0, .Value = deltaTime}}});
+    }
+
+    ScriptCallResult PluginScriptInstance::Disable()
+    {
+        return Invoke(DisableCallback);
+    }
+
+    ScriptCallResult PluginScriptInstance::Enable()
+    {
+        return Invoke(EnableCallback);
+    }
+
+    ScriptCallResult PluginScriptInstance::RenderMenu()
+    {
+        return Invoke(RenderMenuCallback);
+    }
+
+    ScriptCallResult PluginScriptInstance::RenderSettings()
+    {
+        return Invoke(RenderSettingsCallback);
+    }
+
+    ScriptCallResult PluginScriptInstance::RenderInterface()
+    {
+        return Invoke(RenderInterfaceCallback);
+    }
+
     ScriptCallResult PluginScriptInstance::Render()
     {
-        if (!m_IsLoaded)
-            return {.Status = ScriptCallStatus::Failed,
-                    .ModuleId = m_Manifest.Id,
-                    .FunctionDeclaration = "void on_render()",
-                    .Diagnostics = {
-                        {.Severity = ScriptDiagnosticSeverity::Error, .Message = "Plugin script is not loaded."}}};
-        if (m_IsActivating)
-        {
-            auto result = m_ScriptEngine.CallFunction(m_Manifest.Id, LoadCallback);
-            if (result.Status == ScriptCallStatus::Suspended || !result.IsSuccessful())
-                return result;
-            m_IsActivating = false;
-            return result;
-        }
-        return m_ScriptEngine.CallFunction(m_Manifest.Id, RenderCallback);
+        return RenderInterface();
     }
 
     ScriptCallResult PluginScriptInstance::Unload()
     {
         if (!m_IsCompiled)
-            return {.ModuleId = m_Manifest.Id, .FunctionDeclaration = "void on_unload()"};
+            return {.ModuleId = m_Manifest.Id, .FunctionDeclaration = std::string(UnloadCallback.FunctionDeclaration)};
         auto result = m_IsLoaded
                           ? m_ScriptEngine.CallFunction(m_Manifest.Id, UnloadCallback)
-                          : ScriptCallResult{.ModuleId = m_Manifest.Id, .FunctionDeclaration = "void on_unload()"};
+                          : ScriptCallResult{.ModuleId = m_Manifest.Id,
+                                             .FunctionDeclaration = std::string(UnloadCallback.FunctionDeclaration)};
         m_ScriptEngine.UnloadModule(m_Manifest.Id);
         m_IsCompiled = false;
         m_IsLoaded = false;
@@ -130,5 +167,29 @@ namespace PureMirror::Overlay
     const PluginManifest& PluginScriptInstance::Manifest() const noexcept
     {
         return m_Manifest;
+    }
+
+    ScriptCallResult PluginScriptInstance::Invoke(const ScriptCallback& callback)
+    {
+        if (!m_IsLoaded)
+            return NotLoadedResult(callback.FunctionDeclaration);
+        if (m_IsActivating)
+        {
+            auto result = m_ScriptEngine.CallFunction(m_Manifest.Id, LoadCallback);
+            if (result.Status == ScriptCallStatus::Suspended || !result.IsSuccessful())
+                return result;
+            m_IsActivating = false;
+            return result;
+        }
+        return m_ScriptEngine.CallFunction(m_Manifest.Id, callback);
+    }
+
+    ScriptCallResult PluginScriptInstance::NotLoadedResult(const std::string_view functionDeclaration) const
+    {
+        return {
+            .Status = ScriptCallStatus::Failed,
+            .ModuleId = m_Manifest.Id,
+            .FunctionDeclaration = std::string(functionDeclaration),
+            .Diagnostics = {{.Severity = ScriptDiagnosticSeverity::Error, .Message = "Plugin script is not loaded."}}};
     }
 }  // namespace PureMirror::Overlay

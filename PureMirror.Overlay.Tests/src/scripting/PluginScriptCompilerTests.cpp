@@ -52,7 +52,7 @@ namespace PureMirror::Overlay::Tests
         TEST_METHOD(Compile_ExcludesProvidingPluginsOwnExportDeclarations)
         {
             TemporaryPluginDirectory package;
-            package.Write("scripts/main.as", "void exported_helper() {} void on_load() { exported_helper(); }");
+            package.Write("scripts/main.as", "void exported_helper() {} void OnLoad() { exported_helper(); }");
             package.Write("scripts/exports/helper.as", "this is intentionally not valid AngelScript");
             const PluginManifest manifest{
                 .Id = "com.example.files", .Entry = "scripts/main.as", .Exports = {"scripts/exports/helper.as"}};
@@ -73,7 +73,7 @@ namespace PureMirror::Overlay::Tests
                 .Id = "com.example.provider", .Entry = "scripts/main.as", .Exports = {"scripts/exports/helper.as"}};
 
             TemporaryPluginDirectory consumer;
-            consumer.Write("scripts/main.as", "void on_load() { exported_value(); }");
+            consumer.Write("scripts/main.as", "void OnLoad() { exported_value(); }");
             const PluginManifest consumerManifest{.Id = "com.example.consumer", .Entry = "scripts/main.as"};
             const PluginPackage providerPackage{.Manifest = providerManifest, .Location = provider.Path().string()};
             AngelScriptEngine engine;
@@ -83,7 +83,7 @@ namespace PureMirror::Overlay::Tests
             const auto consumerResult =
                 PluginScriptCompiler(engine).Compile(consumerManifest, consumer.Path(), {providerPackage});
             const auto consumerBindings = engine.BindModuleImports(consumerManifest.Id);
-            const auto callback = engine.CallFunction(consumerManifest.Id, {"void on_load()"});
+            const auto callback = engine.CallFunction(consumerManifest.Id, {"void OnLoad()"});
 
             Assert::IsTrue(providerResult.IsSuccessful());
             Assert::IsTrue(providerBindings.IsSuccessful());
@@ -99,7 +99,7 @@ namespace PureMirror::Overlay::Tests
             const PluginManifest providerManifest{
                 .Id = "com.example.provider", .Entry = "scripts/main.as", .Exports = {"scripts/exports/missing.as"}};
             TemporaryPluginDirectory consumer;
-            consumer.Write("scripts/main.as", "void on_load() {}");
+            consumer.Write("scripts/main.as", "void OnLoad() {}");
             const PluginManifest consumerManifest{.Id = "com.example.consumer", .Entry = "scripts/main.as"};
             const PluginPackage providerPackage{.Manifest = providerManifest, .Location = provider.Path().string()};
             AngelScriptEngine engine;

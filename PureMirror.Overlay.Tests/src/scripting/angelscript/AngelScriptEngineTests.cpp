@@ -4,6 +4,7 @@
 #include <array>
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -62,9 +63,35 @@ namespace PureMirror::Overlay::Tests
                 return false;
             }
 
+            bool BeginMenu(std::string_view pluginId, std::string_view label) override
+            {
+                static_cast<void>(pluginId);
+                static_cast<void>(label);
+                return true;
+            }
+
+            void EndMenu(std::string_view pluginId) override
+            {
+                static_cast<void>(pluginId);
+            }
+
+            bool MenuItem(std::string_view pluginId, std::string_view label) override
+            {
+                static_cast<void>(pluginId);
+                static_cast<void>(label);
+                ++MenuItemCallCount;
+                return false;
+            }
+
+            void MenuSeparator(std::string_view pluginId) override
+            {
+                static_cast<void>(pluginId);
+            }
+
             std::size_t BeginCallCount{};
             std::size_t EndCallCount{};
             std::size_t TextCallCount{};
+            std::size_t MenuItemCallCount{};
             std::vector<std::string> LogMessages;
         };
 
@@ -79,7 +106,7 @@ namespace PureMirror::Overlay::Tests
             AngelScriptEngine engine;
             const std::vector sources{ScriptSource{"main.as", R"(
                 string greeting = "Hello";
-                void on_load() { exported_helper(); }
+                void OnLoad() { exported_helper(); }
             )"},
                                       ScriptSource{"exports/helper.as", "void exported_helper() {}"}};
 
@@ -93,7 +120,7 @@ namespace PureMirror::Overlay::Tests
         TEST_METHOD(LoadModule_ReturnsCompilerDiagnosticsWithSectionAndPosition)
         {
             AngelScriptEngine engine;
-            const std::vector sources{ScriptSource{"broken.as", "void on_load( {"}};
+            const std::vector sources{ScriptSource{"broken.as", "void OnLoad( {"}};
 
             const auto result = engine.LoadModule("com.example.broken", sources);
 
@@ -106,7 +133,7 @@ namespace PureMirror::Overlay::Tests
         TEST_METHOD(UnloadModule_AllowsModuleToBeCompiledAgain)
         {
             AngelScriptEngine engine;
-            const std::vector sources{ScriptSource{"main.as", "void on_load() {}"}};
+            const std::vector sources{ScriptSource{"main.as", "void OnLoad() {}"}};
             Assert::IsTrue(engine.LoadModule("com.example.reload", sources).IsSuccessful());
 
             engine.UnloadModule("com.example.reload");
@@ -121,13 +148,13 @@ namespace PureMirror::Overlay::Tests
             const std::vector providerSources{ScriptSource{"main.as", "int exported_value() { return 42; }"}};
             const std::vector consumerSources{ScriptSource{"main.as",
                                                            "import int exported_value() from \"com.example.provider\"; "
-                                                           "void on_load() { exported_value(); }"}};
+                                                           "void OnLoad() { exported_value(); }"}};
 
             Assert::IsTrue(engine.LoadModule("com.example.provider", providerSources).IsSuccessful());
             Assert::IsTrue(engine.LoadModule("com.example.consumer", consumerSources).IsSuccessful());
 
             const auto bindings = engine.BindModuleImports("com.example.consumer");
-            const auto callback = engine.CallFunction("com.example.consumer", {"void on_load()"});
+            const auto callback = engine.CallFunction("com.example.consumer", {"void OnLoad()"});
 
             Assert::IsTrue(bindings.IsSuccessful());
             Assert::IsTrue(callback.IsSuccessful());
@@ -147,6 +174,53 @@ namespace PureMirror::Overlay::Tests
             Assert::IsTrue(missing.Status == ScriptCallStatus::NotFound);
             Assert::IsFalse(failed.IsSuccessful());
             Assert::IsFalse(failed.Diagnostics.empty());
+        }
+
+        TEST_METHOD(CallFunction_ForwardsPrimitiveCallbackArgumentsAtTheirIndexes)
+        {
+            ExecutionTrackingScriptHost host;
+            AngelScriptEngine engine(&host);
+            const std::vector sources{ScriptSource{"main.as", R"(
+                void receive(bool booleanValue,
+                             int8 int8Value,
+                             uint8 uint8Value,
+                             int16 int16Value,
+                             uint16 uint16Value,
+                             int int32Value,
+                             uint uint32Value,
+                             int64 int64Value,
+                             uint64 uint64Value,
+                             float floatValue,
+                             double doubleValue)
+                {
+                    if (booleanValue && int8Value == -8 && uint8Value == 8 && int16Value == -16 &&
+                        uint16Value == 16 && int32Value == -32 && uint32Value == 32 && int64Value == -64 &&
+                        uint64Value == 64 && floatValue > 0.49f && floatValue < 0.51f &&
+                        doubleValue > 1.24 && doubleValue < 1.26)
+                        log::info("arguments");
+                }
+            )"}};
+            Assert::IsTrue(engine.LoadModule("com.example.callback-arguments", sources).IsSuccessful());
+            const ScriptCallback callback{
+                "void receive(bool, int8, uint8, int16, uint16, int, uint, int64, uint64, float, double)",
+                ScriptCallbackTag::None,
+                {{.Index = 10, .Value = 1.25},
+                 {.Index = 8, .Value = std::uint64_t{64}},
+                 {.Index = 6, .Value = std::uint32_t{32}},
+                 {.Index = 4, .Value = std::uint16_t{16}},
+                 {.Index = 2, .Value = std::uint8_t{8}},
+                 {.Index = 0, .Value = true},
+                 {.Index = 1, .Value = std::int8_t{-8}},
+                 {.Index = 3, .Value = std::int16_t{-16}},
+                 {.Index = 5, .Value = std::int32_t{-32}},
+                 {.Index = 7, .Value = std::int64_t{-64}},
+                 {.Index = 9, .Value = 0.5F}}};
+
+            const auto result = engine.CallFunction("com.example.callback-arguments", callback);
+
+            Assert::IsTrue(result.Status == ScriptCallStatus::Executed);
+            Assert::AreEqual(std::size_t{1}, host.LogMessages.size());
+            Assert::AreEqual(std::string{"arguments"}, host.LogMessages.front());
         }
 
         TEST_METHOD(CallFunction_AbortsAfterOneHundredMillisecondsAndFinishesHostCall)
@@ -175,7 +249,7 @@ namespace PureMirror::Overlay::Tests
             const std::vector sources{
                 ScriptSource{"main.as", "void run() { log::info(\"before\"); Utils::Yield(); log::info(\"after\"); }"}};
             Assert::IsTrue(engine.LoadModule("com.example.yield", sources).IsSuccessful());
-            constexpr ScriptCallback callback{"void run()", ScriptCallbackTag::Suspendable};
+            const ScriptCallback callback{"void run()", ScriptCallbackTag::Suspendable};
 
             const auto suspended = engine.CallFunction("com.example.yield", callback);
             const auto sameFrame = engine.CallFunction("com.example.yield", callback);
@@ -197,7 +271,7 @@ namespace PureMirror::Overlay::Tests
             AngelScriptEngine engine;
             const std::vector sources{ScriptSource{"main.as", "void run() { Utils::Sleep(0); }"}};
             Assert::IsTrue(engine.LoadModule("com.example.sleep", sources).IsSuccessful());
-            constexpr ScriptCallback callback{"void run()", ScriptCallbackTag::Suspendable};
+            const ScriptCallback callback{"void run()", ScriptCallbackTag::Suspendable};
 
             const auto suspended = engine.CallFunction("com.example.sleep", callback);
             engine.AdvanceFrame();
@@ -214,8 +288,8 @@ namespace PureMirror::Overlay::Tests
             constexpr std::array<std::string_view, 4> moduleIds{
                 "com.example.sleep.one", "com.example.sleep.two", "com.example.sleep.three", "com.example.sleep.four"};
             const std::vector sources{ScriptSource{
-                "main.as", "void on_load() { log::info(\"before\"); Utils::Sleep(50); log::info(\"after\"); }"}};
-            constexpr ScriptCallback callback{"void on_load()", ScriptCallbackTag::Suspendable};
+                "main.as", "void OnLoad() { log::info(\"before\"); Utils::Sleep(50); log::info(\"after\"); }"}};
+            const ScriptCallback callback{"void OnLoad()", ScriptCallbackTag::Suspendable};
 
             for (const auto moduleId : moduleIds)
                 Assert::IsTrue(engine.LoadModule(moduleId, sources).IsSuccessful());
@@ -276,7 +350,30 @@ namespace PureMirror::Overlay::Tests
             Assert::IsTrue(asyncResult.Diagnostics.front().Message.find("Async") != std::string::npos);
         }
 
-        TEST_METHOD(Coroutine_InheritsAllTagsFromItsCallingContext)
+        TEST_METHOD(MenuUiTag_AllowsOnlyMenuBindings)
+        {
+            ExecutionTrackingScriptHost host;
+            AngelScriptEngine engine(&host);
+            const std::vector sources{ScriptSource{"main.as", R"(
+                void menu_allowed() { ui::menu_item("Entry"); }
+                void menu_rejects_normal_ui() { ui::text("no"); }
+                void normal_ui_rejects_menu() { ui::menu_item("no"); }
+            )"}};
+            Assert::IsTrue(engine.LoadModule("com.example.menu-capability", sources).IsSuccessful());
+
+            const auto allowed =
+                engine.CallFunction("com.example.menu-capability", {"void menu_allowed()", ScriptCallbackTag::MenuUi});
+            const auto rejectsNormalUi = engine.CallFunction(
+                "com.example.menu-capability", {"void menu_rejects_normal_ui()", ScriptCallbackTag::MenuUi});
+            const auto rejectsMenuUi = engine.CallFunction("com.example.menu-capability",
+                                                           {"void normal_ui_rejects_menu()", ScriptCallbackTag::Ui});
+
+            Assert::IsTrue(allowed.Status == ScriptCallStatus::Executed);
+            Assert::IsFalse(rejectsNormalUi.IsSuccessful());
+            Assert::IsFalse(rejectsMenuUi.IsSuccessful());
+            Assert::AreEqual(std::size_t{1}, host.MenuItemCallCount);
+        }
+        TEST_METHOD(Coroutine_InheritsCapabilitiesAndCanAlwaysSuspend)
         {
             ExecutionTrackingScriptHost host;
             AngelScriptEngine engine(&host);
@@ -302,8 +399,9 @@ namespace PureMirror::Overlay::Tests
 
             Assert::IsTrue(result.Status == ScriptCallStatus::Executed);
             Assert::AreEqual(std::size_t{1}, host.TextCallCount);
-            Assert::AreEqual(std::size_t{1}, host.LogMessages.size());
-            Assert::AreEqual(std::string{"inherited-without-suspendable"}, host.LogMessages.front());
+            Assert::AreEqual(std::size_t{0}, host.LogMessages.size());
+            engine.AdvanceFrame();
+            Assert::AreEqual(std::size_t{0}, host.LogMessages.size());
         }
 
         TEST_METHOD(Async_WaitAndTypedTaskResumeTheCallingContextWithTheResult)
@@ -317,7 +415,7 @@ namespace PureMirror::Overlay::Tests
                     Utils::Yield();
                     return 42;
                 }
-                void on_load()
+                void OnLoad()
                 {
                     Work@ work = @worker;
                     Core::Task@ task = Async(work);
@@ -331,7 +429,7 @@ namespace PureMirror::Overlay::Tests
                 }
             )"}};
             Assert::IsTrue(engine.LoadModule("com.example.async.typed", sources).IsSuccessful());
-            constexpr ScriptCallback callback{"void on_load()", OnLoadCallbackTags};
+            const ScriptCallback callback{"void OnLoad()", OnLoadCallbackTags};
 
             const auto suspended = engine.CallFunction("com.example.async.typed", callback);
             engine.AdvanceFrame();
@@ -353,7 +451,7 @@ namespace PureMirror::Overlay::Tests
                 {
                     return a + b + c + d + e + f + g + h + i;
                 }
-                void on_load()
+                void OnLoad()
                 {
                     Work@ work = @worker;
                     Core::Task@ task = Async(work, 1, 2, 3, 4, 5, 6, 7, 8, 9);
@@ -367,7 +465,7 @@ namespace PureMirror::Overlay::Tests
             Assert::IsTrue(engine.LoadModule("com.example.async.arguments", sources).IsSuccessful());
 
             const auto result =
-                engine.CallFunction("com.example.async.arguments", {"void on_load()", OnLoadCallbackTags});
+                engine.CallFunction("com.example.async.arguments", {"void OnLoad()", OnLoadCallbackTags});
 
             Assert::IsTrue(result.Status == ScriptCallStatus::Executed);
             Assert::AreEqual(std::size_t{1}, host.LogMessages.size());
@@ -385,7 +483,7 @@ namespace PureMirror::Overlay::Tests
                     Utils::Yield();
                     return number == 7 ? text : "wrong";
                 }
-                void on_load()
+                void OnLoad()
                 {
                     Work@ work = @worker;
                     Core::Task@ task = Async(work, string("kept-alive"), 7);
@@ -396,7 +494,7 @@ namespace PureMirror::Overlay::Tests
                 }
             )"}};
             Assert::IsTrue(engine.LoadModule("com.example.async.references", sources).IsSuccessful());
-            constexpr ScriptCallback callback{"void on_load()", OnLoadCallbackTags};
+            const ScriptCallback callback{"void OnLoad()", OnLoadCallbackTags};
 
             Assert::IsTrue(engine.CallFunction("com.example.async.references", callback).Status ==
                            ScriptCallStatus::Suspended);
@@ -419,7 +517,7 @@ namespace PureMirror::Overlay::Tests
                     for (int i = 0; i < yields; ++i)
                         Utils::Yield();
                 }
-                void on_load()
+                void OnLoad()
                 {
                     Work@ work = @worker;
                     Core::Task@ one = Async(work, 1);
@@ -430,7 +528,7 @@ namespace PureMirror::Overlay::Tests
                 }
             )"}};
             Assert::IsTrue(engine.LoadModule("com.example.async.all", sources).IsSuccessful());
-            constexpr ScriptCallback callback{"void on_load()", OnLoadCallbackTags};
+            const ScriptCallback callback{"void OnLoad()", OnLoadCallbackTags};
 
             auto result = engine.CallFunction("com.example.async.all", callback);
             for (int frame{}; frame < 3; ++frame)
@@ -457,7 +555,7 @@ namespace PureMirror::Overlay::Tests
                         Utils::Yield();
                     return value;
                 }
-                void on_load()
+                void OnLoad()
                 {
                     Work@ work = @worker;
                     Core::Task@ slow = Async(work, 2, 2);
@@ -470,7 +568,7 @@ namespace PureMirror::Overlay::Tests
                 }
             )"}};
             Assert::IsTrue(engine.LoadModule("com.example.async.any", sources).IsSuccessful());
-            constexpr ScriptCallback callback{"void on_load()", OnLoadCallbackTags};
+            const ScriptCallback callback{"void OnLoad()", OnLoadCallbackTags};
 
             const auto suspended = engine.CallFunction("com.example.async.any", callback);
             engine.AdvanceFrame();
@@ -502,7 +600,7 @@ namespace PureMirror::Overlay::Tests
                     childTask.Retrieve(value);
                     return value + 22;
                 }
-                void on_load()
+                void OnLoad()
                 {
                     Work@ parentWork = @parent;
                     Core::Task@ parentTask = Async(parentWork);
@@ -514,7 +612,7 @@ namespace PureMirror::Overlay::Tests
                 }
             )"}};
             Assert::IsTrue(engine.LoadModule("com.example.async.nested", sources).IsSuccessful());
-            constexpr ScriptCallback callback{"void on_load()", OnLoadCallbackTags};
+            const ScriptCallback callback{"void OnLoad()", OnLoadCallbackTags};
 
             Assert::IsTrue(engine.CallFunction("com.example.async.nested", callback).Status ==
                            ScriptCallStatus::Suspended);
@@ -533,7 +631,7 @@ namespace PureMirror::Overlay::Tests
             const std::vector sources{ScriptSource{"main.as", R"(
                 funcdef void Work();
                 void worker() { Utils::Yield(); }
-                void on_load()
+                void OnLoad()
                 {
                     Work@ work = @worker;
                     Core::Task@ task = Async(work);
@@ -545,7 +643,7 @@ namespace PureMirror::Overlay::Tests
                                                                 "com.example.async.plugin.two",
                                                                 "com.example.async.plugin.three",
                                                                 "com.example.async.plugin.four"};
-            constexpr ScriptCallback callback{"void on_load()", OnLoadCallbackTags};
+            const ScriptCallback callback{"void OnLoad()", OnLoadCallbackTags};
             for (const auto moduleId : moduleIds)
             {
                 Assert::IsTrue(engine.LoadModule(moduleId, sources).IsSuccessful());
@@ -567,7 +665,7 @@ namespace PureMirror::Overlay::Tests
                 funcdef int Work();
                 int divide(int value) { return 1 / value; }
                 int fail() { return divide(0); }
-                void on_load()
+                void OnLoad()
                 {
                     Work@ work = @fail;
                     Core::Task@ task = Async(work);
@@ -578,8 +676,7 @@ namespace PureMirror::Overlay::Tests
             )"}};
             Assert::IsTrue(engine.LoadModule("com.example.async.failure", sources).IsSuccessful());
 
-            const auto result =
-                engine.CallFunction("com.example.async.failure", {"void on_load()", OnLoadCallbackTags});
+            const auto result = engine.CallFunction("com.example.async.failure", {"void OnLoad()", OnLoadCallbackTags});
 
             Assert::IsTrue(result.Status == ScriptCallStatus::Executed);
             Assert::AreEqual(std::size_t{1}, host.LogMessages.size());

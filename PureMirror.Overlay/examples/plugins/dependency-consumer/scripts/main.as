@@ -1,9 +1,9 @@
-void on_load()
+void OnLoad()
 {
     log::info("Dependency consumer loaded after its shared dependency");
 }
 
-void on_render()
+void OnRenderInterface()
 {
     if (ui::begin_window("Dependency Example - Consumer"))
     {
@@ -13,7 +13,7 @@ void on_render()
     ui::end_window();
 }
 
-void on_unload()
+void OnUnload()
 {
     log::info("Dependency consumer unloaded");
 }

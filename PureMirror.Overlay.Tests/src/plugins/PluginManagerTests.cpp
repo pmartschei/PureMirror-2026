@@ -33,7 +33,7 @@ namespace PureMirror::Overlay::Tests
             void LogInfo(std::string_view pluginId, std::string_view message) override
             {
                 static_cast<void>(pluginId);
-                static_cast<void>(message);
+                LogMessages.emplace_back(message);
             }
 
             bool BeginWindow(std::string_view pluginId, std::string_view title) override
@@ -60,6 +60,32 @@ namespace PureMirror::Overlay::Tests
                 static_cast<void>(label);
                 return false;
             }
+
+            bool BeginMenu(std::string_view pluginId, std::string_view label) override
+            {
+                static_cast<void>(pluginId);
+                static_cast<void>(label);
+                return true;
+            }
+
+            void EndMenu(std::string_view pluginId) override
+            {
+                static_cast<void>(pluginId);
+            }
+
+            bool MenuItem(std::string_view pluginId, std::string_view label) override
+            {
+                static_cast<void>(pluginId);
+                static_cast<void>(label);
+                return false;
+            }
+
+            void MenuSeparator(std::string_view pluginId) override
+            {
+                static_cast<void>(pluginId);
+            }
+
+            std::vector<std::string> LogMessages;
         };
 
         std::filesystem::path ExamplePluginsRoot()
@@ -95,9 +121,9 @@ namespace PureMirror::Overlay::Tests
                                                          "  \"optionalDependencies\": {},\n"
                                                          "  \"capabilities\": []\n"
                                                          "}\n";
-            std::ofstream(pluginRoot / "scripts/main.as") << "void on_load() {}\n"
-                                                             "void on_render() {}\n"
-                                                             "void on_unload() {}\n";
+            std::ofstream(pluginRoot / "scripts/main.as") << "void OnLoad() {}\n"
+                                                             "void OnRenderInterface() {}\n"
+                                                             "void OnUnload() {}\n";
         }
 
         void CreateOptionalExportPlugins(const std::filesystem::path& pluginsRoot)
@@ -118,9 +144,9 @@ namespace PureMirror::Overlay::Tests
   "capabilities": []
 })";
             std::ofstream(providerRoot / "scripts/main.as") << "int optional_value() { return 42; }\n"
-                                                               "void on_load() {}\n"
-                                                               "void on_render() {}\n"
-                                                               "void on_unload() {}\n";
+                                                               "void OnLoad() {}\n"
+                                                               "void OnRenderInterface() {}\n"
+                                                               "void OnUnload() {}\n";
             std::ofstream(providerRoot / "scripts/exports/api.as")
                 << "import int optional_value() from \"com.test.optional-provider\";\n";
 
@@ -138,9 +164,9 @@ namespace PureMirror::Overlay::Tests
   "optionalDependencies": {"com.test.optional-provider": ">=1.0.0"},
   "capabilities": []
 })";
-            std::ofstream(consumerRoot / "scripts/main.as") << "void on_load() {}\n"
-                                                               "void on_render() { optional_value(); }\n"
-                                                               "void on_unload() {}\n";
+            std::ofstream(consumerRoot / "scripts/main.as") << "void OnLoad() {}\n"
+                                                               "void OnRenderInterface() { optional_value(); }\n"
+                                                               "void OnUnload() {}\n";
         }
 
         bool ContainsPlugin(const std::vector<PluginInfo>& plugins, const std::string_view pluginId)
@@ -174,6 +200,68 @@ namespace PureMirror::Overlay::Tests
             Assert::AreEqual(std::size_t{0}, manager.LoadedPluginCount());
         }
 
+        TEST_METHOD(FrameCallbacks_ExecuteInOrderAndReceiveDeltaTime)
+        {
+            const auto pluginsRoot = std::filesystem::temp_directory_path() / "PureMirror.PluginCallbackTests";
+            std::error_code error;
+            std::filesystem::remove_all(pluginsRoot, error);
+            CreatePlugin(pluginsRoot, "com.test.callbacks", "Callbacks");
+            std::ofstream(pluginsRoot / "com.test.callbacks/scripts/main.as") << R"(
+void OnLoad() { log::info("load"); }
+void OnBeginFrame() { log::info("begin"); }
+void OnUpdate(float deltaTime) { if (deltaTime > 0.24f && deltaTime < 0.26f) log::info("update"); }
+void OnRenderMenu() { ui::menu_item("Callback entry"); log::info("menu"); }
+void OnRenderInterface() { ui::text("interface"); log::info("interface"); }
+void OnEndFrame() { log::info("end"); }
+void OnUnload() { log::info("unload"); }
+)";
+
+            Logger logger;
+            PluginManagerScriptHost scriptHost;
+            AngelScriptEngine scriptEngine(&scriptHost);
+            PluginManager manager(scriptEngine, logger);
+
+            Assert::AreEqual(std::size_t{1}, manager.ScanPlugins(pluginsRoot));
+            Assert::IsTrue(manager.LoadPlugin("com.test.callbacks"));
+            manager.BeginFrame();
+            manager.Update(0.25F);
+            manager.RenderMenu();
+            manager.RenderInterface();
+            manager.EndFrame();
+            manager.UnloadAll();
+
+            const std::vector<std::string> expected{"load", "begin", "update", "menu", "interface", "end", "unload"};
+            Assert::AreEqual(expected.size(), scriptHost.LogMessages.size());
+            for (std::size_t index{}; index < expected.size(); ++index)
+                Assert::AreEqual(expected[index], scriptHost.LogMessages[index]);
+
+            std::filesystem::remove_all(pluginsRoot, error);
+        }
+        TEST_METHOD(LegacyCallbacks_AreNotInvoked)
+        {
+            const auto pluginsRoot = std::filesystem::temp_directory_path() / "PureMirror.LegacyCallbackTests";
+            std::error_code error;
+            std::filesystem::remove_all(pluginsRoot, error);
+            CreatePlugin(pluginsRoot, "com.test.legacy-callbacks", "Legacy Callbacks");
+            std::ofstream(pluginsRoot / "com.test.legacy-callbacks/scripts/main.as") << R"(
+void on_load() { log::info("legacy-load"); }
+void on_render() { log::info("legacy-render"); }
+void on_unload() { log::info("legacy-unload"); }
+)";
+
+            Logger logger;
+            PluginManagerScriptHost scriptHost;
+            AngelScriptEngine scriptEngine(&scriptHost);
+            PluginManager manager(scriptEngine, logger);
+
+            Assert::AreEqual(std::size_t{1}, manager.ScanPlugins(pluginsRoot));
+            Assert::IsTrue(manager.LoadPlugin("com.test.legacy-callbacks"));
+            manager.Render();
+            manager.UnloadAll();
+
+            Assert::IsTrue(scriptHost.LogMessages.empty());
+            std::filesystem::remove_all(pluginsRoot, error);
+        }
         TEST_METHOD(ExamplePlugins_LoadDependencyAndCyclicGroups)
         {
             Logger logger;
@@ -264,9 +352,10 @@ namespace PureMirror::Overlay::Tests
             std::error_code error;
             std::filesystem::remove_all(pluginsRoot, error);
             CreatePlugin(pluginsRoot, "com.test.timeout", "Timeout");
-            std::ofstream(pluginsRoot / "com.test.timeout/scripts/main.as") << "void on_load() {}\n"
-                                                                               "void on_render() { while (true) {} }\n"
-                                                                               "void on_unload() { while (true) {} }\n";
+            std::ofstream(pluginsRoot / "com.test.timeout/scripts/main.as")
+                << "void OnLoad() {}\n"
+                   "void OnRenderInterface() { while (true) {} }\n"
+                   "void OnUnload() { while (true) {} }\n";
 
             Logger logger;
             PluginManagerScriptHost scriptHost;
@@ -280,7 +369,7 @@ namespace PureMirror::Overlay::Tests
             const auto messages = logger.Snapshot();
             const auto containsMessageId = [&](const std::string_view messageId)
             { return std::ranges::find(messages, messageId, &LogMessage::MessageId) != messages.end(); };
-            Assert::IsTrue(containsMessageId("plugins.script.render.com.test.timeout"));
+            Assert::IsTrue(containsMessageId("plugins.script.render-interface.com.test.timeout"));
             Assert::IsTrue(containsMessageId("plugins.script.unload.com.test.timeout"));
             Assert::AreEqual(std::size_t{0}, manager.LoadedPluginCount());
 

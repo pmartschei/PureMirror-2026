@@ -1,4 +1,4 @@
-void on_load()
+void OnLoad()
 {
     log::info("Shared dependency loaded");
 }
@@ -11,7 +11,7 @@ namespace DependencyExample
     }
 }
 
-void on_render()
+void OnRenderInterface()
 {
     if (ui::begin_window("Dependency Example - Shared"))
     {
@@ -20,7 +20,7 @@ void on_render()
     ui::end_window();
 }
 
-void on_unload()
+void OnUnload()
 {
     log::info("Shared dependency unloaded");
 }

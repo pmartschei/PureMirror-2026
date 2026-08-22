@@ -4,12 +4,28 @@ Der Adapter verwendet AngelScript 2.38.0 als statisch gelinkte Bibliothek. Er be
 
 AngelScript-Header und -Typen bleiben durch ein Pimpl vollständig in diesem Ordner. Der engine-unabhängige Layer kennt ausschließlich `IScriptEngine`, `ScriptSource` und `ScriptModuleLoadResult`.
 
-Implementiert sind außerdem die optionalen Lifecycle-Callbacks `on_load`, `on_render` und `on_unload` sowie die minimale Host-API `log::info`, `ui::begin_window`, `ui::end_window`, `ui::text` und `ui::button`. `PluginScriptInstance` verbindet Manifest, Paketpfad, Kompilierung, Callback-Ausführung und Entladen zu einem Plugin-Lifecycle.
+Implementiert sind folgende optionale Lifecycle-Callbacks:
 
-Callbacks tragen engine-unabhängige Capability-Tags. `on_load` ist pausierbar und darf Coroutinen starten, `on_render` darf UI verwenden und `on_unload` besitzt keine dieser Capabilities. Ein Script kann in pausierbaren Callbacks mit `Utils::Yield()` bis zum nächsten Frame oder mit `Utils::Sleep(uint64 timeInMs)` mindestens bis zum Ablauf der angegebenen Zeit aussetzen. `Async` benötigt das `Coroutine`-Tag; die gestartete Coroutine erbt exakt alle Tags ihres aufrufenden Contexts. Dadurch bleiben verschachtelte Coroutinen erlaubt, erhalten aber beispielsweise aus `on_load` keine UI-Berechtigung. Ein nicht erlaubter UI-, Coroutine- oder Suspend-Aufruf beendet den aktuellen Context mit einer Script-Diagnose. Jeder Ausführungsabschnitt besitzt weiterhin ein Zeitlimit von 100 ms.
+| Callback | Zeitpunkt | Capabilities |
+| --- | --- | --- |
+| `void OnLoad()` | nach dem Laden | suspendierbar, Coroutinen, keine UI |
+| `void OnUnload()` | vor dem Entladen | keine Suspension, Coroutinen oder UI |
+| `void OnBeginFrame()` | am Frame-Anfang | Coroutinen, keine Suspension oder UI |
+| `void OnEndFrame()` | am Frame-Ende | Coroutinen, keine Suspension oder UI |
+| `void OnUpdate(float deltaTime)` | vor `OnRenderInterface`; Sekunden seit dem vorherigen Frame | Coroutinen, keine Suspension oder UI |
+| `void OnDisable()` | beim späteren Disable-Support | Coroutinen, keine Suspension oder UI |
+| `void OnEnable()` | beim späteren Enable-Support | Coroutinen, keine Suspension oder UI |
+| `void OnRenderMenu()` | innerhalb der Host-Menüleiste | Coroutinen, keine Suspension, ausschließlich Menu-UI |
+| `void OnRenderSettings()` | beim späteren Plugin-Settings-Support | Coroutinen, keine Suspension, normale UI |
+| `void OnRenderInterface()` | beim Rendern der Plugin-Oberfläche | Coroutinen, keine Suspension, normale UI |
+
+`OnDisable`/`OnEnable` und `OnRenderSettings` sind als Callback-Verträge vorhanden, werden aber erst aufgerufen, sobald die zugehörigen Host-Funktionen implementiert sind.
+
+Menu-Plugins verwenden in `OnRenderMenu` die Bindings `ui::begin_menu`, `ui::end_menu`, `ui::menu_item` und `ui::menu_separator`. Normale UI-Bindings sind dort absichtlich gesperrt; die Menu-Bindings sind außerhalb dieses Callbacks gesperrt.
+
+Callbacks tragen engine-unabhängige Capability-Tags. Ein nicht erlaubter UI-, Coroutine- oder Suspend-Aufruf beendet den aktuellen Context mit einer Script-Diagnose. `Async` benötigt das `Coroutine`-Tag. Jede erzeugte Coroutine übernimmt die UI-Capabilities ihres auslösenden Callbacks und erhält zusätzlich immer das `Suspendable`-Tag. Sie darf daher selbst `Utils::Yield`, `Utils::Sleep` und die Wait-Funktionen verwenden, auch wenn der auslösende Callback nicht suspendieren darf. Jeder Ausführungsabschnitt besitzt weiterhin ein Zeitlimit von 100 ms.
 
 Die Deklarationen von `Utils::Yield` und `Utils::Sleep` liegen in `ScriptSuspensionBindings.cpp`. `IScriptSuspensionRuntime` verbindet sie mit der Suspend-/Timer-Logik der Engine.
-
 Gemeinsame Prüfungen von AngelScript-Registrierungsergebnissen und einheitliche Fehlerdiagnosen stellt `ScriptBindingUtils` für alle Binding-Module bereit.
 
 ## Tasks und Coroutinen

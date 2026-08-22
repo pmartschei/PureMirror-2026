@@ -35,4 +35,4 @@ Der Aufrufer zeigt diesen Plan an, lädt benötigte Remote-Pakete in einen tempo
 
 `PluginManager` scannt beim Overlay-Start den Ordner `puremirror/plugins` relativ zur geladenen Overlay-DLL. Jeder direkte Unterordner mit einer `plugin.json` ist ein lokales Paket. Der Versionssolver wählt bei mehreren lokalen Versionen eine kompatible Version je Plugin-ID; anschließend validiert der Dependency-Resolver die Auswahl und bestimmt die Ladegruppen.
 
-Erst danach kompiliert der Manager die ausgewählten Scripts und führt `on_load` aus. Während jedes Overlay-Frames wird `on_render` aufgerufen. Ein Plugin mit einem Laufzeitfehler wird protokolliert und entladen; beim Abbau des Managers laufen `on_unload` und das Entladen in umgekehrter Reihenfolge.
+Erst danach kompiliert der Manager die ausgewählten Scripts und führt `OnLoad` aus. Pro Overlay-Frame laufen `OnBeginFrame`, `OnUpdate`, `OnRenderMenu`, `OnRenderInterface` und `OnEndFrame` an ihren jeweiligen Host-Phasen. Ein Plugin mit einem Laufzeitfehler wird protokolliert und entladen; beim Abbau des Managers laufen `OnUnload` und das Entladen in umgekehrter Reihenfolge.
